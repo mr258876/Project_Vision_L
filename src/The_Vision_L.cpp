@@ -13,6 +13,8 @@
 #include "lv_fs_fatfs.h"
 #include "ui.h"
 
+#include <ArduinoJson.h>
+#include "LinkedList.h"
 #include <Preferences.h>
 
 #define LGFX_USE_V1
@@ -110,14 +112,8 @@ static lv_disp_drv_t disp_drv;
 unsigned long startup_time;
 
 /* Things of files */
-const PROGMEM String fileNames[] = {
-    "S:/The Vision L/video/Pyro.mjpeg",
-    "S:/The Vision L/video/Hydro.mjpeg",
-    "S:/The Vision L/video/Anemo.mjpeg",
-    "S:/The Vision L/video/Electro.mjpeg",
-    "S:/The Vision L/video/Dendro.mjpeg",
-    "S:/The Vision L/video/Cryo.mjpeg",
-    "S:/The Vision L/video/Geo.mjpeg"};
+static LinkedList<String> filePaths;
+uint8_t fileCount = 0;
 uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 
 /* Mjpeg decoder & Image Buffers */
@@ -202,16 +198,6 @@ void setup()
 
   // Init NVS
   prefs.begin("Project_Vision", false);
-  // Video file
-  if (prefs.getUInt("currFileId", 255) > 6)
-  {
-    prefs.putUInt("currFileId", 0);
-  }
-  // Screen Rotation
-  if (prefs.getUInt("currScreenDir", 255) > 3)
-  {
-    prefs.putUInt("currScreenDir", 0);
-  }
 
 // SD card init
 #ifdef _CONFIG_SD_USE_SPI_
@@ -294,8 +280,8 @@ void setup()
 void mjpegInit()
 {
   // Mjpeg初始化
-  int fileNo = prefs.getUInt("currFileId", 255);
-  if (!mjpeg.setup(fileNames[fileNo].c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, true, screenWidth, screenHeight))
+  int fileNo = prefs.getUInt("currFileId", 0);
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, true, screenWidth, screenHeight))
   {
     LV_LOG_ERROR("Mjpeg decoder init failed!");
   }
@@ -429,6 +415,56 @@ bool checkSDFiles(String *errMsg)
   bool fileErrDetected = false;
   lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
 
+  File f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
+  if (!f || f.isDirectory())
+  {
+    f.close();
+    f = SD_CLASS.open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
+    f.print(PLAY_FILE_DEFAULT_CONF);
+    f.close();
+    f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
+  }
+
+  StaticJsonDocument<0> filter;
+  filter.set(true);
+
+  StaticJsonDocument<PLAY_FILE_CONF_BUFFER_SIZE> doc;
+
+  DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+
+  if (error)
+  {
+    errMsg->concat(error.c_str());
+    LV_LOG_ERROR("deserializeJson() failed:%s", error.c_str());
+    return true;
+  }
+
+  f.close();
+
+  JsonArray files = doc["files"];
+
+  filePaths.clear();
+  for (const char *fp : files)
+  {
+    lv_fs_res_t _input_op_result;
+    lv_fs_file_t _input;
+    _input_op_result = lv_fs_open(&_input, fp, LV_FS_MODE_RD);
+    if (_input_op_result == LV_FS_RES_OK)
+    {
+      filePaths.add(String(fp));
+    }
+    lv_fs_close(&_input);
+  }
+
+  doc.clear();
+
+  fileCount = filePaths.size();
+  if (fileCount < 1)
+  {
+    errMsg->concat("没有可播放的文件");
+    return true;
+  }
+
   lv_label_set_text(ui_StartupLabel2, "请稍候...");
 
   // LV_FONT_DECLARE(ui_font_HanyiWenhei16);
@@ -500,7 +536,7 @@ void performUpdateFromSD(void *parameter)
     }
   }
 
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY))
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件", {}, false);
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -581,7 +617,6 @@ void hardwareSetup(lv_event_t *e)
     // Serial.println("Err Detected!!!");
     lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 发现如下问题,启动已终止:", errMsg.c_str(), {}, false);
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    // lv_msgbox_start_auto_close(mbox, 10000);
     lv_obj_center(mbox);
 
     return;
@@ -658,9 +693,14 @@ void screenAdjustLoop(void *parameter)
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(30));
+    vTaskDelay(pdMS_TO_TICKS(20));
   }
 }
+
+//********************//
+//  Video Play Loop
+//
+//********************//
 
 unsigned long vfile_ms;
 unsigned long vfile_frame_start_ms;
@@ -702,7 +742,6 @@ void playVideo(void *parameter)
   vTaskDelete(NULL);
 }
 
-uint8_t CPU_RunInfo[512];
 unsigned long last_log_ms = millis();
 void LVGLloop(void *parameter)
 {
@@ -723,20 +762,21 @@ void loop()
 
 void onChangeVideo()
 {
-  int fileNo = prefs.getUInt("currFileId", 255);
-  if (fileNo >= 6)
+  int fileNo = prefs.getUInt("currFileId", 0);
+  if (fileNo + 1 < fileCount)
   {
-    fileNo = 0;
+    fileNo += 1;
   }
   else
   {
-    fileNo += 1;
+    fileNo = 0;
   }
 
   if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
   {
-    if (mjpeg.switchFile(fileNames[fileNo].c_str()))
+    if (mjpeg.switchFile(filePaths.get(fileNo).c_str()))
     {
+      vfile_ms = millis();
       prefs.putUInt("currFileId", fileNo);
     }
     xSemaphoreGive(MjpegReadMutex);

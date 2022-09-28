@@ -42,6 +42,7 @@ public:
 
     _img_bufs = imgBufs;
     _img_buf_num = bufNum;
+    _refresh_chunks = bufNum;
     _img_buf = _img_bufs[0];
     _curr_img_buf = 0;
 
@@ -57,11 +58,21 @@ public:
       _jdec.multitask_begin();
     }
 
+    _is_file_picture = isFilePicture();
+    _is_file_read = false;
+    _is_file_drawn = false;
+
     return true;
   }
 
   bool readMjpegBuf()
   {
+    if (_is_file_picture && _is_file_read)
+    {
+      return true;
+    }
+    
+
     if (_inputindex == 0)
     {
       _input_op_result = lv_fs_read(&_input, _read_buf, READ_BUFFER_SIZE, &_buf_read);
@@ -121,6 +132,7 @@ public:
       }
       if (found_FFD9)
       {
+        _is_file_read = true;
         return true;
       }
     }
@@ -130,6 +142,11 @@ public:
 
   bool drawJpg()
   {
+    if (_is_file_picture && _is_file_drawn)
+    {
+      return true;
+    }
+
     _fileindex = 0;
     _remain = _mjpeg_buf_offset;
 
@@ -177,11 +194,18 @@ public:
       LV_LOG_ERROR("decomp failed! %d", jres);
       return false;
     }
+
+    _is_file_drawn = true;
     return true;
   }
 
   bool reload()
   {
+    if (_is_file_picture)
+    {
+      return true;
+    }
+
     lv_fs_seek(&_input, 0, LV_FS_SEEK_SET);
     _mjpeg_buf_offset = 0;
     _inputindex = 0;
@@ -207,6 +231,10 @@ public:
     _curr_img_buf = 0;
     _unrefreshed_chunk = 0;
 
+    _is_file_picture = isFilePicture();
+    _is_file_read = false;
+    _is_file_drawn = false;
+
     return true;
   }
 
@@ -218,12 +246,17 @@ private:
   uint8_t *_mjpeg_buf;
   int32_t _mjpeg_buf_offset = 0;
 
+  /* For jpg pictures */
+  bool _is_file_picture = false;
+  bool _is_file_read = false;
+  bool _is_file_drawn = false;
+
   bool _multiTask;
   uint8_t **_img_bufs;
   uint8_t *_img_buf;
   uint8_t _img_buf_num;
   uint8_t _curr_img_buf = 0;
-  uint8_t _refresh_chunks = 15;
+  uint8_t _refresh_chunks = 0;
   uint8_t _unrefreshed_chunk = 0;
   uint8_t *_out_buf;
   TJpgD _jdec;
@@ -241,6 +274,11 @@ private:
   int32_t _off_y;
   int32_t _jpg_x;
   int32_t _jpg_y;
+
+  bool isFilePicture()
+  {
+    return _fileName.endsWith(".jpg") || _fileName.endsWith(".jpeg");
+  }
 
   static uint32_t jpgRead(TJpgD *jdec, uint8_t *buf, uint32_t len)
   {
@@ -343,7 +381,7 @@ private:
     memcpy(me->_img_bufs[me->_curr_img_buf], me->_out_buf, jdec->width * h * 2);
     me->_unrefreshed_chunk += 1;
 
-    if ((me->_unrefreshed_chunk >= me->_refresh_chunks))
+    if (me->_unrefreshed_chunk >= me->_refresh_chunks)
     {
       if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
       {

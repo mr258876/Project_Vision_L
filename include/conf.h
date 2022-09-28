@@ -84,4 +84,9 @@
 // Updating
 #define UPDATE_FILE_PATH "/update.bin"
 
+// Play File List
+#define PLAY_FILE_CONF_PATH "/playFiles.json"
+#define PLAY_FILE_DEFAULT_CONF "{\"files\":[\"S:/Pyro.mjpeg\",\"S:/Hydro.mjpeg\",\"S:/Anemo.mjpeg\",\"S:/Electro.mjpeg\",\"S:/Dendro.mjpeg\",\"S:/Cryo.mjpeg\",\"S:/Geo.mjpeg\"]}"
+#define PLAY_FILE_CONF_BUFFER_SIZE 1024
+
 #endif // _VISION_CONFIGURATIONS_H_

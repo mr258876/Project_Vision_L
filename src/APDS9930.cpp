@@ -39,7 +39,7 @@ APDS9930::~APDS9930() {
  * @return True if initialized successfully. False otherwise.
  */
 bool APDS9930::begin() {
-  uint8_t id;
+  uint8_t id = 0;
 
   /* Initialize I2C */
   Wire.begin();
@@ -118,7 +118,7 @@ bool APDS9930::begin() {
  * @return Contents of the ENABLE register. 0xFF if error.
  */
 uint8_t APDS9930::getMode() {
-  uint8_t enable_value;
+  uint8_t enable_value = 0;
 
   /* Read current ENABLE register */
   if (!wireReadDataByte(APDS9930_ENABLE, enable_value)) {
@@ -363,7 +363,7 @@ unsigned long APDS9930::ulongAmbientToLux(uint16_t Ch0, uint16_t Ch1) {
 }
 
 bool APDS9930::readCh0Light(uint16_t &val) {
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
   val = 0;
 
   /* Read value from channel 0 */
@@ -379,7 +379,7 @@ bool APDS9930::readCh0Light(uint16_t &val) {
 }
 
 bool APDS9930::readCh1Light(uint16_t &val) {
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
   val = 0;
 
   /* Read value from channel 0 */
@@ -428,7 +428,7 @@ bool APDS9930::getColorData(uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c) 
  */
 bool APDS9930::readProximity(uint16_t &val) {
   val = 0;
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
 
   /* Read value from proximity data register */
   if (!wireReadDataByte(APDS9930_PDATAL, val_byte)) {
@@ -460,7 +460,7 @@ uint16_t APDS9930::readProximity() {
  */
 uint16_t APDS9930::getProximityIntLowThreshold() {
   uint16_t val;
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
 
   /* Read value from PILT register */
   if (!wireReadDataByte(APDS9930_PILTL, val_byte)) {
@@ -504,7 +504,7 @@ bool APDS9930::setProximityIntLowThreshold(uint16_t threshold) {
  */
 uint16_t APDS9930::getProximityIntHighThreshold() {
   uint16_t val;
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
 
   /* Read value from PILT register */
   if (!wireReadDataByte(APDS9930_PIHTL, val_byte)) {
@@ -557,7 +557,7 @@ bool APDS9930::setProximityInterruptThreshold(uint16_t thresholdL, uint16_t thre
  * @return the value of the LED drive strength. 0xFF on failure.
  */
 uint8_t APDS9930::getLEDDrive() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -583,7 +583,7 @@ uint8_t APDS9930::getLEDDrive() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setLEDDrive(uint8_t drive) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -616,7 +616,7 @@ bool APDS9930::setLEDDrive(uint8_t drive) {
  * @return the value of the proximity gain. 0xFF on failure.
  */
 uint8_t APDS9930::getProximityGain() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -642,7 +642,7 @@ uint8_t APDS9930::getProximityGain() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setProximityGain(uint8_t drive) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -675,7 +675,7 @@ bool APDS9930::setProximityGain(uint8_t drive) {
  * @return the selected diode. 0xFF on failure.
  */
 uint8_t APDS9930::getProximityDiode() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -701,7 +701,7 @@ uint8_t APDS9930::getProximityDiode() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setProximityDiode(uint8_t drive) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -734,7 +734,7 @@ bool APDS9930::setProximityDiode(uint8_t drive) {
  * @return the value of the ALS gain. 0xFF on failure.
  */
 uint8_t APDS9930::getAmbientLightGain() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -760,7 +760,7 @@ uint8_t APDS9930::getAmbientLightGain() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setAmbientLightGain(uint8_t drive) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from CONTROL register */
   if (!wireReadDataByte(APDS9930_CONTROL, val)) {
@@ -787,7 +787,7 @@ bool APDS9930::setAmbientLightGain(uint8_t drive) {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::getLightIntLowThreshold(uint16_t &threshold) {
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
   threshold = 0;
 
   /* Read value from ambient light low threshold, low byte register */
@@ -839,7 +839,7 @@ bool APDS9930::setLightIntLowThreshold(uint16_t threshold) {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::getLightIntHighThreshold(uint16_t &threshold) {
-  uint8_t val_byte;
+  uint8_t val_byte = 0;
   threshold = 0;
 
   /* Read value from ambient light high threshold, low byte register */
@@ -891,7 +891,7 @@ bool APDS9930::setLightIntHighThreshold(uint16_t threshold) {
  * @return 1 if interrupts are enabled, 0 if not. 0xFF on error.
  */
 uint8_t APDS9930::getAmbientLightIntEnable() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from ENABLE register */
   if (!wireReadDataByte(APDS9930_ENABLE, val)) {
@@ -911,7 +911,7 @@ uint8_t APDS9930::getAmbientLightIntEnable() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setAmbientLightIntEnable(uint8_t enable) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from ENABLE register */
   if (!wireReadDataByte(APDS9930_ENABLE, val)) {
@@ -938,7 +938,7 @@ bool APDS9930::setAmbientLightIntEnable(uint8_t enable) {
  * @return 1 if interrupts are enabled, 0 if not. 0xFF on error.
  */
 uint8_t APDS9930::getProximityIntEnable() {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from ENABLE register */
   if (!wireReadDataByte(APDS9930_ENABLE, val)) {
@@ -958,7 +958,7 @@ uint8_t APDS9930::getProximityIntEnable() {
  * @return True if operation successful. False otherwise.
  */
 bool APDS9930::setProximityIntEnable(uint8_t enable) {
-  uint8_t val;
+  uint8_t val = 0;
 
   /* Read value from ENABLE register */
   if (!wireReadDataByte(APDS9930_ENABLE, val)) {
