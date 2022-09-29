@@ -1,5 +1,3 @@
-#pragma GCC optimize("O3")
-
 #include "conf.h"
 #include "rtos_externs.h"
 
@@ -31,8 +29,6 @@
 #include <OneButton.h>
 #include <kxtj3-1057.h>
 #undef getName
-
-#include <WiFi.h>
 
 // Freertos
 #include "rtc_wdt.h"
@@ -144,7 +140,6 @@ bool checkSDFiles(String *errMsg);
 void screenAdjustLoop(void *parameter);
 void wifiConfigure(void *parameter);
 void playVideo(void *parameter);
-void LVGLloop(void *parameter);
 void getDailyNote(void *parameter);
 bool connectWiFi();
 void cb_switchToVideoScreen();
@@ -161,9 +156,7 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
   if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
   {
     gfx.setAddrWindow(area->x1, area->y1, w, h);
-    gfx.startWrite();
-    gfx.writePixels((uint16_t *)&color_p->full, w * h);
-    gfx.endWrite();
+    gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
     xSemaphoreGive(LCDMutex);
   }
 
@@ -192,9 +185,6 @@ void setup()
 
   // Enable Serial output
   Serial.begin(115200);
-
-  // Disable Wifi
-  WiFi.mode(WIFI_OFF);
 
   // Init NVS
   prefs.begin("Project_Vision", false);
@@ -264,14 +254,6 @@ void setup()
     lv_fs_fatfs_init();
 
     ui_init();
-
-    xTaskCreatePinnedToCore(LVGLloop,        //任务函数
-                            "LVGLloop",      //任务名称
-                            4096,            //任务堆栈大小
-                            NULL,            //任务参数
-                            1,               //任务优先级
-                            &LVGLloopHandle, //任务句柄
-                            1);              //执行任务核心
 
     LV_LOG_INFO("LVGL booted.");
   }
@@ -738,12 +720,13 @@ void playVideo(void *parameter)
     {
       vTaskDelay(pdMS_TO_TICKS(1000 / VIDEO_FPS + vfile_frame_start_ms - vfile_frame_end_ms));
     }
+    // LV_LOG_WARN("Current FPS:%d", (int)(1000 / (vfile_frame_end_ms - vfile_frame_start_ms)));
   }
   vTaskDelete(NULL);
 }
 
 unsigned long last_log_ms = millis();
-void LVGLloop(void *parameter)
+void loop()
 {
   while (1)
   {
@@ -753,11 +736,6 @@ void LVGLloop(void *parameter)
       xSemaphoreGive(LVGLMutex);
     }
   }
-}
-
-void loop()
-{
-  vTaskDelete(NULL);
 }
 
 void onChangeVideo()
