@@ -40,7 +40,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 ![image](/images/serial_conn.png)
 1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载ESP Download Tool(Flash下载工具)。
 
-2. 打开ESP Download Tool，芯片类型选择ESP32。
+2. 打开ESP Download Tool，芯片类型选择ESP32，工作模式选择开发模式。
 ![image](/images/flash_step1.png)
 3. 按照下图设置刷入的文件、flash地址、flash速度，串口及下载速度按实际情况选择。
 ![image](/images/flash_step2.png)
