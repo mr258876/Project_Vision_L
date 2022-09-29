@@ -39,9 +39,9 @@ Do Virtual Gods Hand Out Electronic Visions?
 0. 建立串口连接。若使用的主板为开发版，使用Type-C接口直接连接电脑即可，无需额外操作；若使用的主板为普通版，则需使用额外USB-串口转换器，并按下图建立有线连接(以CH341A下载器为例)。
 ![image](/images/serial_conn.png)
 1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载ESP Download Tool(Flash下载工具)。
+
 2. 打开ESP Download Tool，芯片类型选择ESP32。
 ![image](/images/flash_step1.png)
-</br>
 3. 按照下图设置刷入的文件、flash地址、flash速度，串口及下载速度按实际情况选择。
 ![image](/images/flash_step2.png)
 4. 点击下载按钮。若使用的主板为普通版，还需在按住BOOT键的同时短按EN键。若下载状态一直显示等待上电同步，重复此步骤。
