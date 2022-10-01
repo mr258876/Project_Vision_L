@@ -30,6 +30,8 @@
 #include <kxtj3-1057.h>
 #undef getName
 
+#include <WiFi.h>
+
 // Freertos
 #include "rtc_wdt.h"
 
@@ -185,6 +187,9 @@ void setup()
 
   // Enable Serial output
   Serial.begin(115200);
+
+  // Disable Wifi
+  WiFi.mode(WIFI_OFF);
 
   // Init NVS
   prefs.begin("Project_Vision", false);
