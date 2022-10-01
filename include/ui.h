@@ -45,8 +45,10 @@ extern lv_obj_t * ui_VideoImages[IMG_BUF_CHUNKS];
 extern lv_img_dsc_t ui_VideoImageConfs[IMG_BUF_CHUNKS];
 extern lv_obj_t * ui_MenuScreen;
 
-void hardwareSetup(lv_event_t * e);
-void leaveVideoScreen(lv_event_t * e);
+extern lv_group_t * ui_group;
+
+void cb_hardwareSetup(lv_event_t * e);
+void cb_leaveVideoScreen(lv_event_t * e);
 
 
 
