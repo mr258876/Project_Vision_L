@@ -8,8 +8,10 @@
 /* mutex */
 SemaphoreHandle_t LVGLMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t LCDMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
 
 /* tsk handle */
-TaskHandle_t LVGLloopHandle;
 TaskHandle_t playVideoHandle;
+TaskHandle_t showDailyNoteLoopHandle;

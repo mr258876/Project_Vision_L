@@ -13,7 +13,7 @@
 class MjpegClass
 {
 public:
-  bool setup(const char *fileName, uint8_t *mjpeg_buf, uint8_t *imgBufs[], uint8_t bufNum, bool multiTask, int32_t tftWidth, int32_t tftHeight)
+  bool setup(const char *fileName, uint8_t *mjpeg_buf, uint8_t *imgBufs[], uint8_t imgBufNum, uint8_t memBufNum, bool multiTask, int32_t tftWidth, int32_t tftHeight)
   {
     _fileName = fileName;
     _input_op_result = lv_fs_open(&_input, fileName, LV_FS_MODE_RD);
@@ -41,8 +41,9 @@ public:
     }
 
     _img_bufs = imgBufs;
-    _img_buf_num = bufNum;
-    _refresh_chunks = bufNum;
+    _img_buf_num = imgBufNum;
+    _mem_buf_num = memBufNum;
+    _refresh_chunks = memBufNum;
     _img_buf = _img_bufs[0];
     _curr_img_buf = 0;
 
@@ -62,6 +63,8 @@ public:
     _is_file_read = false;
     _is_file_drawn = false;
 
+    _ready = true;
+
     return true;
   }
 
@@ -71,7 +74,6 @@ public:
     {
       return true;
     }
-    
 
     if (_inputindex == 0)
     {
@@ -207,9 +209,7 @@ public:
     }
 
     lv_fs_seek(&_input, 0, LV_FS_SEEK_SET);
-    _mjpeg_buf_offset = 0;
     _inputindex = 0;
-    _remain = 0;
     return true;
   }
 
@@ -224,9 +224,7 @@ public:
       return false;
     }
 
-    _mjpeg_buf_offset = 0;
     _inputindex = 0;
-    _remain = 0;
 
     _curr_img_buf = 0;
     _unrefreshed_chunk = 0;
@@ -236,6 +234,23 @@ public:
     _is_file_drawn = false;
 
     return true;
+  }
+
+  bool ready()
+  {
+    return _ready;
+  }
+
+  void pause()
+  {
+    _jdec.pause_multitask();
+    _ready = false;
+  }
+
+  void resume()
+  {
+    _jdec.resume_multitask();
+    _ready = true;
   }
 
 private:
@@ -251,10 +266,14 @@ private:
   bool _is_file_read = false;
   bool _is_file_drawn = false;
 
+  /* Status Flag */
+  bool _ready = false;
+
   bool _multiTask;
   uint8_t **_img_bufs;
   uint8_t *_img_buf;
   uint8_t _img_buf_num;
+  uint8_t _mem_buf_num;
   uint8_t _curr_img_buf = 0;
   uint8_t _refresh_chunks = 0;
   uint8_t _unrefreshed_chunk = 0;
@@ -378,8 +397,10 @@ private:
     //   me->_img_bufs[0] = tmpPtr;
     // }
 
-    memcpy(me->_img_bufs[me->_curr_img_buf], me->_out_buf, jdec->width * h * 2);
-    me->_unrefreshed_chunk += 1;
+    // memcpy(me->_img_bufs[me->_curr_img_buf % me->_mem_buf_num], me->_out_buf, jdec->width * h * 2);
+    memcpy(me->_img_bufs[me->_curr_img_buf % me->_mem_buf_num], me->_out_buf, jdec->width * h);
+    memcpy(me->_img_bufs[(me->_curr_img_buf + 1) % me->_mem_buf_num], me->_out_buf + jdec->width * h, jdec->width * h);
+    me->_unrefreshed_chunk += 2;
 
     if (me->_unrefreshed_chunk >= me->_refresh_chunks)
     {
@@ -401,7 +422,7 @@ private:
       }
     }
 
-    me->_curr_img_buf += 1;
+    me->_curr_img_buf += 2;
     if (me->_curr_img_buf > me->_img_buf_num)
     {
       me->_curr_img_buf = 0;

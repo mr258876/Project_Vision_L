@@ -11,14 +11,14 @@ struct Notedata{
     int homecoinRemain = 2400;
     int homecoinMax = 2400;
     time_t homecoinRecoverTime = 0;
+    int expeditionOngoing = 5;
     int expeditionFinished = 5;
     int expeditionMax = 5;
     time_t expeditionRecoverTime[5] = {0, 0, 0, 0, 0};
     bool hasTransformer = true;
-    int transformerRecDay = 0;
-    int transformerRecHour = 0;
-    int transformerRecMinute = 0;
+    time_t transformerRecoverTime = 640800;
     time_t _last_calc_time = 0;
+    time_t _last_update_time = 0;
 };
 
 typedef enum {

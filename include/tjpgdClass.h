@@ -71,6 +71,8 @@ struct TJpgD {
   JRESULT prepare(uint32_t (*)(TJpgD*, uint8_t*, uint32_t), void*);
   JRESULT decomp(uint32_t (*)(TJpgD*, void*, JRECT*), uint32_t (*)(TJpgD*, uint32_t, uint32_t) = 0, uint32_t = 0);
   JRESULT decomp_multitask(uint32_t (*)(TJpgD*, void*, JRECT*), uint32_t (*)(TJpgD*, uint32_t, uint32_t) = 0, uint32_t = 0);
+  JRESULT pause_multitask();
+  JRESULT resume_multitask();
   static void multitask_begin();
   static void multitask_end();
 };

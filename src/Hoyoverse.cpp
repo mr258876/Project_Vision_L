@@ -185,6 +185,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     {
         ESP_LOGE("Arduino JSON", "deserializeJson() failed: %s", error.c_str());
         free(buffer);
+        doc.clear();
         return HOYO_CLI_JSON_DESER_FAIL;
     }
 
@@ -195,6 +196,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     {
         ESP_LOGE("HoyoverseClient::getDailyNote()", "Get data failed! Server response code: %d", (int)doc["retcode"]);
         free(buffer);
+        doc.clear();
         return HOYO_CLI_RESP_ERR;
     }
 
@@ -202,16 +204,20 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     nd->resinRemain = data["current_resin"];                         // 120
     nd->resinMax = data["max_resin"];                                // 160
     nd->resinRecoverTime = atol(data["resin_recovery_time"]);        // "19104"
+
     nd->homecoinRemain = data["current_home_coin"];                  // 750
     nd->homecoinMax = data["max_home_coin"];                         // 2400
     nd->homecoinRecoverTime = atol(data["home_coin_recovery_time"]); // "195774"
-    nd->expeditionFinished = data["current_expedition_num"];         // 5
+
+    nd->expeditionOngoing = data["current_expedition_num"];         // 5
     nd->expeditionMax = data["max_expedition_num"];                  // 5
+    nd->expeditionFinished = 0;
     memset(nd->expeditionRecoverTime, 0, sizeof(nd->expeditionRecoverTime));
     int i = 0;
     for (JsonObject data_expedition : data["expeditions"].as<JsonArray>())
     {
         nd->expeditionRecoverTime[i] = atol(data_expedition["remained_time"]); // "0", "0", "0", "0", "0"
+        nd->expeditionFinished += nd->expeditionRecoverTime[i] > 0 ? 0 : 1;
         i++;
     }
 
@@ -221,24 +227,29 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     if (data_transformer_obtained)
     {
         JsonObject data_transformer_recovery_time = data_transformer["recovery_time"];
-        nd->transformerRecDay = data_transformer_recovery_time["Day"];    // 5
-        nd->transformerRecDay = data_transformer_recovery_time["Hour"];   // 0
-        nd->transformerRecDay = data_transformer_recovery_time["Minute"]; // 0
+        nd->transformerRecoverTime = ((int)data_transformer_recovery_time["Day"]) * 86400 + ((int)data_transformer_recovery_time["Hour"]) * 3600 + ((int)data_transformer_recovery_time["Minute"]) * 60;
+        
+        if ((int)data_transformer_recovery_time["Day"] > 0)
+        {
+            nd->transformerRecoverTime += 43200;    // 1天23小时也只会返回1天，因此当剩余时间>1天时再添加12小时时间
+        }
     }
 
-    nd->_last_calc_time = time(NULL);
+    time_t update_time = time(NULL);
+    nd->_last_update_time = update_time;
+    nd->_last_calc_time = update_time;
 
     free(buffer);
+    doc.clear();
     return HOYO_CLI_OK;
 }
 
 void HoyoverseClient::updateDailyNote(Notedata *nd)
 {
-    if (nd->_last_calc_time == 0)   // 若未初始化则直接返回
+    if (nd->_last_calc_time == 0) // 若未初始化则直接返回
     {
         return;
     }
-
 
     time_t t = time(NULL);
     /* Resin 树脂 */
@@ -327,21 +338,12 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
     }
 
     /* Transformer 质量参变仪 */
-    time_t transformerRecoverTime = nd->transformerRecDay * 86400 + nd->transformerRecHour * 3600 + nd->transformerRecMinute * 60;
-    if (nd->hasTransformer && transformerRecoverTime > 0)
+    if (nd->hasTransformer && nd->transformerRecoverTime > 0)
     {
-        transformerRecoverTime -= t - nd->_last_calc_time;
-        if (transformerRecoverTime < 1)
+        nd->transformerRecoverTime -= t - nd->_last_calc_time;
+        if (nd->transformerRecoverTime < 1)
         {
-            nd->transformerRecDay = 0;
-            nd->transformerRecHour = 0;
-            nd->transformerRecMinute = 0;
-        }
-        else
-        {
-            nd->transformerRecDay = transformerRecoverTime % 86400;
-            nd->transformerRecHour = transformerRecoverTime % 3600;
-            nd->transformerRecMinute = transformerRecoverTime % 60;
+            nd->transformerRecoverTime = 0;
         }
     }
 }

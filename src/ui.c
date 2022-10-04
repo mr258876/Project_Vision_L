@@ -35,7 +35,19 @@ lv_obj_t *ui_VideoTopPanel;
 lv_obj_t *ui_VideoImages[IMG_BUF_CHUNKS];
 lv_img_dsc_t ui_VideoImageConfs[IMG_BUF_CHUNKS];
 
-lv_group_t * ui_group;
+lv_obj_t *ui_ResinScreen;
+lv_obj_t *ui_DailyNotePanel;
+lv_obj_t *ui_NoteResinLabel;
+lv_obj_t *ui_NoteHomeCoinLabel;
+lv_obj_t *ui_NoteExpeditionsLabel;
+lv_obj_t *ui_NoteTransformerLabel;
+lv_obj_t *ui_NoteResinImage;
+lv_obj_t *ui_NoteHomeCoinImage;
+lv_obj_t *ui_NoteExpeditionsImage;
+lv_obj_t *ui_NoteTransformerImage;
+lv_obj_t *ui_NoteUpdateTimeLabel;
+
+lv_group_t *ui_group;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -106,9 +118,39 @@ static void ui_event_VideoScreen(lv_event_t *e)
 {
     lv_event_code_t event = lv_event_get_code(e);
     lv_obj_t *ta = lv_event_get_target(e);
-    if (event == LV_EVENT_LONG_PRESSED)
+    if (event == LV_EVENT_KEY)
     {
-        cb_hardwareSetup(e);
+        switch (lv_event_get_key(e))
+        {
+        case LV_KEY_ENTER:
+            cb_leaveVideoScreen(e);
+            break;
+        case LV_KEY_PREV:
+            cb_changeVideo(e);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+static void ui_event_ResinScreen(lv_event_t *e)
+{
+    lv_event_code_t event = lv_event_get_code(e);
+    lv_obj_t *ta = lv_event_get_target(e);
+    if (event == LV_EVENT_KEY)
+    {
+        switch (lv_event_get_key(e))
+        {
+        case LV_KEY_ENTER:
+            cb_leaveResinScreen(e);
+            break;
+        case LV_KEY_PREV:
+            cb_getDailyNoteFromResinScreen(e);
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -292,6 +334,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_add_flag(ui_Button1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_clear_flag(ui_Button1, LV_OBJ_FLAG_SCROLLABLE);
 
+    lv_group_add_obj(ui_group, ui_Button1);
+
     // ui_Label1
 
     ui_Label1 = lv_label_create(ui_Button1);
@@ -322,6 +366,8 @@ void ui_SettingScreen_screen_init(void)
 
     lv_obj_add_flag(ui_Button2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_clear_flag(ui_Button2, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_group_add_obj(ui_group, ui_Button2);
 
     // ui_Label2
 
@@ -354,6 +400,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_add_flag(ui_Button3, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_clear_flag(ui_Button3, LV_OBJ_FLAG_SCROLLABLE);
 
+    lv_group_add_obj(ui_group, ui_Button3);
+
     // ui_Label3
 
     ui_Label3 = lv_label_create(ui_Button3);
@@ -385,6 +433,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_add_flag(ui_Button4, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_clear_flag(ui_Button4, LV_OBJ_FLAG_SCROLLABLE);
 
+    lv_group_add_obj(ui_group, ui_Button4);
+
     // ui_Label4
 
     ui_Label4 = lv_label_create(ui_Button4);
@@ -415,6 +465,8 @@ void ui_SettingScreen_screen_init(void)
 
     lv_obj_add_flag(ui_Button5, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
     lv_obj_clear_flag(ui_Button5, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_group_add_obj(ui_group, ui_Button5);
 
     // ui_Label5
 
@@ -496,6 +548,117 @@ void ui_VideoScreen_screen_init(void)
     // lv_obj_set_style_border_side(ui_VideoTopPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // lv_obj_move_foreground(ui_VideoTopPanel);
+
+    lv_group_add_obj(ui_group, ui_VideoScreen);
+}
+
+void ui_ResinScreen_screen_init(void)
+{
+    ui_ResinScreen = lv_obj_create(NULL);
+    lv_obj_add_event_cb(ui_ResinScreen, ui_event_ResinScreen, LV_EVENT_ALL, NULL);
+    lv_obj_clear_flag(ui_ResinScreen, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_set_style_bg_color(ui_ResinScreen, lv_color_hex(0xEEE6DE), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_ResinScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_ResinScreen, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DailyNotePanel = lv_obj_create(ui_ResinScreen);
+    lv_obj_set_width(ui_DailyNotePanel, 200);
+    lv_obj_set_height(ui_DailyNotePanel, 200);
+    lv_obj_set_align(ui_DailyNotePanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DailyNotePanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_set_style_bg_color(ui_DailyNotePanel, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DailyNotePanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_DailyNotePanel, lv_color_hex(0xDED8D2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_DailyNotePanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(ui_DailyNotePanel, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DailyNotePanel, LV_BORDER_SIDE_FULL, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_NoteResinLabel = lv_label_create(ui_DailyNotePanel);
+    lv_obj_set_width(ui_NoteResinLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteResinLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteResinLabel, 45);
+    lv_obj_set_y(ui_NoteResinLabel, 7);
+    lv_label_set_text(ui_NoteResinLabel, "160/160");
+    lv_obj_set_style_text_color(ui_NoteResinLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_NoteResinLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_NoteResinLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_NoteHomeCoinLabel = lv_label_create(ui_DailyNotePanel);
+    lv_obj_set_width(ui_NoteHomeCoinLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteHomeCoinLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteHomeCoinLabel, 45);
+    lv_obj_set_y(ui_NoteHomeCoinLabel, 52);
+    lv_label_set_text(ui_NoteHomeCoinLabel, "2.4K/2.4K");
+    lv_obj_set_style_text_color(ui_NoteHomeCoinLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_NoteHomeCoinLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_NoteHomeCoinLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_NoteExpeditionsLabel = lv_label_create(ui_DailyNotePanel);
+    lv_obj_set_width(ui_NoteExpeditionsLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteExpeditionsLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteExpeditionsLabel, 45);
+    lv_obj_set_y(ui_NoteExpeditionsLabel, 97);
+    lv_label_set_text(ui_NoteExpeditionsLabel, "5/5");
+    lv_obj_set_style_text_color(ui_NoteExpeditionsLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_NoteExpeditionsLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_NoteExpeditionsLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_NoteTransformerLabel = lv_label_create(ui_DailyNotePanel);
+    lv_obj_set_width(ui_NoteTransformerLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteTransformerLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteTransformerLabel, 45);
+    lv_obj_set_y(ui_NoteTransformerLabel, 142);
+    lv_label_set_text(ui_NoteTransformerLabel, "6 D 24 H");
+    lv_obj_set_style_text_color(ui_NoteTransformerLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_NoteTransformerLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_NoteTransformerLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_NoteResinImage = lv_img_create(ui_DailyNotePanel);
+    lv_img_set_src(ui_NoteResinImage, &ui_img_Resin);
+    lv_obj_set_width(ui_NoteResinImage, LV_SIZE_CONTENT);         /// 1
+    lv_obj_set_height(ui_NoteResinImage, LV_SIZE_CONTENT);        /// 1
+    lv_obj_add_flag(ui_NoteResinImage, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_NoteResinImage, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+
+    ui_NoteHomeCoinImage = lv_img_create(ui_DailyNotePanel);
+    lv_img_set_src(ui_NoteHomeCoinImage, &ui_img_Homecoin);
+    lv_obj_set_width(ui_NoteHomeCoinImage, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteHomeCoinImage, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteHomeCoinImage, 0);
+    lv_obj_set_y(ui_NoteHomeCoinImage, 45);
+    lv_obj_add_flag(ui_NoteHomeCoinImage, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_NoteHomeCoinImage, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+
+    ui_NoteExpeditionsImage = lv_img_create(ui_DailyNotePanel);
+    lv_img_set_src(ui_NoteExpeditionsImage, &ui_img_Expeditions);
+    lv_obj_set_width(ui_NoteExpeditionsImage, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteExpeditionsImage, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteExpeditionsImage, 0);
+    lv_obj_set_y(ui_NoteExpeditionsImage, 90);
+    lv_obj_add_flag(ui_NoteExpeditionsImage, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_NoteExpeditionsImage, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+
+    ui_NoteTransformerImage = lv_img_create(ui_DailyNotePanel);
+    lv_img_set_src(ui_NoteTransformerImage, &ui_img_Transformer);
+    lv_obj_set_width(ui_NoteTransformerImage, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteTransformerImage, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteTransformerImage, 0);
+    lv_obj_set_y(ui_NoteTransformerImage, 135);
+    lv_obj_add_flag(ui_NoteTransformerImage, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_NoteTransformerImage, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+
+    ui_NoteUpdateTimeLabel = lv_label_create(ui_DailyNotePanel);
+    lv_obj_set_width(ui_NoteUpdateTimeLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_NoteUpdateTimeLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_NoteUpdateTimeLabel, 0);
+    lv_obj_set_y(ui_NoteUpdateTimeLabel, -89);
+    lv_obj_set_align(ui_NoteUpdateTimeLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_NoteUpdateTimeLabel, "20分钟前更新");
+    lv_obj_set_style_text_color(ui_NoteUpdateTimeLabel, lv_color_hex(0xC2B4A4), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_NoteUpdateTimeLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_NoteUpdateTimeLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_group_add_obj(ui_group, ui_ResinScreen);
 }
 
 void ui_init(void)
@@ -507,6 +670,7 @@ void ui_init(void)
     ui_StartupScreen_screen_init();
     // ui_SettingScreen_screen_init();
     // ui_VideoScreen_screen_init();
+    // ui_ResinScreen_screen_init();
     lv_disp_load_scr(ui_StartupScreen);
 
     ui_group = lv_group_create();

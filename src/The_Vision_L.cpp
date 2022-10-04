@@ -59,7 +59,6 @@ typedef enum
   VISION_UPDATE_OK          // Update finished (probably never gonna to use)
 } vision_update_result_t;
 
-
 ////////////////////////
 //
 //  Variables
@@ -146,7 +145,7 @@ uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 
 /* Mjpeg decoder & Image Buffers */
 static MjpegClass mjpeg;
-uint8_t *imgBufs[IMG_BUF_CHUNKS];
+uint8_t *imgBufs[MEM_BUF_CHUNKS];
 bool mjpegInited = false;
 
 /* Proximity sensor Object */
@@ -167,13 +166,13 @@ Preferences prefs;
 HoyoverseClient hyc;
 Notedata nd;
 const PROGMEM char *cookie = "HOYOLABCOOKIE";
-const PROGMEM char *uid = "GENSHENID";
+const PROGMEM char *uid = "GENSHINID";
+bool inResinScreen = false;
 
 /* Booleans for whether the sensors enabled. */
 bool useProx;
 bool useAcc;
 bool useAutoBrightness;
-
 
 ////////////////////////
 //
@@ -186,11 +185,16 @@ vision_hw_result_t checkHardware(String *errMsg);
 void screenAdjustLoop(void *parameter);
 void wifiConfigure();
 void playVideo(void *parameter);
-bool getDailyNote(Notedata *nd);
+bool getDailyNote(Notedata *nd, String *errMsg);
+void showDailyNote(Notedata *nd);
 void resinCalcLoop(void *parameter);
+void showDailyNoteLoop(void *parameter);
 bool connectWiFi();
 void cb_switchToVideoScreen();
 void mjpegInit();
+void leaveVideoScreen(void *parameter);
+void leaveResinScreen(void *parameter);
+void getDailyNoteFromResinScreen(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
@@ -216,12 +220,6 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
   }
 
   lv_disp_flush_ready(disp);
-}
-
-/* Serial Debug Output */
-void serialPrint(const char *str)
-{
-  Serial.print(str);
 }
 
 /* Setup Function */
@@ -271,7 +269,6 @@ void setup()
   ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
   lv_init();
-  lv_log_register_print_cb(serialPrint);
 
   screenWidth = gfx.width();
   screenHeight = gfx.height();
@@ -299,6 +296,7 @@ void setup()
     disp_drv.flush_cb = disp_flush;
     disp_drv.draw_buf = &draw_buf;
     disp_drv.sw_rotate = 0;
+    disp_drv.full_refresh = 0;
 
     lv_disp_drv_register(&disp_drv);
 
@@ -320,13 +318,13 @@ void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
-  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, true, screenWidth, screenHeight))
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, MEM_BUF_CHUNKS, true, screenWidth, screenHeight))
   {
     LV_LOG_ERROR("Mjpeg decoder init failed!");
   }
 
   // 划显存
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
+  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
   {
     imgBufs[i] = (uint8_t *)heap_caps_malloc(LCD_WIDTH * LCD_HEIGHT / IMG_BUF_CHUNKS * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     if (!imgBufs[i])
@@ -343,7 +341,7 @@ void mjpegInit()
     ui_VideoImageConfs[i].header.h = screenHeight / IMG_BUF_CHUNKS;
     ui_VideoImageConfs[i].data_size = screenWidth * screenHeight / IMG_BUF_CHUNKS * LV_COLOR_SIZE / 8;
     ui_VideoImageConfs[i].header.cf = LV_IMG_CF_TRUE_COLOR;
-    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % IMG_BUF_CHUNKS];
+    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % MEM_BUF_CHUNKS];
   }
 
   // Create task of video playing
@@ -378,7 +376,7 @@ void switchToVideoScreen(void *delayTime)
   // 切换屏幕
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, true);
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
     xSemaphoreGive(LVGLMutex);
   }
 
@@ -516,22 +514,26 @@ void cb_switchToVideoScreen()
     xSemaphoreGive(LVGLMutex);
   }
 
-  xTaskCreatePinnedToCore(screenAdjustLoop,   //任务函数
-                          "screenAdjustLoop", //任务名称
-                          2048,               //任务堆栈大小
-                          NULL,               //任务参数
-                          1,                  //任务优先级
-                          NULL,               //任务句柄
-                          0);                 //执行任务核心
+  xTaskCreatePinnedToCore(screenAdjustLoop, //任务函数
+                          "screenAdjLoop",  //任务名称
+                          2560,             //任务堆栈大小
+                          NULL,             //任务参数
+                          1,                //任务优先级
+                          NULL,             //任务句柄
+                          0);               //执行任务核心
 
-  switchScreenDelay = 2500 + startup_time - millis();
-  if (switchScreenDelay < 0)
-  {
-    switchScreenDelay = 0;
-  }
+  xTaskCreatePinnedToCore(resinCalcLoop,   //任务函数
+                          "resinCalcLoop", //任务名称
+                          1024,            //任务堆栈大小
+                          NULL,            //任务参数
+                          1,               //任务优先级
+                          NULL,            //任务句柄
+                          0);              //执行任务核心
+
+  switchScreenDelay = 5000;
 
   xTaskCreatePinnedToCore(switchToVideoScreen,        //任务函数
-                          "switchToVideoScreen",      //任务名称
+                          "swToVideoScr",             //任务名称
                           4096,                       //任务堆栈大小
                           (void *)&switchScreenDelay, //任务参数
                           1,                          //任务优先级
@@ -655,7 +657,15 @@ void hardwareSetup(void *parameter)
       lv_label_set_text(ui_StartupLabel2, "连接至网络...");
       xSemaphoreGive(LVGLMutex);
     }
-    getDailyNote(&nd);
+
+    if (!getDailyNote(&nd, &errMsg))
+    {
+      lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
+      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_center(mbox);
+      vTaskDelay(5000);
+      lv_obj_del(mbox);
+    }
   }
 
   pinMode(BUTTON_PIN, INPUT);
@@ -696,33 +706,206 @@ void wifiConfigure()
 
 bool connectWiFi()
 {
-
-  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
-
   WiFi.mode(WIFI_STA);
-  int wifiCount = WiFi.scanNetworks(false, true, false, 300U, 0U, prefs.getString("wifiSSID1").c_str());
+  int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
+  WiFi.scanDelete();
   if (wifiCount < 1)
   {
     WiFi.mode(WIFI_OFF);
     return false;
   }
 
-  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); // disable brownout detector
-
   WiFi.begin();
   unsigned long startConnect_ms = millis();
   while (WiFi.status() != WL_CONNECTED)
   {
     vTaskDelay(500);
-    if (millis() - startConnect_ms > 30000)
+    if (millis() - startConnect_ms > 10000)
     {
       WiFi.disconnect(true);
       WiFi.mode(WIFI_OFF);
       return false;
     }
   }
-
   return true;
+}
+
+void leaveVideoScreen(void *parameter)
+{
+
+  // 暂停解码
+  if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
+  {
+    vTaskSuspend(playVideoHandle);
+    mjpeg.pause();
+    xSemaphoreGive(MjpegMutex);
+  }
+
+  // 切换屏幕
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_group_remove_all_objs(ui_group);
+    ui_ResinScreen_screen_init();
+    showDailyNote(&nd);
+    inResinScreen = true;
+    lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_OUT_RIGHT, 500, 0, true);
+
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  vTaskDelay(pdMS_TO_TICKS(500));
+
+  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
+  {
+    free(imgBufs[i]);
+  }
+
+  // 创建显示数据刷新任务
+  xTaskCreatePinnedToCore(showDailyNoteLoop,        //任务函数
+                          "showDailyNoteLoop",      //任务名称
+                          4096,                     //任务堆栈大小
+                          NULL,                     //任务参数
+                          1,                        //任务优先级
+                          &showDailyNoteLoopHandle, //任务句柄
+                          0);                       //执行任务核心
+
+  vTaskDelete(NULL);
+}
+
+void leaveResinScreen(void *parameter)
+{
+  vTaskDelete(showDailyNoteLoopHandle);
+
+  // 划显存
+  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
+  {
+    imgBufs[i] = (uint8_t *)heap_caps_malloc(LCD_WIDTH * LCD_HEIGHT / IMG_BUF_CHUNKS * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (!imgBufs[i])
+    {
+      LV_LOG_ERROR("Img buf #%d allocate failed!", i);
+    }
+  }
+
+  // 设置显存地址
+  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
+  {
+    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % MEM_BUF_CHUNKS];
+  }
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_group_remove_all_objs(ui_group);
+    ui_VideoScreen_screen_init();
+
+    // 设置视频块参数
+    for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
+    {
+      lv_img_set_src(ui_VideoImages[i], &ui_VideoImageConfs[i]);
+    }
+
+    // 恢复解码器工作
+    vTaskResume(playVideoHandle);
+    mjpeg.resume();
+
+    // 切换屏幕
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 500, 0, true);
+
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  vTaskDelete(NULL);
+}
+
+void getDailyNoteFromResinScreen(void *parameter)
+{
+  String errMsg = "";
+  bool updateRes = false;
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text(ui_NoteUpdateTimeLabel, "正在更新...");
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  updateRes = getDailyNote(&nd, &errMsg);
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    if (updateRes)
+    {
+      showDailyNote(&nd);
+    }
+    else
+    {
+      lv_obj_t *mbox = lv_msgbox_create(ui_ResinScreen, LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
+      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_center(mbox);
+      vTaskDelay(5000);
+      lv_obj_del(mbox);
+    }
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  vTaskDelete(NULL);
+}
+
+void showDailyNote(Notedata *nd)
+{
+  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd->_last_update_time) / 60));
+    lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd->resinRemain, nd->resinMax);
+    lv_label_set_text_fmt(ui_NoteExpeditionsLabel, "%d/%d", nd->expeditionFinished, nd->expeditionOngoing);
+
+    if (nd->homecoinMax < 1000)
+    {
+      lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%d/%d", nd->homecoinRemain, nd->homecoinMax);
+    }
+    else
+    {
+      lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%.1fK/%.1fK", (nd->homecoinRemain / 1000.0), (nd->homecoinMax / 1000.0));
+    }
+
+    if (nd->hasTransformer)
+    {
+      if (nd->transformerRecoverTime > 86400)
+      {
+        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d天", (int)(nd->transformerRecoverTime / 86400));
+      }
+      else if (nd->transformerRecoverTime > 3600)
+      {
+        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d小时", (int)(nd->transformerRecoverTime / 3600));
+      }
+      else if (nd->transformerRecoverTime > 60)
+      {
+        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d分钟", (int)(nd->transformerRecoverTime / 60));
+      }
+      else
+      {
+        lv_label_set_text(ui_NoteTransformerLabel, "已就绪");
+      }
+    }
+    else
+    {
+      lv_label_set_text(ui_NoteTransformerLabel, "未解锁");
+    }
+
+    xSemaphoreGive(NoteDataMutex);
+  }
+}
+
+void showDailyNoteLoop(void *parameter)
+{
+  while (1)
+  {
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      showDailyNote(&nd);
+      xSemaphoreGive(LVGLMutex);
+    }
+    vTaskDelay(20000);
+  }
+  vTaskDelete(NULL);
 }
 
 //*****************************/
@@ -795,6 +978,45 @@ void cb_hardwareSetup(lv_event_t *e)
                           1,               //任务优先级
                           NULL,            //任务句柄
                           0);              //执行任务核心
+}
+
+void cb_leaveVideoScreen(lv_event_t *e)
+{
+  // 创建显存释放任务
+  xTaskCreatePinnedToCore(leaveVideoScreen,   //任务函数
+                          "leaveVideoScreen", //任务名称
+                          4096,               //任务堆栈大小
+                          NULL,               //任务参数
+                          3,                  //任务优先级
+                          NULL,               //任务句柄
+                          0);                 //执行任务核心
+}
+
+void cb_changeVideo(lv_event_t *e)
+{
+  onChangeVideo();
+}
+
+void cb_leaveResinScreen(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(leaveResinScreen, //任务函数
+                          "leaveResinScr",  //任务名称
+                          4096,             //任务堆栈大小
+                          NULL,             //任务参数
+                          3,                //任务优先级
+                          NULL,             //任务句柄
+                          0);               //执行任务核心
+}
+
+void cb_getDailyNoteFromResinScreen(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, //任务函数
+                          "getDailyNoteFRS",           //任务名称
+                          8192,                        //任务堆栈大小
+                          NULL,                        //任务参数
+                          1,                           //任务优先级
+                          NULL,                        //任务句柄
+                          0);                          //执行任务核心
 }
 
 ////////////////////
@@ -895,24 +1117,28 @@ void playVideo(void *parameter)
   {
     vfile_frame_start_ms = millis();
     rtc_wdt_feed(); // Feed watchdog manually
-    if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
+    if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
     {
-      if (mjpeg.readMjpegBuf())
+      if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
       {
-        xSemaphoreGive(MjpegReadMutex);
-        mjpeg.drawJpg();
-      }
-      else
-      {
-        xSemaphoreGive(MjpegReadMutex);
-        if (!mjpeg.reload())
+        if (mjpeg.readMjpegBuf())
         {
-          LV_LOG_ERROR("Unable to reload video file!");
-          break;
+          xSemaphoreGive(MjpegReadMutex);
+          mjpeg.drawJpg();
         }
-        LV_LOG_WARN("Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
-        vfile_ms = millis();
+        else
+        {
+          xSemaphoreGive(MjpegReadMutex);
+          if (!mjpeg.reload())
+          {
+            LV_LOG_ERROR("Unable to reload video file!");
+            break;
+          }
+          LV_LOG_WARN("Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
+          vfile_ms = millis();
+        }
       }
+      xSemaphoreGive(MjpegMutex);
     }
 
     vfile_frame_end_ms = millis();
@@ -930,10 +1156,11 @@ void playVideo(void *parameter)
 //  Resin Functions
 //
 ////////////////////////
-bool getDailyNote(Notedata *nd)
+bool getDailyNote(Notedata *nd, String *errMsg)
 {
   if (!connectWiFi())
   {
+    errMsg->concat("无法连接至网络\n");
     return false;
   }
 
@@ -950,20 +1177,22 @@ bool getDailyNote(Notedata *nd)
     {
       LV_LOG_ERROR("Failed to obtain time");
       res = false;
+      errMsg->concat("同步时间失败\n");
       break;
     }
   }
 
   if (getLocalTime(&timeinfo))
   {
-    hyc.syncDailyNote(nd);
-    xTaskCreatePinnedToCore(resinCalcLoop,   //任务函数
-                          "resinCalcLoop", //任务名称
-                          1024,            //任务堆栈大小
-                          NULL,            //任务参数
-                          1,               //任务优先级
-                          NULL,            //任务句柄
-                          0);              //执行任务核心
+    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+      if (!hyc.syncDailyNote(nd))
+      {
+        errMsg->concat("网络响应异常\n");
+      }
+
+      xSemaphoreGive(NoteDataMutex);
+    }
   }
 
   WiFi.disconnect(true);
@@ -976,8 +1205,13 @@ void resinCalcLoop(void *parameter)
 {
   while (1)
   {
-    HoyoverseClient::updateDailyNote(&nd);
-    vTaskDelay(pdMS_TO_TICKS(60000));
+    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+      HoyoverseClient::updateDailyNote(&nd);
+
+      xSemaphoreGive(NoteDataMutex);
+    }
+    vTaskDelay(pdMS_TO_TICKS(20000));
   }
   vTaskDelete(NULL);
 }
@@ -1015,7 +1249,7 @@ void onSingleClick()
 {
   if (inEditMode)
   {
-    lv_group_send_data(ui_group, LV_KEY_UP);
+    lv_group_send_data(ui_group, LV_KEY_DOWN);
   }
   else
   {
@@ -1046,7 +1280,7 @@ void onMultiClick()
 {
   if (inEditMode)
   {
-    lv_group_send_data(ui_group, LV_KEY_DOWN);
+    lv_group_send_data(ui_group, LV_KEY_UP);
   }
   else
   {

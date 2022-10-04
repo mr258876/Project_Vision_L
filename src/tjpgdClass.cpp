@@ -1036,3 +1036,15 @@ TJpgD::JRESULT TJpgD::decomp_multitask(
   } while ((y += my) < height);
   return rc;
 }
+
+TJpgD::JRESULT TJpgD::pause_multitask()
+{
+  vTaskSuspend(param.task);
+  return JDR_OK;
+}
+
+TJpgD::JRESULT TJpgD::resume_multitask()
+{
+  vTaskResume(param.task);
+  return JDR_OK;
+}

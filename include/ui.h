@@ -43,13 +43,31 @@ extern lv_obj_t * ui_VideoScreen;
 extern lv_obj_t * ui_VideoTopPanel;
 extern lv_obj_t * ui_VideoImages[IMG_BUF_CHUNKS];
 extern lv_img_dsc_t ui_VideoImageConfs[IMG_BUF_CHUNKS];
-extern lv_obj_t * ui_MenuScreen;
+extern lv_obj_t * ui_ResinScreen;
+extern lv_obj_t * ui_DailyNotePanel;
+extern lv_obj_t * ui_NoteResinLabel;
+extern lv_obj_t * ui_NoteHomeCoinLabel;
+extern lv_obj_t * ui_NoteExpeditionsLabel;
+extern lv_obj_t * ui_NoteTransformerLabel;
+extern lv_obj_t * ui_NoteResinImage;
+extern lv_obj_t * ui_NoteHomeCoinImage;
+extern lv_obj_t * ui_NoteExpeditionsImage;
+extern lv_obj_t * ui_NoteTransformerImage;
+extern lv_obj_t * ui_NoteUpdateTimeLabel;
 
 extern lv_group_t * ui_group;
 
 void cb_hardwareSetup(lv_event_t * e);
 void cb_leaveVideoScreen(lv_event_t * e);
+void cb_changeVideo(lv_event_t *e);
+void cb_leaveResinScreen(lv_event_t * e);
+void cb_getDailyNoteFromResinScreen(lv_event_t * e);
 
+
+LV_IMG_DECLARE(ui_img_Resin);           // assets\Resin.png
+LV_IMG_DECLARE(ui_img_Homecoin);        // assets\HomeCoin.png
+LV_IMG_DECLARE(ui_img_Expeditions);     // assets\Expeditions.png
+LV_IMG_DECLARE(ui_img_Transformer);     // assets\Transformer.png
 
 
 LV_FONT_DECLARE(ui_font_HanyiWenhei16ZhHans);
@@ -61,6 +79,7 @@ void ui_init(void);
 void ui_StartupScreen_screen_init();
 void ui_SettingScreen_screen_init();
 void ui_VideoScreen_screen_init();
+void ui_ResinScreen_screen_init();
 
 #ifdef __cplusplus
 } /*extern "C"*/

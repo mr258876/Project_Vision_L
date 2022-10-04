@@ -9,10 +9,12 @@
 // FreeRTOS互斥锁
 extern SemaphoreHandle_t LVGLMutex;
 extern SemaphoreHandle_t LCDMutex;
+extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
+extern SemaphoreHandle_t NoteDataMutex;
 
 // FreeRTOS任务句柄
-extern TaskHandle_t LVGLloopHandle;
 extern TaskHandle_t playVideoHandle;
+extern TaskHandle_t showDailyNoteLoopHandle;
 
 #endif

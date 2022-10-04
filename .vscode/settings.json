@@ -2,6 +2,18 @@
     "files.associations": {
         "*.tcc": "cpp",
         "cmath": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "*.ipp": "cpp",
+        "chrono": "cpp",
+        "ctime": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "limits": "cpp",
+        "numeric": "cpp",
+        "ratio": "cpp",
+        "streambuf": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }
