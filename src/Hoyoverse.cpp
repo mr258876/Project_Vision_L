@@ -255,7 +255,6 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
     /* Resin 树脂 */
     if (nd->resinRecoverTime > 0)
     {
-        nd->resinRemain += ceil(nd->resinRecoverTime / 480);
         nd->resinRecoverTime -= t - nd->_last_calc_time;
 
         if (nd->resinRecoverTime < 0)
@@ -263,7 +262,7 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
             nd->resinRecoverTime = 0;
         }
 
-        nd->resinRemain -= ceil(nd->resinRecoverTime / 480);
+        nd->resinRemain = floor(nd->resinMax - nd->resinRecoverTime / 480);
     }
     else
     {
@@ -346,4 +345,6 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
             nd->transformerRecoverTime = 0;
         }
     }
+
+    nd->_last_calc_time = t;
 }
