@@ -199,6 +199,8 @@ void onSingleClick();
 void onDoubleClick();
 void onMultiClick();
 
+void removeStyles(lv_obj_t *obj);
+
 ////////////////////////
 //
 //  Functions
@@ -355,7 +357,15 @@ void switchToVideoScreen(void *delayTime)
 {
   // 等待延时
   vTaskDelay(pdMS_TO_TICKS(*((int *)delayTime)));
-  ui_VideoScreen_screen_init();
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    // 删除样式解决内存泄露
+    removeStyles(lv_scr_act());
+
+    ui_VideoScreen_screen_init();
+    xSemaphoreGive(LVGLMutex);
+  }
 
   if (!mjpegInited)
   {
@@ -520,8 +530,8 @@ bool checkSDFiles(String *errMsg)
 
   f.close();
 
-  const char* uid = doc["uid"];
-  const char* cookie = doc["cookie"];
+  const char *uid = doc["uid"];
+  const char *cookie = doc["cookie"];
   hyc.begin(cookie, uid);
 
   doc.clear();
@@ -770,16 +780,17 @@ void leaveVideoScreen(void *parameter)
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_group_remove_all_objs(ui_group);
+    removeStyles(lv_scr_act());
     ui_ResinScreen_screen_init();
     showDailyNote(&nd);
     inResinScreen = true;
-    lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_OUT_RIGHT, 500, 0, true);
+    lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     xSemaphoreGive(LVGLMutex);
   }
 
   // 等待动画完成后释放显存
-  vTaskDelay(pdMS_TO_TICKS(500));
+  // vTaskDelay(pdMS_TO_TICKS(500));
 
   for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
   {
@@ -821,6 +832,11 @@ void leaveResinScreen(void *parameter)
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_group_remove_all_objs(ui_group);
+
+    // 删除样式及图片缓存解决内存泄露
+    removeStyles(lv_scr_act());
+
+    // 初始化下个要显示的屏幕
     ui_VideoScreen_screen_init();
 
     // 设置视频块参数
@@ -834,7 +850,7 @@ void leaveResinScreen(void *parameter)
     mjpeg.resume();
 
     // 切换屏幕
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 500, 0, true);
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
     xSemaphoreGive(LVGLMutex);
   }
@@ -1010,7 +1026,7 @@ void cb_leaveVideoScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(leaveVideoScreen,   //任务函数
                           "leaveVideoScreen", //任务名称
-                          4096,               //任务堆栈大小
+                          3072,               //任务堆栈大小
                           NULL,               //任务参数
                           3,                  //任务优先级
                           NULL,               //任务句柄
@@ -1026,7 +1042,7 @@ void cb_leaveResinScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(leaveResinScreen, //任务函数
                           "leaveResinScr",  //任务名称
-                          4096,             //任务堆栈大小
+                          3072,             //任务堆栈大小
                           NULL,             //任务参数
                           3,                //任务优先级
                           NULL,             //任务句柄
@@ -1037,7 +1053,7 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, //任务函数
                           "getDailyNoteFRS",           //任务名称
-                          8192,                        //任务堆栈大小
+                          6144,                        //任务堆栈大小
                           NULL,                        //任务参数
                           1,                           //任务优先级
                           NULL,                        //任务句柄
@@ -1309,5 +1325,19 @@ void onMultiClick()
   else
   {
     lv_group_send_data(ui_group, LV_KEY_PREV);
+  }
+}
+
+////////////////////////
+//
+//  LVGL Related
+//
+////////////////////////
+void removeStyles(lv_obj_t *obj)
+{
+  lv_obj_remove_style_all(obj);
+  for (size_t i = 0; i < lv_obj_get_child_cnt(obj); i++)
+  {
+    removeStyles(lv_obj_get_child(obj, i));
   }
 }
