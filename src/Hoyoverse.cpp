@@ -14,8 +14,8 @@ HoyoverseClient::~HoyoverseClient()
 
 void HoyoverseClient::begin(const char *cookie, const char *uid)
 {
-    _uid = uid;
-    _cookie = cookie;
+    _uid = String(uid);
+    _cookie = String(cookie);
 }
 
 uint8_t HoyoverseClient::getForumType(const char *uid)
@@ -60,7 +60,7 @@ String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
     int r = random(100001, 200000);
 
     md5.add("salt=");
-    md5.add(Hoyoverse_salt[getForumType(_uid)]);
+    md5.add(Hoyoverse_salt[getForumType(_uid.c_str())]);
 
     md5.add("&t=");
     md5.add(String(t));
@@ -106,9 +106,9 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     String p = "role_id=";
     p.concat(_uid);
     p.concat("&server=");
-    p.concat(getServer(_uid));
+    p.concat(getServer(_uid.c_str()));
 
-    int forumtype = getForumType(_uid);
+    int forumtype = getForumType(_uid.c_str());
     String url = Hoyoverse_hosts_record[forumtype];
     url.concat("game_record/app/genshin/api/dailyNote?");
     url.concat(p);
@@ -141,7 +141,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     /* Set headers */
     esp_http_client_set_header(client, "Accept", "application/json, text/plain, */*");
     esp_http_client_set_header(client, "Accept-Language", "en-US,zh-CN,ja-JP,ko-KR;q=0.8");
-    esp_http_client_set_header(client, "cookie", _cookie);
+    esp_http_client_set_header(client, "cookie", _cookie.c_str());
     esp_http_client_set_header(client, "DS", getDynamicSalt("", p.c_str()).c_str());
     esp_http_client_set_header(client, "Origin", Hoyoverse_App_origin[forumtype]);
     esp_http_client_set_header(client, "Referer", Hoyoverse_App_referer[forumtype]);

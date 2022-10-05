@@ -44,8 +44,8 @@ public:
     HoyoverseClient_result_t syncDailyNote(Notedata *data); // Sync resin data from server
     static void updateDailyNote(Notedata *data);            // Calculate resin locally
 private:
-    const char *_uid;
-    const char *_cookie;
+    String _uid;
+    String _cookie;
 
     static uint8_t getForumType(const char *uid);
     static const char *getServer(const char *uid);
