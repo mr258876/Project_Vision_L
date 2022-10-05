@@ -24,13 +24,13 @@ struct Notedata
 
 typedef enum
 {
-    HOYO_CLI_CONFIG_ERR = -1,
-    HOYO_CLI_OK = 0,
-    HOYO_CLI_OUT_OF_MEM,
     HOYO_CLI_HTTP_OPEN_FAIL,
     HOYO_CLI_HTTP_READ_FAIL,
     HOYO_CLI_JSON_DESER_FAIL,
-    HOYO_CLI_RESP_ERR
+    HOYO_CLI_RESP_ERR,
+    HOYO_CLI_OUT_OF_MEM,
+    HOYO_CLI_CONFIG_ERR,
+    HOYO_CLI_OK = 1
 } HoyoverseClient_result_t;
 
 class HoyoverseClient

@@ -520,7 +520,9 @@ bool checkSDFiles(String *errMsg)
 
   f.close();
 
-  hyc.begin(doc["cookie"], doc["uid"]);
+  const char* uid = doc["uid"];
+  const char* cookie = doc["cookie"];
+  hyc.begin(cookie, uid);
 
   doc.clear();
 
@@ -1213,7 +1215,6 @@ bool getDailyNote(Notedata *nd, String *errMsg)
       {
         errMsg->concat("网络响应异常\n");
       }
-
       xSemaphoreGive(NoteDataMutex);
     }
   }
