@@ -2,7 +2,8 @@
 #include <MD5Builder.h>
 #include "esp_http_client.h"
 
-struct Notedata{
+struct Notedata
+{
     int respCode;
     String respMsg;
     int resinRemain = 160;
@@ -21,11 +22,13 @@ struct Notedata{
     time_t _last_update_time = 0;
 };
 
-typedef enum {
-    HOYO_CLI_OK= 0,
+typedef enum
+{
+    HOYO_CLI_CONFIG_ERR = -1,
+    HOYO_CLI_OK = 0,
     HOYO_CLI_OUT_OF_MEM,
     HOYO_CLI_HTTP_OPEN_FAIL,
-    HOYO_CLI_HEEP_READ_FAIL,
+    HOYO_CLI_HTTP_READ_FAIL,
     HOYO_CLI_JSON_DESER_FAIL,
     HOYO_CLI_RESP_ERR
 } HoyoverseClient_result_t;
@@ -38,8 +41,8 @@ public:
 
     void begin(const char *cookie, const char *uid);
 
-    HoyoverseClient_result_t syncDailyNote(Notedata* data);     // Sync resin data from server
-    static void updateDailyNote(Notedata* data);   // Calculate resin locally
+    HoyoverseClient_result_t syncDailyNote(Notedata *data); // Sync resin data from server
+    static void updateDailyNote(Notedata *data);            // Calculate resin locally
 private:
     const char *_uid;
     const char *_cookie;

@@ -85,9 +85,15 @@
 // Updating
 #define UPDATE_FILE_PATH "/update.bin"
 
-// Play File List
+// JSON conf buffer size
+#define JSON_CONF_BUFFER_SIZE 1024
+
+/* Play File List */
 #define PLAY_FILE_CONF_PATH "/playFiles.json"
 #define PLAY_FILE_DEFAULT_CONF "{\"files\":[\"S:/Pyro.mjpeg\",\"S:/Hydro.mjpeg\",\"S:/Anemo.mjpeg\",\"S:/Electro.mjpeg\",\"S:/Dendro.mjpeg\",\"S:/Cryo.mjpeg\",\"S:/Geo.mjpeg\"]}"
-#define PLAY_FILE_CONF_BUFFER_SIZE 1024
+
+/* Hoyolab cookie */
+#define HOYOLAB_CONF_PATH "/Hoyolab.json"
+#define HOYOLAB_DEFAULT_CONF "{\"uid\":\"\", \"cookie\":\"\"}"
 
 #endif // _VISION_CONFIGURATIONS_H_

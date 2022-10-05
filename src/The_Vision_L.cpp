@@ -165,8 +165,6 @@ Preferences prefs;
 /* Hoyolab Client */
 HoyoverseClient hyc;
 Notedata nd;
-const PROGMEM char *cookie = "HOYOLABCOOKIE";
-const PROGMEM char *uid = "GENSHINID";
 bool inResinScreen = false;
 
 /* Booleans for whether the sensors enabled. */
@@ -309,8 +307,6 @@ void setup()
     ui_init();
 
     LV_LOG_INFO("LVGL booted.");
-
-    hyc.begin(cookie, uid);
   }
 }
 
@@ -450,6 +446,7 @@ bool checkSDFiles(String *errMsg)
   bool fileErrDetected = false;
   // lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
 
+  // 读取播放文件列表
   File f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
   if (!f || f.isDirectory())
   {
@@ -463,7 +460,7 @@ bool checkSDFiles(String *errMsg)
   StaticJsonDocument<0> filter;
   filter.set(true);
 
-  StaticJsonDocument<PLAY_FILE_CONF_BUFFER_SIZE> doc;
+  StaticJsonDocument<JSON_CONF_BUFFER_SIZE> doc;
 
   DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
 
@@ -491,6 +488,7 @@ bool checkSDFiles(String *errMsg)
     lv_fs_close(&_input);
   }
 
+  files.clear();
   doc.clear();
 
   fileCount = filePaths.size();
@@ -499,6 +497,32 @@ bool checkSDFiles(String *errMsg)
     errMsg->concat("没有可播放的文件");
     return true;
   }
+
+  // 读取米游社配置
+  f = SD_CLASS.open(HOYOLAB_CONF_PATH);
+  if (!f || f.isDirectory())
+  {
+    f.close();
+    f = SD_CLASS.open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
+    f.print(HOYOLAB_DEFAULT_CONF);
+    f.close();
+    f = SD_CLASS.open(HOYOLAB_CONF_PATH);
+  }
+
+  error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+
+  if (error)
+  {
+    errMsg->concat(error.c_str());
+    LV_LOG_ERROR("deserializeJson() failed:%s", error.c_str());
+    return true;
+  }
+
+  f.close();
+
+  hyc.begin(doc["cookie"], doc["uid"]);
+
+  doc.clear();
 
   // LV_FONT_DECLARE(ui_font_HanyiWenhei16);
   // LV_FONT_DECLARE(ui_font_HanyiWenhei24);
@@ -708,7 +732,7 @@ bool connectWiFi()
 {
   WiFi.mode(WIFI_STA);
   int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
-  WiFi.scanDelete();
+  // WiFi.scanDelete();
   if (wifiCount < 1)
   {
     WiFi.mode(WIFI_OFF);
@@ -732,7 +756,6 @@ bool connectWiFi()
 
 void leaveVideoScreen(void *parameter)
 {
-
   // 暂停解码
   if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
   {
@@ -753,6 +776,7 @@ void leaveVideoScreen(void *parameter)
     xSemaphoreGive(LVGLMutex);
   }
 
+  // 等待动画完成后释放显存
   vTaskDelay(pdMS_TO_TICKS(500));
 
   for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
@@ -982,7 +1006,6 @@ void cb_hardwareSetup(lv_event_t *e)
 
 void cb_leaveVideoScreen(lv_event_t *e)
 {
-  // 创建显存释放任务
   xTaskCreatePinnedToCore(leaveVideoScreen,   //任务函数
                           "leaveVideoScreen", //任务名称
                           4096,               //任务堆栈大小

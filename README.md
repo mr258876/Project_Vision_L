@@ -57,5 +57,15 @@ Do Virtual Gods Hand Out Electronic Visions?
 2. 将SD卡插入神之眼，神之眼会自动开始升级过程。
 ![image](images/self_updating.png)
 
+## Referenced Libraries
+```
+LVGL        8.3.2
+OneButton   2.0.3
+ArduinoJSON 6.19.4
+KXTJ3-1057  0.0.1
+LovyanGFX   0.4.18
+APDS-9930   https://github.com/Depau/APDS9930
+LinkedList  https://github.com/ivanseidel/LinkedList
+```
 
 <!-- ## English -->

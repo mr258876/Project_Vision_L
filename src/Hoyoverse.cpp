@@ -96,7 +96,12 @@ String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
 }
 
 HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
-{
+{   
+    if (!_uid || !_cookie)
+    {
+        return HOYO_CLI_CONFIG_ERR;
+    }
+
     /* Request Param */
     String p = "role_id=";
     p.concat(_uid);
@@ -163,7 +168,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
         {
             ESP_LOGE(HTTP_TAG, "Error read data");
             free(buffer);
-            return HOYO_CLI_HEEP_READ_FAIL;
+            return HOYO_CLI_HTTP_READ_FAIL;
         }
         buffer[read_len] = 0;
         ESP_LOGD(HTTP_TAG, "read_len = %d", read_len);
