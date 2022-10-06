@@ -31,9 +31,6 @@ lv_obj_t *ui_Label5;
 lv_obj_t *ui_SettingsInfoPanel;
 
 lv_obj_t *ui_VideoScreen;
-lv_obj_t *ui_VideoTopPanel;
-lv_obj_t *ui_VideoImages[IMG_BUF_CHUNKS];
-lv_img_dsc_t ui_VideoImageConfs[IMG_BUF_CHUNKS];
 
 lv_obj_t *ui_ResinScreen;
 lv_obj_t *ui_DailyNotePanel;
@@ -111,26 +108,6 @@ static void ui_event_StartupScreen(lv_event_t *e)
     if (event == LV_EVENT_SCREEN_LOAD_START)
     {
         cb_hardwareSetup(e);
-    }
-}
-
-static void ui_event_VideoScreen(lv_event_t *e)
-{
-    lv_event_code_t event = lv_event_get_code(e);
-    lv_obj_t *ta = lv_event_get_target(e);
-    if (event == LV_EVENT_KEY)
-    {
-        switch (lv_event_get_key(e))
-        {
-        case LV_KEY_ENTER:
-            cb_leaveVideoScreen(e);
-            break;
-        case LV_KEY_PREV:
-            cb_changeVideo(e);
-            break;
-        default:
-            break;
-        }
     }
 }
 
@@ -510,44 +487,9 @@ void ui_VideoScreen_screen_init(void)
 
     ui_VideoScreen = lv_obj_create(NULL);
 
-    lv_obj_add_event_cb(ui_VideoScreen, ui_event_VideoScreen, LV_EVENT_ALL, NULL);
-
+    lv_obj_set_style_bg_color(ui_StartupScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_StartupScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_clear_flag(ui_VideoScreen, LV_OBJ_FLAG_SCROLLABLE);
-
-    // ui_VideoImage
-    for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-    {
-        ui_VideoImages[i] = lv_img_create(ui_VideoScreen);
-
-        lv_obj_set_width(ui_VideoImages[i], LV_SIZE_CONTENT);
-        lv_obj_set_height(ui_VideoImages[i], LV_SIZE_CONTENT);
-
-        lv_obj_set_x(ui_VideoImages[i], 0);
-        lv_obj_set_y(ui_VideoImages[i], LCD_HEIGHT / IMG_BUF_CHUNKS * i);
-
-        lv_obj_clear_flag(ui_VideoImages[i], LV_OBJ_FLAG_SCROLLABLE);
-    }
-
-    // ui_VideoTopPanel
-
-    // ui_VideoTopPanel = lv_obj_create(ui_VideoScreen);
-
-    // lv_obj_set_width(ui_VideoTopPanel, 240);
-    // lv_obj_set_height(ui_VideoTopPanel, 240);
-
-    // lv_obj_set_x(ui_VideoTopPanel, 0);
-    // lv_obj_set_y(ui_VideoTopPanel, 0);
-
-    // lv_obj_set_align(ui_VideoTopPanel, LV_ALIGN_CENTER);
-
-    // lv_obj_clear_flag(ui_VideoTopPanel, LV_OBJ_FLAG_SCROLLABLE);
-
-    // lv_obj_set_style_radius(ui_VideoTopPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    // lv_obj_set_style_bg_color(ui_VideoTopPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    // lv_obj_set_style_bg_opa(ui_VideoTopPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    // lv_obj_set_style_border_side(ui_VideoTopPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    // lv_obj_move_foreground(ui_VideoTopPanel);
 
     lv_group_add_obj(ui_group, ui_VideoScreen);
 }

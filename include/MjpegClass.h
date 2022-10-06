@@ -10,10 +10,13 @@
 #include "tjpgdClass.h"
 #include "ui.h"
 
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
+
 class MjpegClass
 {
 public:
-  bool setup(const char *fileName, uint8_t *mjpeg_buf, uint8_t *imgBufs[], uint8_t imgBufNum, uint8_t memBufNum, bool multiTask, int32_t tftWidth, int32_t tftHeight)
+  bool setup(const char *fileName, uint8_t *mjpeg_buf, LGFX_Device *tft, bool multiTask, int32_t tftWidth, int32_t tftHeight)
   {
     _fileName = fileName;
     _input_op_result = lv_fs_open(&_input, fileName, LV_FS_MODE_RD);
@@ -24,6 +27,7 @@ public:
     }
 
     _mjpeg_buf = mjpeg_buf;
+    _tft = tft;
     _multiTask = multiTask;
 
     _mjpeg_buf_offset = 0;
@@ -39,13 +43,6 @@ public:
       LV_LOG_ERROR("Read Buffer allocate failed!");
       return false;
     }
-
-    _img_bufs = imgBufs;
-    _img_buf_num = imgBufNum;
-    _mem_buf_num = memBufNum;
-    _refresh_chunks = memBufNum;
-    _img_buf = _img_bufs[0];
-    _curr_img_buf = 0;
 
     _out_buf = (uint8_t *)heap_caps_malloc(_tft_width * 16 * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     if (!_out_buf)
@@ -226,9 +223,6 @@ public:
 
     _inputindex = 0;
 
-    _curr_img_buf = 0;
-    _unrefreshed_chunk = 0;
-
     _is_file_picture = isFilePicture();
     _is_file_read = false;
     _is_file_drawn = false;
@@ -269,14 +263,8 @@ private:
   /* Status Flag */
   bool _ready = false;
 
+  LGFX_Device *_tft;
   bool _multiTask;
-  uint8_t **_img_bufs;
-  uint8_t *_img_buf;
-  uint8_t _img_buf_num;
-  uint8_t _mem_buf_num;
-  uint8_t _curr_img_buf = 0;
-  uint8_t _refresh_chunks = 0;
-  uint8_t _unrefreshed_chunk = 0;
   uint8_t *_out_buf;
   TJpgD _jdec;
 
@@ -380,53 +368,13 @@ private:
   static uint32_t jpgWriteRow(TJpgD *jdec, uint32_t y, uint32_t h)
   {
     MjpegClass *me = (MjpegClass *)jdec->device;
+    
     if (y == 0)
     {
-      me->_curr_img_buf = 0;
+      me->_tft->setAddrWindow(me->_jpg_x, me->_jpg_y, jdec->width, jdec->height);
     }
 
-    // uint8_t * tmpPtr = me->_img_bufs[me->_curr_img_buf];
-    // me->_img_bufs[me->_curr_img_buf] = me->_out_buf;
-    // if (me->_curr_img_buf + 1 < me->_img_buf_num)
-    // {
-    //   me->_out_buf = me->_img_bufs[me->_curr_img_buf + 1];
-    //   me->_img_bufs[me->_curr_img_buf + 1] = tmpPtr;
-    // }
-    // else{
-    //   me->_out_buf = me->_img_bufs[0];
-    //   me->_img_bufs[0] = tmpPtr;
-    // }
-
-    // memcpy(me->_img_bufs[me->_curr_img_buf % me->_mem_buf_num], me->_out_buf, jdec->width * h * 2);
-    memcpy(me->_img_bufs[me->_curr_img_buf % me->_mem_buf_num], me->_out_buf, jdec->width * h);
-    memcpy(me->_img_bufs[(me->_curr_img_buf + 1) % me->_mem_buf_num], me->_out_buf + jdec->width * h, jdec->width * h);
-    me->_unrefreshed_chunk += 2;
-
-    if (me->_unrefreshed_chunk >= me->_refresh_chunks)
-    {
-      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-      {
-        for (int i = me->_unrefreshed_chunk - 1; i >= 0; --i)
-        {
-          if (me->_curr_img_buf - i < 0)
-          {
-            lv_obj_invalidate(ui_VideoImages[me->_curr_img_buf + me->_img_buf_num - i]);
-          }
-          else
-          {
-            lv_obj_invalidate(ui_VideoImages[me->_curr_img_buf - i]);
-          }
-        }
-        me->_unrefreshed_chunk = 0;
-        xSemaphoreGive(LVGLMutex);
-      }
-    }
-
-    me->_curr_img_buf += 2;
-    if (me->_curr_img_buf > me->_img_buf_num)
-    {
-      me->_curr_img_buf = 0;
-    }
+    me->_tft->pushPixelsDMA((uint16_t *)me->_out_buf, me->_out_width * h);
 
     return 1;
   }

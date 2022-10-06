@@ -1,3 +1,6 @@
+#ifndef _HOYOVERSE_CONST_H_
+#define _HOYOVERSE_CONST_H_
+
 const PROGMEM char *Hoyoverse_SSL_root_cert =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\n"
@@ -40,3 +43,5 @@ const PROGMEM char *Hoyoverse_App_x_requested_with[] = {
 const PROGMEM char *Hoyoverse_App_referer[] = {
     "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon",
     "https://webstatic-sea.hoyolab.com"};
+
+#endif

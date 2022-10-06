@@ -137,6 +137,7 @@ static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
 static lv_disp_drv_t disp_drv;
 unsigned long startup_time;
+bool isInLVGL = true;
 
 /* Things of files */
 static LinkedList<String> filePaths;
@@ -145,7 +146,6 @@ uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 
 /* Mjpeg decoder & Image Buffers */
 static MjpegClass mjpeg;
-uint8_t *imgBufs[MEM_BUF_CHUNKS];
 bool mjpegInited = false;
 
 /* Proximity sensor Object */
@@ -180,9 +180,7 @@ bool useAutoBrightness;
 bool checkSDFiles(String *errMsg);
 vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
-void screenAdjustLoop(void *parameter);
 void wifiConfigure();
-void playVideo(void *parameter);
 bool getDailyNote(Notedata *nd, String *errMsg);
 void showDailyNote(Notedata *nd);
 void resinCalcLoop(void *parameter);
@@ -193,6 +191,10 @@ void mjpegInit();
 void leaveVideoScreen(void *parameter);
 void leaveResinScreen(void *parameter);
 void getDailyNoteFromResinScreen(void *parameter);
+
+void lvglLoop(void *parameter);
+void screenAdjustLoop(void *parameter);
+void playVideo(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
@@ -206,7 +208,11 @@ void removeStyles(lv_obj_t *obj);
 //  Functions
 //
 ////////////////////////
-/* Display flushing */
+/**
+ *
+ * @brief Custom scren update function for LVGL
+ *
+ */
 void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
   uint32_t w = (area->x2 - area->x1 + 1);
@@ -308,38 +314,27 @@ void setup()
 
     ui_init();
 
+    xTaskCreatePinnedToCore(lvglLoop,        //任务函数
+                            "lvglLoop",      //任务名称
+                            8192,            //任务堆栈大小
+                            NULL,            //任务参数
+                            1,               //任务优先级
+                            &lvglLoopHandle, //任务句柄
+                            1);              //执行任务核心
+
     LV_LOG_INFO("LVGL booted.");
   }
+
+  // vTaskDelete(NULL);
 }
 
 void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
-  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, MEM_BUF_CHUNKS, true, screenWidth, screenHeight))
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, &gfx, true, screenWidth, screenHeight))
   {
     LV_LOG_ERROR("Mjpeg decoder init failed!");
-  }
-
-  // 划显存
-  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
-  {
-    imgBufs[i] = (uint8_t *)heap_caps_malloc(LCD_WIDTH * LCD_HEIGHT / IMG_BUF_CHUNKS * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!imgBufs[i])
-    {
-      LV_LOG_ERROR("Img buf #%d allocate failed!", i);
-    }
-  }
-
-  // 创建视频块参数
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    ui_VideoImageConfs[i].header.always_zero = 0;
-    ui_VideoImageConfs[i].header.w = screenWidth;
-    ui_VideoImageConfs[i].header.h = screenHeight / IMG_BUF_CHUNKS;
-    ui_VideoImageConfs[i].data_size = screenWidth * screenHeight / IMG_BUF_CHUNKS * LV_COLOR_SIZE / 8;
-    ui_VideoImageConfs[i].header.cf = LV_IMG_CF_TRUE_COLOR;
-    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % MEM_BUF_CHUNKS];
   }
 
   // Create task of video playing
@@ -347,9 +342,9 @@ void mjpegInit()
                           "playVideo",      //任务名称
                           2048,             //任务堆栈大小
                           NULL,             //任务参数
-                          2,                //任务优先级
+                          1,                //任务优先级
                           &playVideoHandle, //任务句柄
-                          0);               //执行任务核心
+                          1);               //执行任务核心
 }
 
 static int switchScreenDelay = 0;
@@ -364,6 +359,15 @@ void switchToVideoScreen(void *delayTime)
     removeStyles(lv_scr_act());
 
     ui_VideoScreen_screen_init();
+
+    // 切换屏幕
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+
+    lv_task_handler();
+
+    vTaskSuspend(lvglLoopHandle);
+    isInLVGL = false;
+
     xSemaphoreGive(LVGLMutex);
   }
 
@@ -371,19 +375,6 @@ void switchToVideoScreen(void *delayTime)
   {
     mjpegInit();
     mjpegInited = true;
-  }
-
-  // 设置视频块参数
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    lv_img_set_src(ui_VideoImages[i], &ui_VideoImageConfs[i]);
-  }
-
-  // 切换屏幕
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-  {
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
-    xSemaphoreGive(LVGLMutex);
   }
 
   vTaskDelete(NULL);
@@ -786,15 +777,12 @@ void leaveVideoScreen(void *parameter)
     inResinScreen = true;
     lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
+    lv_task_handler();
+
+    vTaskResume(lvglLoopHandle);
+    isInLVGL = true;
+
     xSemaphoreGive(LVGLMutex);
-  }
-
-  // 等待动画完成后释放显存
-  // vTaskDelay(pdMS_TO_TICKS(500));
-
-  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
-  {
-    free(imgBufs[i]);
   }
 
   // 创建显示数据刷新任务
@@ -813,22 +801,6 @@ void leaveResinScreen(void *parameter)
 {
   vTaskDelete(showDailyNoteLoopHandle);
 
-  // 划显存
-  for (int i = 0; i < MEM_BUF_CHUNKS; ++i)
-  {
-    imgBufs[i] = (uint8_t *)heap_caps_malloc(LCD_WIDTH * LCD_HEIGHT / IMG_BUF_CHUNKS * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!imgBufs[i])
-    {
-      LV_LOG_ERROR("Img buf #%d allocate failed!", i);
-    }
-  }
-
-  // 设置显存地址
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % MEM_BUF_CHUNKS];
-  }
-
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_group_remove_all_objs(ui_group);
@@ -839,18 +811,17 @@ void leaveResinScreen(void *parameter)
     // 初始化下个要显示的屏幕
     ui_VideoScreen_screen_init();
 
-    // 设置视频块参数
-    for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-    {
-      lv_img_set_src(ui_VideoImages[i], &ui_VideoImageConfs[i]);
-    }
-
     // 恢复解码器工作
     vTaskResume(playVideoHandle);
     mjpeg.resume();
 
     // 切换屏幕
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+
+    lv_task_handler();
+
+    vTaskSuspend(lvglLoopHandle);
+    isInLVGL = false;
 
     xSemaphoreGive(LVGLMutex);
   }
@@ -1022,31 +993,15 @@ void cb_hardwareSetup(lv_event_t *e)
                           0);              //执行任务核心
 }
 
-void cb_leaveVideoScreen(lv_event_t *e)
-{
-  xTaskCreatePinnedToCore(leaveVideoScreen,   //任务函数
-                          "leaveVideoScreen", //任务名称
-                          3072,               //任务堆栈大小
-                          NULL,               //任务参数
-                          3,                  //任务优先级
-                          NULL,               //任务句柄
-                          0);                 //执行任务核心
-}
-
-void cb_changeVideo(lv_event_t *e)
-{
-  onChangeVideo();
-}
-
 void cb_leaveResinScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(leaveResinScreen, //任务函数
                           "leaveResinScr",  //任务名称
                           3072,             //任务堆栈大小
                           NULL,             //任务参数
-                          3,                //任务优先级
+                          2,                //任务优先级
                           NULL,             //任务句柄
-                          0);               //执行任务核心
+                          1);               //执行任务核心
 }
 
 void cb_getDailyNoteFromResinScreen(lv_event_t *e)
@@ -1066,6 +1021,12 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 //
 ////////////////////
 void loop()
+{
+  printf("Free MEM:%d\n", esp_get_free_heap_size());
+  vTaskDelay(pdMS_TO_TICKS(5000));
+}
+
+void lvglLoop(void *parameter)
 {
   while (1)
   {
@@ -1152,12 +1113,11 @@ unsigned long vfile_frame_start_ms;
 unsigned long vfile_frame_end_ms;
 void playVideo(void *parameter)
 {
-  LV_LOG_INFO("MJPEG video start");
+  ESP_LOGI("playVideo", "MJPEG video start");
   vfile_ms = millis();
   while (1)
   {
     vfile_frame_start_ms = millis();
-    rtc_wdt_feed(); // Feed watchdog manually
     if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
     {
       if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
@@ -1172,10 +1132,10 @@ void playVideo(void *parameter)
           xSemaphoreGive(MjpegReadMutex);
           if (!mjpeg.reload())
           {
-            LV_LOG_ERROR("Unable to reload video file!");
+            ESP_LOGE("playVideo", "Unable to reload video file!");
             break;
           }
-          LV_LOG_WARN("Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
+          ESP_LOGI("playVideo", "Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
           vfile_ms = millis();
         }
       }
@@ -1199,10 +1159,13 @@ void playVideo(void *parameter)
 ////////////////////////
 bool getDailyNote(Notedata *nd, String *errMsg)
 {
-  if (!connectWiFi())
+  if (WiFi.status() != WL_CONNECTED)
   {
-    errMsg->concat("无法连接至网络\n");
-    return false;
+    if (!connectWiFi())
+    {
+      errMsg->concat("无法连接至网络\n");
+      return false;
+    }
   }
 
   bool res = true;
@@ -1235,8 +1198,8 @@ bool getDailyNote(Notedata *nd, String *errMsg)
     }
   }
 
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  // WiFi.disconnect(true);
+  // WiFi.mode(WIFI_OFF);
 
   return res;
 }
@@ -1287,44 +1250,67 @@ void onChangeVideo()
 bool inEditMode = false;
 void onSingleClick()
 {
-  if (inEditMode)
+  if (isInLVGL)
   {
-    lv_group_send_data(ui_group, LV_KEY_DOWN);
-  }
-  else
-  {
-    lv_group_send_data(ui_group, LV_KEY_NEXT);
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_DOWN);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_NEXT);
+    }
   }
 }
 
 void onDoubleClick()
 {
-  lv_group_send_data(ui_group, LV_KEY_ENTER);
-
-  if (inEditMode)
+  if (isInLVGL)
   {
-    inEditMode = false;
-    lv_obj_clear_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
-    return;
+    lv_group_send_data(ui_group, LV_KEY_ENTER);
+
+    if (inEditMode)
+    {
+      inEditMode = false;
+      lv_obj_clear_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
+      return;
+    }
+
+    if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+    {
+      inEditMode = true;
+      lv_obj_add_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
+      return;
+    }
   }
-
-  if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+  else
   {
-    inEditMode = true;
-    lv_obj_add_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
-    return;
+    xTaskCreatePinnedToCore(leaveVideoScreen, //任务函数
+                            "leaveVideoScr",  //任务名称
+                            3072,             //任务堆栈大小
+                            NULL,             //任务参数
+                            2,                //任务优先级
+                            NULL,             //任务句柄
+                            1);               //执行任务核心
   }
 }
 
 void onMultiClick()
 {
-  if (inEditMode)
+  if (isInLVGL)
   {
-    lv_group_send_data(ui_group, LV_KEY_UP);
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_UP);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_PREV);
+    }
   }
   else
   {
-    lv_group_send_data(ui_group, LV_KEY_PREV);
+    onChangeVideo();
   }
 }
 

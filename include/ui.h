@@ -40,9 +40,6 @@ extern lv_obj_t * ui_Button5;
 extern lv_obj_t * ui_Label5;
 extern lv_obj_t * ui_SettingsInfoPanel;
 extern lv_obj_t * ui_VideoScreen;
-extern lv_obj_t * ui_VideoTopPanel;
-extern lv_obj_t * ui_VideoImages[IMG_BUF_CHUNKS];
-extern lv_img_dsc_t ui_VideoImageConfs[IMG_BUF_CHUNKS];
 extern lv_obj_t * ui_ResinScreen;
 extern lv_obj_t * ui_DailyNotePanel;
 extern lv_obj_t * ui_NoteResinLabel;
@@ -58,8 +55,6 @@ extern lv_obj_t * ui_NoteUpdateTimeLabel;
 extern lv_group_t * ui_group;
 
 void cb_hardwareSetup(lv_event_t * e);
-void cb_leaveVideoScreen(lv_event_t * e);
-void cb_changeVideo(lv_event_t *e);
 void cb_leaveResinScreen(lv_event_t * e);
 void cb_getDailyNoteFromResinScreen(lv_event_t * e);
 

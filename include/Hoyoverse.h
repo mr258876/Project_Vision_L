@@ -1,3 +1,6 @@
+#ifndef _HOYOVERSE_H_
+#define _HOYOVERSE_H_
+
 #include <ArduinoJSON.h>
 #include <MD5Builder.h>
 #include "esp_http_client.h"
@@ -52,3 +55,5 @@ private:
 
     String getDynamicSalt(const char *body = "", const char *param = "");
 };
+
+#endif

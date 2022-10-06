@@ -948,7 +948,7 @@ static void task_output(void* arg) {
 void TJpgD::multitask_begin() {
   param.sem = xQueueCreate(queue_max + 1, sizeof(queue_t*));
 
-  xTaskCreatePinnedToCore(task_output, "task_output", 1792, &param, 2, &param.task, 1);
+  xTaskCreatePinnedToCore(task_output, "task_output", 1792, &param, 1, &param.task, 0);
   
 }
 
