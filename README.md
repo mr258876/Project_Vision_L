@@ -24,6 +24,35 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 查看树脂(切换界面)
 - 短按两次开机键
 
+### 米游社/HoyoLab cookie设置
+- 打开SD卡根目录`Hoyolab.json`，并设定玩家id及米游社/Hoyolab cookie。文件格式参考如下：
+```
+{
+    "uid": "100000000",
+    "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值"
+}
+```
+- 对于米游社，请打开米游社并登录，随后将以下代码粘贴至浏览器控制台中获取cookie：
+```
+let cookie_keys = ['_MHYUUID', 'ltoken', 'ltuid', 'cookie_token', 'account_id'];
+var cookie = document.cookie;
+var Str_Num = cookie.indexOf('_MHYUUID=');
+var cookies = cookie.substring(Str_Num).split('; ');
+for(var i = 0; i < cookies.length; i++){
+    if(!cookie_keys.includes(cookies[i].split("=")[0])){
+        cookies.splice(i--,1);
+    }
+}
+cookie = '"cookie": "' + cookies.join('; ') + '"';
+var ask = confirm('按"确认"复制cookie至剪贴板');
+if (ask == true) {
+  copy(cookie);
+  msg = cookie
+} else {
+  msg = 'Cancel'
+}
+```
+
 ### 自定义元素顺序(自定义视频文件及顺序)
 - 打开SD卡根目录`playFiles.json`，并设定视频/图片文件顺序及路径。路径需要以盘符'S'开头。文件格式参考如下：
 ```
@@ -59,11 +88,12 @@ Do Virtual Gods Hand Out Electronic Visions?
 
 ## Referenced Libraries
 ```
-LVGL        8.3.2
-OneButton   2.0.3
-ArduinoJSON 6.19.4
+Adafruit BusIO  1.13.2
+ArduinoJson 6.19.4
 KXTJ3-1057  0.0.1
 LovyanGFX   0.4.18
+LVGL        8.3.2
+OneButton   2.0.3
 APDS-9930   https://github.com/Depau/APDS9930
 LinkedList  https://github.com/ivanseidel/LinkedList
 ```

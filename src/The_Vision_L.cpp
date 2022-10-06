@@ -183,7 +183,7 @@ vision_hw_result_t checkHardware(String *errMsg);
 void wifiConfigure();
 bool getDailyNote(Notedata *nd, String *errMsg);
 void showDailyNote(Notedata *nd);
-void resinCalcLoop(void *parameter);
+void resinCalc(void *parameter);
 void showDailyNoteLoop(void *parameter);
 bool connectWiFi();
 void cb_switchToVideoScreen();
@@ -547,17 +547,23 @@ void cb_switchToVideoScreen()
                           NULL,             //任务参数
                           1,                //任务优先级
                           NULL,             //任务句柄
-                          0);               //执行任务核心
+                          1);               //执行任务核心
 
-  xTaskCreatePinnedToCore(resinCalcLoop,   //任务函数
-                          "resinCalcLoop", //任务名称
-                          1024,            //任务堆栈大小
-                          NULL,            //任务参数
-                          1,               //任务优先级
-                          NULL,            //任务句柄
-                          0);              //执行任务核心
+  // 每30s计算一次树脂数据
+  esp_timer_create_args_t resinCalc_timer_args = {
+      .callback = &resinCalc,
+      .name = "resinCalc"};
+  ESP_ERROR_CHECK(esp_timer_create(&resinCalc_timer_args, &resinCalcTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
 
-  switchScreenDelay = 5000;
+  // 每15分钟同步一次树脂数据
+  // esp_timer_create_args_t resinSync_timer_args = {
+  //     .callback = &resinSync,
+  //     .name = "resinSync"};
+  // ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
+  // ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, 15000000));
+
+  switchScreenDelay = 2500;
 
   xTaskCreatePinnedToCore(switchToVideoScreen,        //任务函数
                           "swToVideoScr",             //任务名称
@@ -609,7 +615,7 @@ void hardwareSetup(void *parameter)
   // 若检查到错误则停止启动
   if (hwErr || fileErr || updateStatus)
   {
-    LV_LOG_ERROR("Hardware err Detected!!!");
+    ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
       lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 发现如下问题,启动已终止:", errMsg.c_str(), {}, false);
@@ -617,7 +623,6 @@ void hardwareSetup(void *parameter)
       lv_obj_center(mbox);
       xSemaphoreGive(LVGLMutex);
     }
-
     vTaskDelete(NULL);
   }
 
@@ -687,11 +692,21 @@ void hardwareSetup(void *parameter)
 
     if (!getDailyNote(&nd, &errMsg))
     {
-      lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
-      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-      lv_obj_center(mbox);
-      vTaskDelay(5000);
-      lv_obj_del(mbox);
+      lv_obj_t *mbox;
+      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      {
+        lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
+        lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_center(mbox);
+        xSemaphoreGive(LVGLMutex);
+
+        vTaskDelay(5000);
+
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        // removeStyles(mbox);
+        lv_obj_del(mbox);
+        xSemaphoreGive(LVGLMutex);
+      }
     }
   }
 
@@ -714,14 +729,14 @@ void wifiConfigure()
 
   // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); // disable brownout detector
 
-  LV_LOG_WARN("Waiting for Smartconfig...");
+  ESP_LOGI("wifiConfigure", "Waiting for Smartconfig...");
 
   while (!WiFi.smartConfigDone() || WiFi.status() != WL_CONNECTED)
   {
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 
-  LV_LOG_WARN("Smartconfig success!");
+  ESP_LOGI("wifiConfigure", "Smartconfig success!");
 
   prefs.putString("wifiSSID1", WiFi.SSID());
   prefs.putString("wifiPSWD1", WiFi.psk());
@@ -733,6 +748,11 @@ void wifiConfigure()
 
 bool connectWiFi()
 {
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    return true;
+  }
+
   WiFi.mode(WIFI_STA);
   int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
   // WiFi.scanDelete();
@@ -778,12 +798,11 @@ void leaveVideoScreen(void *parameter)
     lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-
-    vTaskResume(lvglLoopHandle);
-    isInLVGL = true;
-
     xSemaphoreGive(LVGLMutex);
   }
+
+  vTaskResume(lvglLoopHandle);
+  isInLVGL = true;
 
   // 创建显示数据刷新任务
   xTaskCreatePinnedToCore(showDailyNoteLoop,        //任务函数
@@ -811,10 +830,6 @@ void leaveResinScreen(void *parameter)
     // 初始化下个要显示的屏幕
     ui_VideoScreen_screen_init();
 
-    // 恢复解码器工作
-    vTaskResume(playVideoHandle);
-    mjpeg.resume();
-
     // 切换屏幕
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
@@ -826,6 +841,10 @@ void leaveResinScreen(void *parameter)
     xSemaphoreGive(LVGLMutex);
   }
 
+  // 恢复解码器工作
+  vTaskResume(playVideoHandle);
+  mjpeg.resume();
+
   vTaskDelete(NULL);
 }
 
@@ -836,7 +855,7 @@ void getDailyNoteFromResinScreen(void *parameter)
 
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_label_set_text(ui_NoteUpdateTimeLabel, "正在更新...");
+    lv_label_set_text(ui_NoteUpdateTimeLabel, LV_SYMBOL_REFRESH "正在更新...");
     xSemaphoreGive(LVGLMutex);
   }
 
@@ -844,18 +863,23 @@ void getDailyNoteFromResinScreen(void *parameter)
 
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    if (updateRes)
+    if (!updateRes)
     {
-      showDailyNote(&nd);
-    }
-    else
-    {
-      lv_obj_t *mbox = lv_msgbox_create(ui_ResinScreen, LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
+      lv_obj_t *mbox = lv_msgbox_create(lv_scr_act(), LV_SYMBOL_WARNING " 获取数据失败:", errMsg.c_str(), {}, false);
       lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
       lv_obj_center(mbox);
+      lv_obj_move_foreground(mbox);
+      xSemaphoreGive(LVGLMutex);
+
       vTaskDelay(5000);
+
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+      // removeStyles(mbox);
       lv_obj_del(mbox);
     }
+
+    showDailyNote(&nd);
+
     xSemaphoreGive(LVGLMutex);
   }
 
@@ -866,7 +890,15 @@ void showDailyNote(Notedata *nd)
 {
   if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd->_last_update_time) / 60));
+    if (nd->_last_update_time > 0)
+    {
+      lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd->_last_update_time) / 60));
+    }
+    else
+    {
+      lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
+    }
+
     lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd->resinRemain, nd->resinMax);
     lv_label_set_text_fmt(ui_NoteExpeditionsLabel, "%d/%d", nd->expeditionFinished, nd->expeditionOngoing);
 
@@ -1159,13 +1191,10 @@ void playVideo(void *parameter)
 ////////////////////////
 bool getDailyNote(Notedata *nd, String *errMsg)
 {
-  if (WiFi.status() != WL_CONNECTED)
+  if (!connectWiFi())
   {
-    if (!connectWiFi())
-    {
-      errMsg->concat("无法连接至网络\n");
-      return false;
-    }
+    errMsg->concat("无法连接至网络\n");
+    return false;
   }
 
   bool res = true;
@@ -1179,7 +1208,7 @@ bool getDailyNote(Notedata *nd, String *errMsg)
     vTaskDelay(100);
     if (millis() - ntp_start_ms > 10000)
     {
-      LV_LOG_ERROR("Failed to obtain time");
+      ESP_LOGE("getDailyNote", "Failed to obtain time");
       res = false;
       errMsg->concat("同步时间失败\n");
       break;
@@ -1188,35 +1217,39 @@ bool getDailyNote(Notedata *nd, String *errMsg)
 
   if (getLocalTime(&timeinfo))
   {
+    int r = 0;
     if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
     {
-      if (!hyc.syncDailyNote(nd))
-      {
-        errMsg->concat("网络响应异常\n");
-      }
+      r = hyc.syncDailyNote(nd);
       xSemaphoreGive(NoteDataMutex);
+    }
+
+    if (r < 0)
+    {
+      errMsg->concat("网络响应异常\n");
+      res = false;
+    }
+    else if (r == 0)
+    {
+      errMsg->concat("未配置cookie\n");
+      res = false;
     }
   }
 
-  // WiFi.disconnect(true);
-  // WiFi.mode(WIFI_OFF);
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
 
   return res;
 }
 
-void resinCalcLoop(void *parameter)
+void resinCalc(void *parameter)
 {
-  while (1)
+  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
   {
-    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
-    {
-      HoyoverseClient::updateDailyNote(&nd);
+    HoyoverseClient::updateDailyNote(&nd);
 
-      xSemaphoreGive(NoteDataMutex);
-    }
-    vTaskDelay(pdMS_TO_TICKS(20000));
+    xSemaphoreGive(NoteDataMutex);
   }
-  vTaskDelete(NULL);
 }
 
 void onChangeVideo()

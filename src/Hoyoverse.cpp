@@ -97,7 +97,7 @@ String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
 
 HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 {   
-    if (!_uid || !_cookie)
+    if (_uid.length() < 1 || _cookie.length() < 1)
     {
         return HOYO_CLI_CONFIG_ERR;
     }
@@ -251,11 +251,6 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 
 void HoyoverseClient::updateDailyNote(Notedata *nd)
 {
-    if (nd->_last_calc_time == 0) // 若未初始化则直接返回
-    {
-        return;
-    }
-
     time_t t = time(NULL);
     /* Resin 树脂 */
     if (nd->resinRecoverTime > 0)

@@ -19,20 +19,20 @@ struct Notedata
     int expeditionFinished = 5;
     int expeditionMax = 5;
     time_t expeditionRecoverTime[5] = {0, 0, 0, 0, 0};
-    bool hasTransformer = true;
-    time_t transformerRecoverTime = 640800;
+    bool hasTransformer = false;
+    time_t transformerRecoverTime = 0;
     time_t _last_calc_time = 0;
     time_t _last_update_time = 0;
 };
 
 typedef enum
 {
-    HOYO_CLI_HTTP_OPEN_FAIL,
+    HOYO_CLI_HTTP_OPEN_FAIL = -5,
     HOYO_CLI_HTTP_READ_FAIL,
     HOYO_CLI_JSON_DESER_FAIL,
     HOYO_CLI_RESP_ERR,
     HOYO_CLI_OUT_OF_MEM,
-    HOYO_CLI_CONFIG_ERR,
+    HOYO_CLI_CONFIG_ERR = 0,
     HOYO_CLI_OK = 1
 } HoyoverseClient_result_t;
 

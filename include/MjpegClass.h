@@ -22,7 +22,7 @@ public:
     _input_op_result = lv_fs_open(&_input, fileName, LV_FS_MODE_RD);
     if (_input_op_result != LV_FS_RES_OK)
     {
-      LV_LOG_ERROR("Unable to open video file! Result was lv_fs_res_t:: %d", _input_op_result);
+      ESP_LOGE("setup", "Unable to open video file! Result was lv_fs_res_t:: %d", _input_op_result);
       return false;
     }
 
@@ -40,14 +40,14 @@ public:
     _read_buf = (uint8_t *)malloc(READ_BUFFER_SIZE);
     if (!_read_buf)
     {
-      LV_LOG_ERROR("Read Buffer allocate failed!");
+      ESP_LOGE("setup", "Read Buffer allocate failed!");
       return false;
     }
 
     _out_buf = (uint8_t *)heap_caps_malloc(_tft_width * 16 * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     if (!_out_buf)
     {
-      LV_LOG_ERROR("Jpeg codec out buffer malloc failed!");
+      ESP_LOGE("setup", "Jpeg codec out buffer malloc failed!");
       return false;
     }
 
@@ -152,7 +152,7 @@ public:
     TJpgD::JRESULT jres = _jdec.prepare(jpgRead, this);
     if (jres != TJpgD::JDR_OK)
     {
-      LV_LOG_ERROR("prepare failed! %d", jres);
+      ESP_LOGE("drawJpg", "prepare failed! %d", jres);
       return false;
     }
 
@@ -190,7 +190,7 @@ public:
 
     if (jres != TJpgD::JDR_OK)
     {
-      LV_LOG_ERROR("decomp failed! %d", jres);
+      ESP_LOGE("drawJpg", "decomp failed! %d", jres);
       return false;
     }
 
@@ -217,7 +217,7 @@ public:
     _input_op_result = lv_fs_open(&_input, fileName, LV_FS_MODE_RD);
     if (_input_op_result != LV_FS_RES_OK)
     {
-      LV_LOG_ERROR("Unable to open video file!");
+      ESP_LOGE("switchFile", "Unable to open video file!");
       return false;
     }
 
@@ -368,7 +368,7 @@ private:
   static uint32_t jpgWriteRow(TJpgD *jdec, uint32_t y, uint32_t h)
   {
     MjpegClass *me = (MjpegClass *)jdec->device;
-    
+
     if (y == 0)
     {
       me->_tft->setAddrWindow(me->_jpg_x, me->_jpg_y, jdec->width, jdec->height);
