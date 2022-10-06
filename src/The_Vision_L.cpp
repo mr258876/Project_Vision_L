@@ -251,8 +251,8 @@ void setup()
 // SD card init
 #ifdef _CONFIG_SD_USE_SPI_
   SPIClass SDSPI = SPIClass(HSPI);
-  SDSPI.begin(14, 2, 15, 13);
-  SD.begin(13, SDSPI, 80000000);
+  SDSPI.begin(CLK, DAT0, CMD, DAT3);
+  SD.begin(DAT3, SDSPI, 80000000);
 #endif
 #ifdef _CONFIG_SD_USE_SDMMC_1BIT_
   SD_MMC.begin("/sdcard", true);
@@ -342,7 +342,7 @@ void mjpegInit()
                           "playVideo",      //任务名称
                           2048,             //任务堆栈大小
                           NULL,             //任务参数
-                          1,                //任务优先级
+                          2,                //任务优先级
                           &playVideoHandle, //任务句柄
                           1);               //执行任务核心
 }
