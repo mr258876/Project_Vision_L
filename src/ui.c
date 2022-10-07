@@ -1,12 +1,22 @@
 // SquareLine LVGL GENERATED FILE
-// EDITOR VERSION: SquareLine Studio 1.0.5
-// LVGL VERSION: 8.2
+// EDITOR VERSION: SquareLine Studio 1.1.1
+// LVGL VERSION: 8.3.3
 // PROJECT: The_Vision_L
+
+#ifndef _UI_H_
+#define _UI_H_
 
 #include "ui.h"
 #include "ui_helpers.h"
 
 ///////////////////// VARIABLES ////////////////////
+void aniTitleSlideInY_Animation(lv_obj_t * TargetObject, int delay);
+void aniTitleSlideInX_Animation(lv_obj_t * TargetObject, int delay);
+void ClockHoroSpin3_Animation(lv_obj_t * TargetObject, int delay);
+void ClockHoroSpin1Reverse_Animation(lv_obj_t * TargetObject, int delay);
+void ClockHoroSpin2Reverse_Animation(lv_obj_t * TargetObject, int delay);
+void ClockHoroSpin4Reverse_Animation(lv_obj_t * TargetObject, int delay);
+
 lv_obj_t *ui_StartupScreen;
 lv_obj_t *ui_StartupTitle1;
 lv_obj_t *ui_StartupTitle2;
@@ -44,7 +54,23 @@ lv_obj_t *ui_NoteExpeditionsImage;
 lv_obj_t *ui_NoteTransformerImage;
 lv_obj_t *ui_NoteUpdateTimeLabel;
 
+lv_obj_t * ui_ClockScreen;
+lv_obj_t * ui_Horoscpoe1;
+lv_obj_t * ui_Horoscope2;
+lv_obj_t * ui_Horoscope3;
+lv_obj_t * ui_Horoscope4;
+lv_obj_t * ui_ClockDial;
+lv_obj_t * ui_ClockHour;
+lv_obj_t * ui_ClockMinute;
+lv_obj_t * ui_ClockIconMorning;
+lv_obj_t * ui_ClockIconNoon;
+lv_obj_t * ui_ClockIconDusk;
+lv_obj_t * ui_ClockIconNight;
+
 lv_group_t *ui_group;
+
+lv_timer_t *ui_timer_ResinTimer;
+lv_timer_t *ui_timer_ClockTimer;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -56,15 +82,8 @@ lv_group_t *ui_group;
 
 ///////////////////// ANIMATIONS ////////////////////
 
-// ui_EloAnimation0
-// FUNCTION HEADER
-void aniTitleSlideInY_Animation(lv_obj_t *TargetObject, int delay);
-
-// FUNCTION
-void aniTitleSlideInY_Animation(lv_obj_t *TargetObject, int delay)
+void aniTitleSlideInY_Animation(lv_obj_t * TargetObject, int delay)
 {
-
-    //
     lv_anim_t PropertyAnimation_0;
     lv_anim_init(&PropertyAnimation_0);
     lv_anim_set_time(&PropertyAnimation_0, 1000);
@@ -73,20 +92,17 @@ void aniTitleSlideInY_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_values(&PropertyAnimation_0, -100, 0);
     lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_ease_out);
     lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
     lv_anim_set_early_apply(&PropertyAnimation_0, false);
     lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_y);
     lv_anim_start(&PropertyAnimation_0);
+
 }
-
-// ui_EloAnimation0
-// FUNCTION HEADER
-void aniTitleSlideInX_Animation(lv_obj_t *TargetObject, int delay);
-
-// FUNCTION
-void aniTitleSlideInX_Animation(lv_obj_t *TargetObject, int delay)
+void aniTitleSlideInX_Animation(lv_obj_t * TargetObject, int delay)
 {
-
-    //
     lv_anim_t PropertyAnimation_0;
     lv_anim_init(&PropertyAnimation_0);
     lv_anim_set_time(&PropertyAnimation_0, 1000);
@@ -95,9 +111,91 @@ void aniTitleSlideInX_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_values(&PropertyAnimation_0, -100, 0);
     lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_ease_out);
     lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
     lv_anim_set_early_apply(&PropertyAnimation_0, false);
     lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_x);
     lv_anim_start(&PropertyAnimation_0);
+
+
+}
+void ClockHoroSpin3_Animation(lv_obj_t * TargetObject, int delay)
+{
+    lv_anim_t PropertyAnimation_0;
+    lv_anim_init(&PropertyAnimation_0);
+    lv_anim_set_time(&PropertyAnimation_0, 49750);
+    lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
+    lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_image_angle);
+    lv_anim_set_values(&PropertyAnimation_0, 0, 3600);
+    lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_linear);
+    lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_early_apply(&PropertyAnimation_0, false);
+    lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_image_angle);
+    lv_anim_start(&PropertyAnimation_0);
+
+}
+void ClockHoroSpin1Reverse_Animation(lv_obj_t * TargetObject, int delay)
+{
+    lv_anim_t PropertyAnimation_0;
+    lv_anim_init(&PropertyAnimation_0);
+    lv_anim_set_time(&PropertyAnimation_0, 75000);
+    lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
+    lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_image_angle);
+    lv_anim_set_values(&PropertyAnimation_0, 3600, 0);
+    lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_linear);
+    lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_early_apply(&PropertyAnimation_0, false);
+    lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_image_angle);
+    lv_anim_start(&PropertyAnimation_0);
+
+}
+void ClockHoroSpin2Reverse_Animation(lv_obj_t * TargetObject, int delay)
+{
+    lv_anim_t PropertyAnimation_0;
+    lv_anim_init(&PropertyAnimation_0);
+    lv_anim_set_time(&PropertyAnimation_0, 75000);
+    lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
+    lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_image_angle);
+    lv_anim_set_values(&PropertyAnimation_0, 3600, 0);
+    lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_linear);
+    lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_early_apply(&PropertyAnimation_0, false);
+    lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_image_angle);
+    lv_anim_start(&PropertyAnimation_0);
+
+}
+void ClockHoroSpin4Reverse_Animation(lv_obj_t * TargetObject, int delay)
+{
+    lv_anim_t PropertyAnimation_0;
+    lv_anim_init(&PropertyAnimation_0);
+    lv_anim_set_time(&PropertyAnimation_0, 30320);
+    lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
+    lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_image_angle);
+    lv_anim_set_values(&PropertyAnimation_0, 3600, 0);
+    lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_linear);
+    lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_early_apply(&PropertyAnimation_0, false);
+    lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_image_angle);
+    lv_anim_start(&PropertyAnimation_0);
+
 }
 
 ///////////////////// FUNCTIONS ////////////////////
@@ -128,6 +226,18 @@ static void ui_event_ResinScreen(lv_event_t *e)
         default:
             break;
         }
+    }
+}
+
+static void ui_event_ClockScreen(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_SCREEN_LOADED) {
+        ClockHoroSpin1Reverse_Animation(ui_Horoscpoe1, 0);
+        ClockHoroSpin2Reverse_Animation(ui_Horoscope2, 0);
+        ClockHoroSpin3_Animation(ui_Horoscope3, 0);
+        ClockHoroSpin4Reverse_Animation(ui_Horoscope4, 0);
     }
 }
 
@@ -602,6 +712,133 @@ void ui_ResinScreen_screen_init(void)
 
     lv_group_add_obj(ui_group, ui_ResinScreen);
 }
+void ui_ClockScreen_screen_init(void)
+{
+    ui_ClockScreen = lv_obj_create(NULL);
+    lv_obj_clear_flag(ui_ClockScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_img_src(ui_ClockScreen, &ui_img_HoroscopeBg, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Horoscpoe1 = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_Horoscpoe1, &ui_img_Horoscope03);
+    lv_obj_set_width(ui_Horoscpoe1, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Horoscpoe1, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Horoscpoe1, 35);
+    lv_obj_set_y(ui_Horoscpoe1, -4);
+    lv_obj_set_align(ui_Horoscpoe1, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Horoscpoe1, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_Horoscpoe1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Horoscope2 = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_Horoscope2, &ui_img_Horoscope04);
+    lv_obj_set_width(ui_Horoscope2, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Horoscope2, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Horoscope2, -33);
+    lv_obj_set_y(ui_Horoscope2, -15);
+    lv_obj_set_align(ui_Horoscope2, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Horoscope2, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_Horoscope2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Horoscope3 = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_Horoscope3, &ui_img_Horoscope05);
+    lv_obj_set_width(ui_Horoscope3, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Horoscope3, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Horoscope3, 21);
+    lv_obj_set_y(ui_Horoscope3, 102);
+    lv_obj_set_align(ui_Horoscope3, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Horoscope3, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_Horoscope3, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Horoscope4 = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_Horoscope4, &ui_img_Horoscope06);
+    lv_obj_set_width(ui_Horoscope4, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Horoscope4, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Horoscope4, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Horoscope4, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_Horoscope4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_ClockDial = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockDial, &ui_img_clock_mask);
+    lv_obj_set_width(ui_ClockDial, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockDial, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_ClockDial, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockDial, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockDial, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_ClockHour = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockHour, &ui_img_clock_hourhand);
+    lv_obj_set_width(ui_ClockHour, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockHour, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockHour, 0);
+    lv_obj_set_y(ui_ClockHour, 42);
+    lv_obj_set_align(ui_ClockHour, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockHour, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockHour, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_pivot(ui_ClockHour, 15, -9);
+
+    ui_ClockMinute = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockMinute, &ui_img_clock_minutehand);
+    lv_obj_set_width(ui_ClockMinute, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockMinute, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockMinute, 0);
+    lv_obj_set_y(ui_ClockMinute, -34);
+    lv_obj_set_align(ui_ClockMinute, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockMinute, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockMinute, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_pivot(ui_ClockMinute, 22, 89);
+
+        ui_ClockIconMorning = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockIconMorning, &ui_img_clockicon_morning);
+    lv_obj_set_width(ui_ClockIconMorning, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockIconMorning, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockIconMorning, -101);
+    lv_obj_set_y(ui_ClockIconMorning, -107);
+    lv_obj_set_align(ui_ClockIconMorning, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockIconMorning, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockIconMorning, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_angle(ui_ClockIconMorning, 450);
+
+    ui_ClockIconNoon = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockIconNoon, &ui_img_clockicon_noon);
+    lv_obj_set_width(ui_ClockIconNoon, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockIconNoon, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockIconNoon, 104);
+    lv_obj_set_y(ui_ClockIconNoon, -104);
+    lv_obj_set_align(ui_ClockIconNoon, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockIconNoon, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockIconNoon, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_angle(ui_ClockIconNoon, 450);
+
+    ui_ClockIconDusk = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockIconDusk, &ui_img_clockicon_dusk);
+    lv_obj_set_width(ui_ClockIconDusk, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockIconDusk, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockIconDusk, 104);
+    lv_obj_set_y(ui_ClockIconDusk, 101);
+    lv_obj_set_align(ui_ClockIconDusk, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockIconDusk, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockIconDusk, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_angle(ui_ClockIconDusk, 450);
+
+    ui_ClockIconNight = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockIconNight, &ui_img_clockicon_night);
+    lv_obj_set_width(ui_ClockIconNight, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockIconNight, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockIconNight, -104);
+    lv_obj_set_y(ui_ClockIconNight, 103);
+    lv_obj_set_align(ui_ClockIconNight, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockIconNight, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockIconNight, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_angle(ui_ClockIconNight, 450);
+
+    lv_obj_add_event_cb(ui_ClockScreen, ui_event_ClockScreen, LV_EVENT_ALL, NULL);
+
+    // 将屏幕添加至group内监听按键触发
+    lv_group_add_obj(ui_group, ui_ClockScreen);
+
+    // 启动timer
+    ui_timer_ClockTimer = lv_timer_create(cb_timer_ClockTimer, 1000, NULL);
+    lv_timer_ready(ui_timer_ClockTimer);
+}
 
 void ui_init(void)
 {
@@ -613,7 +850,10 @@ void ui_init(void)
     // ui_SettingScreen_screen_init();
     // ui_VideoScreen_screen_init();
     // ui_ResinScreen_screen_init();
+    // ui_ClockScreen_screen_init();
     lv_disp_load_scr(ui_StartupScreen);
 
     ui_group = lv_group_create();
 }
+
+#endif

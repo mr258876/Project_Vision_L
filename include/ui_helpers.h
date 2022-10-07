@@ -1,16 +1,12 @@
 // SquareLine LVGL GENERATED FILE
-// EDITOR VERSION: SquareLine Studio 1.0.5
-// LVGL VERSION: 8.2
+// EDITOR VERSION: SquareLine Studio 1.1.1
+// LVGL VERSION: 8.3.3
 // PROJECT: The_Vision_L
 
 #ifndef _THE_VISION_L_UI_HELPERS_H
 #define _THE_VISION_L_UI_HELPERS_H
 
-#if __has_include("lvgl.h")
-    #include "lvgl.h"
-#else
-    #include "lvgl/lvgl.h"
-#endif
+#include "ui.h"
 
 #define _UI_TEMPORARY_STRING_BUFFER_SIZE 32
 #define _UI_BAR_PROPERTY_VALUE 0
@@ -42,11 +38,11 @@ void _ui_slider_set_property(lv_obj_t * target, int id, int val);
 
 void _ui_screen_change(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay);
 
-void _ui_arc_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay);
+void _ui_arc_increment(lv_obj_t * target, int val);
 
-void _ui_bar_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay);
+void _ui_bar_increment(lv_obj_t * target, int val, int anm);
 
-void _ui_slider_increment(lv_obj_t * target, lv_scr_load_anim_t fademode, int spd, int delay);
+void _ui_slider_increment(lv_obj_t * target, int val, int anm);
 
 #define _UI_MODIFY_FLAG_ADD 0
 #define _UI_MODIFY_FLAG_REMOVE 1

@@ -828,22 +828,23 @@ void leaveResinScreen(void *parameter)
     removeStyles(lv_scr_act());
 
     // 初始化下个要显示的屏幕
-    ui_VideoScreen_screen_init();
+    // ui_VideoScreen_screen_init();
+    ui_ClockScreen_screen_init();
 
     // 切换屏幕
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+    lv_scr_load_anim(ui_ClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 
     lv_task_handler();
 
-    vTaskSuspend(lvglLoopHandle);
-    isInLVGL = false;
+    // vTaskSuspend(lvglLoopHandle);
+    // isInLVGL = false;
 
     xSemaphoreGive(LVGLMutex);
   }
 
   // 恢复解码器工作
-  vTaskResume(playVideoHandle);
-  mjpeg.resume();
+  // vTaskResume(playVideoHandle);
+  // mjpeg.resume();
 
   vTaskDelete(NULL);
 }
@@ -1054,7 +1055,7 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 ////////////////////
 void loop()
 {
-  printf("Free MEM:%d\n", esp_get_free_heap_size());
+  ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
   vTaskDelay(pdMS_TO_TICKS(5000));
 }
 
