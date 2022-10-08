@@ -67,7 +67,13 @@ typedef enum
 //  Variables
 //
 ////////////////////////
-// LCD screen
+/* Pwr button & Audio */
+uint8_t audioPin = 25;
+uint8_t pwrBtnPin = 26;
+static OneButton *pwrButton;
+
+/* LCD screen */
+static LCD_panel_t LCD_panel = LCD_ST7789;
 static LGFX_Device gfx;
 
 /* LVGL Stuff */
@@ -91,8 +97,7 @@ bool mjpegInited = false;
 /* Proximity sensor Object */
 PROX_LIGHT_METER apds;
 uint16_t r, g, b, c;
-OneButton proxButton(PROX_INT, true);
-OneButton pwrButton(BUTTON_PIN, true);
+OneButton *proxButton;
 
 /* Accelmeter Object */
 #define LOW_POWER
@@ -194,11 +199,23 @@ void setup()
   SD_MMC.begin();
 #endif
 
+  // Check 
+  if (digitalRead(audioPin) == HIGH)
+  {
+    audioPin = 26;
+    pwrBtnPin = 25;
+    LCD_panel = LCD_GC9A01;
+  }
+
+  // Buttons
+  pwrButton = new OneButton(pwrBtnPin, true);
+  proxButton = new OneButton(PROX_INT, true);
+
   // Audio Output
-  pinMode(AUDIO_OUT, INPUT_PULLDOWN);
+  pinMode(audioPin, INPUT_PULLDOWN);
 
   // Init Display
-  LCDinit(&gfx, LCD_ST7789);
+  LCDinit(&gfx, LCD_panel);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
@@ -330,7 +347,7 @@ vision_hw_result_t checkHardware(String *errMsg)
     apds.setProximityInterruptThreshold(0, PROX_THRS);
     apds.enableProximityInterrupt();
     pinMode(PROX_INT, INPUT_PULLUP);
-    proxButton.attachDoubleClick(onChangeVideo);
+    proxButton->attachDoubleClick(onChangeVideo);
     useProx = true;
     useAutoBrightness = true;
   }
@@ -644,10 +661,10 @@ void hardwareSetup(void *parameter)
     }
   }
 
-  pinMode(BUTTON_PIN, INPUT);
-  pwrButton.attachClick(onSingleClick);
-  pwrButton.attachDoubleClick(onDoubleClick);
-  pwrButton.attachMultiClick(onMultiClick);
+  pinMode(pwrBtnPin, INPUT);
+  pwrButton->attachClick(onSingleClick);
+  pwrButton->attachDoubleClick(onDoubleClick);
+  pwrButton->attachMultiClick(onMultiClick);
 
   cb_switchToVideoScreen();
 
@@ -920,11 +937,11 @@ void screenAdjustLoop(void *parameter)
   float accY = 0;
   while (1)
   {
-    pwrButton.tick();
+    pwrButton->tick();
 
     if (useProx)
     {
-      proxButton.tick();
+      proxButton->tick();
       if (!digitalRead(PROX_INT))
       {
         if (apds.readProximity() < PROX_THRS)
