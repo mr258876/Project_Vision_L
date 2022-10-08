@@ -40,6 +40,21 @@ extern lv_obj_t * ui_Button5;
 extern lv_obj_t * ui_Label5;
 extern lv_obj_t * ui_SettingsInfoPanel;
 extern lv_obj_t * ui_VideoScreen;
+extern lv_obj_t * ui_MenuScreen;
+extern lv_obj_t * ui_MenuTitlePanel;
+extern lv_obj_t * ui_MenutitleLabel;
+extern lv_obj_t * ui_MenuButton1;
+extern lv_obj_t * ui_MenuButton1Image;
+extern lv_obj_t * ui_MenuButton1Label;
+extern lv_obj_t * ui_MenuButton2;
+extern lv_obj_t * ui_MenuButton2Image;
+extern lv_obj_t * ui_MenuButton2Label;
+extern lv_obj_t * ui_MenuButton3;
+extern lv_obj_t * ui_MenuButton3Image;
+extern lv_obj_t * ui_MenuButton3Label;
+extern lv_obj_t * ui_MenuButton4;
+extern lv_obj_t * ui_MenuButton4Image;
+extern lv_obj_t * ui_MenuButton4Label;
 extern lv_obj_t * ui_ResinScreen;
 extern lv_obj_t * ui_DailyNotePanel;
 extern lv_obj_t * ui_NoteResinLabel;
@@ -66,16 +81,28 @@ extern lv_obj_t * ui_ClockIconNight;
 
 extern lv_group_t * ui_group;
 
-extern lv_timer_t *ui_timer_ResinTimer;
+extern lv_timer_t *ui_timer_ResinDispTimer;
 extern lv_timer_t *ui_timer_ClockTimer;
 
-void cb_timer_ResinTimer(lv_timer_t *timer);
+void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
-void cb_leaveResinScreen(lv_event_t * e);
 void cb_getDailyNoteFromResinScreen(lv_event_t * e);
+void cb_leaveResinScreen(lv_event_t * e);
+void cb_leaveClockScreen(lv_event_t * e);
+void cb_leaveSettingScreen(lv_event_t * e);
+void cb_loadResinScreen(lv_event_t * e);
+void cb_loadClockScreen(lv_event_t * e);
+void cb_loadSettingScreen(lv_event_t * e);
 
+void cb_loadVideoScreen(lv_event_t * e);
+
+
+LV_IMG_DECLARE(ui_img_icon_element);    // assets\UI_Icon_Element.png
+LV_IMG_DECLARE(ui_img_icon_activity_signintab);    // assets\UI_Icon_Activity_SignInTab.png
+LV_IMG_DECLARE(ui_img_icon_timespeedup_s);    // assets\UI_Icon_TimeSpeedUp_S.png
+LV_IMG_DECLARE(ui_img_icon_setting_s);    // assets\UI_Icon_Setting_S.png
 
 LV_IMG_DECLARE(ui_img_Resin);           // assets\Resin.png
 LV_IMG_DECLARE(ui_img_Homecoin);        // assets\HomeCoin.png
@@ -105,6 +132,7 @@ void ui_init(void);
 void ui_StartupScreen_screen_init();
 void ui_SettingScreen_screen_init();
 void ui_VideoScreen_screen_init();
+void ui_MenuScreen_screen_init();
 void ui_ResinScreen_screen_init();
 void ui_ClockScreen_screen_init();
 

@@ -1,7 +1,54 @@
 #include <Arduino.h>
 #include "ui.h"
+#include "The_Vision_L_globals.h"
 
-void cb_timer_ResinTimer(lv_timer_t *timer);
+void cb_timer_ResinDispTimer(lv_timer_t *timer)
+{
+    if (nd._last_update_time > 0)
+    {
+        lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd._last_update_time) / 60));
+    }
+    else
+    {
+        lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
+    }
+
+    lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd.resinRemain, nd.resinMax);
+    lv_label_set_text_fmt(ui_NoteExpeditionsLabel, "%d/%d", nd.expeditionFinished, nd.expeditionOngoing);
+
+    if (nd.homecoinMax < 1000)
+    {
+        lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%d/%d", nd.homecoinRemain, nd.homecoinMax);
+    }
+    else
+    {
+        lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%.1fK/%.1fK", (nd.homecoinRemain / 1000.0), (nd.homecoinMax / 1000.0));
+    }
+
+    if (nd.hasTransformer)
+    {
+        if (nd.transformerRecoverTime > 86400)
+        {
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d天", (int)(nd.transformerRecoverTime / 86400));
+        }
+        else if (nd.transformerRecoverTime > 3600)
+        {
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d小时", (int)(nd.transformerRecoverTime / 3600));
+        }
+        else if (nd.transformerRecoverTime > 60)
+        {
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d分钟", (int)(nd.transformerRecoverTime / 60));
+        }
+        else
+        {
+            lv_label_set_text(ui_NoteTransformerLabel, "已就绪");
+        }
+    }
+    else
+    {
+        lv_label_set_text(ui_NoteTransformerLabel, "未解锁");
+    }
+}
 
 void cb_timer_ClockTimer(lv_timer_t *timer)
 {

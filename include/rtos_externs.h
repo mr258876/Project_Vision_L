@@ -15,7 +15,6 @@ extern SemaphoreHandle_t NoteDataMutex;
 
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
-extern TaskHandle_t showDailyNoteLoopHandle;
 extern TaskHandle_t lvglLoopHandle;
 
 // ESP Timer 计时器

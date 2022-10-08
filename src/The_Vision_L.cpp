@@ -1,5 +1,6 @@
 #include "conf.h"
 #include "rtos_externs.h"
+#include "The_Vision_L_globals.h"
 
 #include <FS.h>
 #include <SD.h>
@@ -10,11 +11,13 @@
 #include <lvgl.h>
 #include "lv_fs_fatfs.h"
 #include "ui.h"
+#include "ui_supply_functions.h"
 
 #include <ArduinoJson.h>
 #include "LinkedList.h"
 #include <Preferences.h>
 
+#include "LCD.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 
@@ -65,70 +68,7 @@ typedef enum
 //
 ////////////////////////
 // LCD screen
-class LGFX_PANEL : public lgfx::LGFX_Device
-{
-  lgfx::Panel_ST7789 _panel_instance;
-
-  lgfx::Bus_SPI _bus_instance;
-
-public:
-  LGFX_PANEL(void)
-  {
-    {                                    // バス制御の設定を行います。        // 设置总线
-      auto cfg = _bus_instance.config(); // バス設定用の構造体を取得します。  // 获取总线设置结构体
-
-      // SPIバスの設定  // SPI总线设置
-      cfg.spi_host = VSPI_HOST; // 使用するSPIを選択  ESP32-S2,C3 : SPI2_HOST or SPI3_HOST / ESP32 : VSPI_HOST or HSPI_HOST
-      // ※ ESP-IDFバージョンアップに伴い、VSPI_HOST , HSPI_HOSTの記述は非推奨になるため、エラーが出る場合は代わりにSPI2_HOST , SPI3_HOSTを使用してください。
-      // ※ ESP-IDF版本更新后，若使用VSPI_HOST、HSPI_HOST报错，请使用SPI2_HOST、SPI3_HOST代替。
-      cfg.spi_mode = 0;                  // SPI通信モードを設定 (0 ~ 3)   // SPI通信模式设置
-      cfg.freq_write = 80000000;         // 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)  // SPI写时钟频率(80MHz除以整数)
-      cfg.freq_read = 80000000;          // 受信時のSPIクロック // SPI读时钟频率
-      cfg.spi_3wire = true;              // 受信をMOSIピンで行う場合はtrueを設定  // 使用MOSI pin进行读操作时设定为true
-      cfg.use_lock = true;               // トランザクションロックを使用する場合はtrueを設定  // 使用事务锁
-      cfg.dma_channel = SPI_DMA_CH_AUTO; // 使用するDMAチャンネルを設定 (0=DMA不使用 / 1=1ch / 2=2ch / SPI_DMA_CH_AUTO=自動設定) // 指定DMA通道
-      // ※ ESP-IDFバージョンアップに伴い、DMAチャンネルはSPI_DMA_CH_AUTO(自動設定)が推奨になりました。1ch,2chの指定は非推奨になります。
-      // ※ ESP-IDF版本更新后，推荐使用SPI_DMA_CH_AUTO自动设置DMA通道。不推荐手动指定。
-      cfg.pin_sclk = LCD_CLK;  // SPIのSCLKピン番号を設定   // SPI CLK引脚
-      cfg.pin_mosi = LCD_MOSI; // SPIのMOSIピン番号を設定   // SPI MOSI引脚
-      cfg.pin_miso = -1;       // SPIのMISOピン番号を設定 (-1 = disable)  // SPI MISO引脚(-1禁用)
-      cfg.pin_dc = LCD_DC;     // SPIのD/Cピン番号を設定  (-1 = disable)  // SPI 数据/指令引脚(-1禁用)
-                               // SDカードと共通のSPIバスを使う場合、MISOは省略せず必ず設定してください。
-                               // 屏幕与SD卡共用一个SPI总线时，必须指定MISO引脚。
-
-      _bus_instance.config(cfg);              // 設定値をバスに反映します。   // 应用总线设置
-      _panel_instance.setBus(&_bus_instance); // バスをパネルにセットします。 // 为屏幕指定总线
-    }
-
-    {                                      // 表示パネル制御の設定を行います。    // 设置屏幕
-      auto cfg = _panel_instance.config(); // 表示パネル設定用の構造体を取得します。  //获取屏幕设置构造体
-
-      cfg.pin_cs = LCD_CS;   // CSが接続されているピン番号   (-1 = disable)   // 片选引脚
-      cfg.pin_rst = LCD_RST; // RSTが接続されているピン番号  (-1 = disable)   // 重置引脚
-      cfg.pin_busy = -1;     // BUSYが接続されているピン番号 (-1 = disable)   // busy信号引脚
-
-      // ※ 以下の設定値はパネル毎に一般的な初期値が設定されていますので、不明な項目はコメントアウトして試してみてください。
-
-      cfg.panel_width = 240;    // 実際に表示可能な幅   // 水平分辨率
-      cfg.panel_height = 240;   // 実際に表示可能な高さ // 垂直分辨率
-      cfg.offset_x = 0;         // パネルのX方向オフセット量  // X方向偏移量
-      cfg.offset_y = 0;         // パネルのY方向オフセット量  // Y方向偏移量
-      cfg.offset_rotation = 0;  // 回転方向の値のオフセット 0~7 (4~7は上下反転) // 屏幕旋转方向(4-7为垂直翻转)
-      cfg.dummy_read_pixel = 8; // ピクセル読出し前のダミーリードのビット数     // 读取显存前的dummy bit数
-      cfg.dummy_read_bits = 1;  // ピクセル以外のデータ読出し前のダミーリードのビット数 // 读取其他数据前的dummy bit数
-      cfg.readable = false;     // データ読出しが可能な場合 trueに設定    // 启用读操作
-      cfg.invert = true;        // パネルの明暗が反転してしまう場合 trueに設定  // 反色
-      cfg.rgb_order = false;    // パネルの赤と青が入れ替わってしまう場合 trueに設定  // 像素使用RGB顺序
-      cfg.dlen_16bit = false;   // 16bitパラレルやSPIでデータ長を16bit単位で送信するパネルの場合 trueに設定 // 一次写入16 bit数据
-      cfg.bus_shared = false;   // SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います) // 与SD卡共享总线
-
-      _panel_instance.config(cfg); // 应用屏幕设置
-    }
-
-    setPanel(&_panel_instance); // 使用するパネルをセットします。 // 设置屏幕
-  }
-};
-static LGFX_PANEL gfx;
+static LGFX_Device gfx;
 
 /* LVGL Stuff */
 static uint32_t screenWidth;
@@ -162,11 +102,6 @@ int rotation = 0;
 /* NVS */
 Preferences prefs;
 
-/* Hoyolab Client */
-HoyoverseClient hyc;
-Notedata nd;
-bool inResinScreen = false;
-
 /* Booleans for whether the sensors enabled. */
 bool useProx;
 bool useAcc;
@@ -182,26 +117,24 @@ vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
 void wifiConfigure();
 bool getDailyNote(Notedata *nd, String *errMsg);
-void showDailyNote(Notedata *nd);
 void resinCalc(void *parameter);
-void showDailyNoteLoop(void *parameter);
 bool connectWiFi();
+
 void cb_switchToVideoScreen();
 void mjpegInit();
 void leaveVideoScreen(void *parameter);
-void leaveResinScreen(void *parameter);
+void loadVideoScreen(void *parameter);
+void playVideo(void *parameter);
+
 void getDailyNoteFromResinScreen(void *parameter);
 
 void lvglLoop(void *parameter);
 void screenAdjustLoop(void *parameter);
-void playVideo(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
 void onDoubleClick();
 void onMultiClick();
-
-void removeStyles(lv_obj_t *obj);
 
 ////////////////////////
 //
@@ -265,6 +198,7 @@ void setup()
   pinMode(AUDIO_OUT, INPUT_PULLDOWN);
 
   // Init Display
+  LCDinit(&gfx, LCD_ST7789);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
@@ -613,7 +547,7 @@ void hardwareSetup(void *parameter)
   }
 
   // 若检查到错误则停止启动
-  if (hwErr || fileErr || updateStatus)
+  if (hwErr == VISION_HW_SD_ERR || fileErr || updateStatus)
   {
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -792,59 +726,35 @@ void leaveVideoScreen(void *parameter)
   {
     lv_group_remove_all_objs(ui_group);
     removeStyles(lv_scr_act());
-    ui_ResinScreen_screen_init();
-    showDailyNote(&nd);
-    inResinScreen = true;
-    lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
-
-    lv_task_handler();
+    ui_MenuScreen_screen_init();
+    lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
     xSemaphoreGive(LVGLMutex);
   }
 
   vTaskResume(lvglLoopHandle);
   isInLVGL = true;
 
-  // 创建显示数据刷新任务
-  xTaskCreatePinnedToCore(showDailyNoteLoop,        //任务函数
-                          "showDailyNoteLoop",      //任务名称
-                          4096,                     //任务堆栈大小
-                          NULL,                     //任务参数
-                          1,                        //任务优先级
-                          &showDailyNoteLoopHandle, //任务句柄
-                          0);                       //执行任务核心
-
   vTaskDelete(NULL);
 }
 
-void leaveResinScreen(void *parameter)
+void loadVideoScreen(void *parameter)
 {
-  vTaskDelete(showDailyNoteLoopHandle);
-
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_group_remove_all_objs(ui_group);
-
-    // 删除样式及图片缓存解决内存泄露
-    removeStyles(lv_scr_act());
-
-    // 初始化下个要显示的屏幕
-    // ui_VideoScreen_screen_init();
-    ui_ClockScreen_screen_init();
-
-    // 切换屏幕
-    lv_scr_load_anim(ui_ClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
-
-    lv_task_handler();
-
-    // vTaskSuspend(lvglLoopHandle);
-    // isInLVGL = false;
+    lv_group_remove_all_objs(ui_group);                                  // 删除控制组内对象
+    ui_VideoScreen_screen_init();                                        // 初始化下个要显示的屏幕
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+    lv_async_call(delScr, ui_MenuScreen);                                // 异步释放资源
+    lv_task_handler();                                                   // 调用任务处理器使LVGL完成操作
+    vTaskSuspend(lvglLoopHandle);                                        // 挂起LVGL
+    isInLVGL = false;                                                    // LVGL标志位设为false
 
     xSemaphoreGive(LVGLMutex);
   }
 
   // 恢复解码器工作
-  // vTaskResume(playVideoHandle);
-  // mjpeg.resume();
+  vTaskResume(playVideoHandle);
+  mjpeg.resume();
 
   vTaskDelete(NULL);
 }
@@ -879,78 +789,11 @@ void getDailyNoteFromResinScreen(void *parameter)
       lv_obj_del(mbox);
     }
 
-    showDailyNote(&nd);
+    lv_timer_ready(ui_timer_ResinDispTimer); // 立即更新树脂显示
 
     xSemaphoreGive(LVGLMutex);
   }
 
-  vTaskDelete(NULL);
-}
-
-void showDailyNote(Notedata *nd)
-{
-  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
-  {
-    if (nd->_last_update_time > 0)
-    {
-      lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd->_last_update_time) / 60));
-    }
-    else
-    {
-      lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
-    }
-
-    lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd->resinRemain, nd->resinMax);
-    lv_label_set_text_fmt(ui_NoteExpeditionsLabel, "%d/%d", nd->expeditionFinished, nd->expeditionOngoing);
-
-    if (nd->homecoinMax < 1000)
-    {
-      lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%d/%d", nd->homecoinRemain, nd->homecoinMax);
-    }
-    else
-    {
-      lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%.1fK/%.1fK", (nd->homecoinRemain / 1000.0), (nd->homecoinMax / 1000.0));
-    }
-
-    if (nd->hasTransformer)
-    {
-      if (nd->transformerRecoverTime > 86400)
-      {
-        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d天", (int)(nd->transformerRecoverTime / 86400));
-      }
-      else if (nd->transformerRecoverTime > 3600)
-      {
-        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d小时", (int)(nd->transformerRecoverTime / 3600));
-      }
-      else if (nd->transformerRecoverTime > 60)
-      {
-        lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d分钟", (int)(nd->transformerRecoverTime / 60));
-      }
-      else
-      {
-        lv_label_set_text(ui_NoteTransformerLabel, "已就绪");
-      }
-    }
-    else
-    {
-      lv_label_set_text(ui_NoteTransformerLabel, "未解锁");
-    }
-
-    xSemaphoreGive(NoteDataMutex);
-  }
-}
-
-void showDailyNoteLoop(void *parameter)
-{
-  while (1)
-  {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-    {
-      showDailyNote(&nd);
-      xSemaphoreGive(LVGLMutex);
-    }
-    vTaskDelay(20000);
-  }
   vTaskDelete(NULL);
 }
 
@@ -1026,17 +869,6 @@ void cb_hardwareSetup(lv_event_t *e)
                           0);              //执行任务核心
 }
 
-void cb_leaveResinScreen(lv_event_t *e)
-{
-  xTaskCreatePinnedToCore(leaveResinScreen, //任务函数
-                          "leaveResinScr",  //任务名称
-                          3072,             //任务堆栈大小
-                          NULL,             //任务参数
-                          2,                //任务优先级
-                          NULL,             //任务句柄
-                          1);               //执行任务核心
-}
-
 void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, //任务函数
@@ -1046,6 +878,17 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
                           1,                           //任务优先级
                           NULL,                        //任务句柄
                           0);                          //执行任务核心
+}
+
+void cb_loadVideoScreen(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(loadVideoScreen,   //任务函数
+                          "loadVideoScreen", //任务名称
+                          3072,              //任务堆栈大小
+                          NULL,              //任务参数
+                          2,                 //任务优先级
+                          NULL,              //任务句柄
+                          1);                //执行任务核心
 }
 
 ////////////////////
@@ -1288,11 +1131,12 @@ void onSingleClick()
   {
     if (inEditMode)
     {
-      lv_group_send_data(ui_group, LV_KEY_DOWN);
+      lv_group_send_data(ui_group, LV_KEY_RIGHT);
     }
     else
     {
       lv_group_send_data(ui_group, LV_KEY_NEXT);
+      lv_group_focus_next(ui_group);
     }
   }
 }
@@ -1301,7 +1145,8 @@ void onDoubleClick()
 {
   if (isInLVGL)
   {
-    lv_group_send_data(ui_group, LV_KEY_ENTER);
+    // lv_group_send_data(ui_group, LV_KEY_ENTER);
+    lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
 
     if (inEditMode)
     {
@@ -1335,29 +1180,16 @@ void onMultiClick()
   {
     if (inEditMode)
     {
-      lv_group_send_data(ui_group, LV_KEY_UP);
+      lv_group_send_data(ui_group, LV_KEY_LEFT);
     }
     else
     {
       lv_group_send_data(ui_group, LV_KEY_PREV);
+      lv_group_focus_prev(ui_group);
     }
   }
   else
   {
     onChangeVideo();
-  }
-}
-
-////////////////////////
-//
-//  LVGL Related
-//
-////////////////////////
-void removeStyles(lv_obj_t *obj)
-{
-  lv_obj_remove_style_all(obj);
-  for (size_t i = 0; i < lv_obj_get_child_cnt(obj); i++)
-  {
-    removeStyles(lv_obj_get_child(obj, i));
   }
 }

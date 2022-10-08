@@ -14,7 +14,6 @@ SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
 
 /* tsk handle */
 TaskHandle_t playVideoHandle;
-TaskHandle_t showDailyNoteLoopHandle;
 TaskHandle_t lvglLoopHandle;
 
 esp_timer_handle_t resinCalcTimer;
