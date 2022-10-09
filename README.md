@@ -5,17 +5,36 @@
 
 Do Virtual Gods Hand Out Electronic Visions?
 
+## 版本 / Versions
+### 稳定版 / Stable Release
+- [L0.1.1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.1.1)
+### 测试版 / Beta Release
+- None
+### 开发版 / Indev Release
+- [L0.2.0-Indev22A092](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22A092)
+
+## 支持库 / Referenced Libraries
+```
+Adafruit BusIO  1.13.2
+ArduinoJson 6.19.4
+KXTJ3-1057  0.0.1
+LovyanGFX   0.4.18
+LVGL        8.3.2
+OneButton   2.0.3
+APDS-9930   https://github.com/Depau/APDS9930
+LinkedList  https://github.com/ivanseidel/LinkedList
+```
+
+## 中文
+
+该项目为硬件项目[璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")的对应固件。
+
 ## 开发进度
 
 - 显示图片/视频✅
 - 设置菜单/管理界面🔲
 - 多语言支持🚧
 - 从米游社API获取树脂🚧
-
-
-## 中文
-
-该项目为硬件项目[璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")的对应固件。
 
 ## 使用方法
 ### 切换元素(切换视频)
