@@ -24,7 +24,7 @@ extern lv_obj_t * ui_SettingScreen;
 extern lv_obj_t * ui_SettingTitlePanel;
 extern lv_obj_t * ui_SettingTitleLabel;
 extern lv_obj_t * ui_SettingTitleBackButton;
-extern lv_obj_t * ui_SettingTitleBackButtonLabel;
+extern lv_obj_t * ui_SettingTitleBackButtonImg;
 extern lv_obj_t * ui_SettingSidePanel;
 extern lv_obj_t * ui_SettingSideButton1;
 extern lv_obj_t * ui_SettingSideButton1Label;
@@ -113,6 +113,7 @@ void cb_loadSettingScreen(lv_event_t * e);
 
 void cb_loadVideoScreen(lv_event_t * e);
 
+LV_IMG_DECLARE(ui_img_back);    // assets\UI_IconSmall_Back.png
 
 LV_IMG_DECLARE(ui_img_icon_element);    // assets\UI_Icon_Element.png
 LV_IMG_DECLARE(ui_img_icon_activity_signintab);    // assets\UI_Icon_Activity_SignInTab.png

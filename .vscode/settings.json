@@ -16,6 +16,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "lvgl.h": "c",
-        "functional": "c"
+        "functional": "c",
+        "ui.h": "c"
     }
 }

@@ -23,8 +23,8 @@ lv_obj_t *ui_SettingScreen;
 lv_obj_t *ui_SettingScreen;
 lv_obj_t *ui_SettingTitlePanel;
 lv_obj_t *ui_SettingTitleLabel;
-lv_obj_t *ui_SettingTitleBackButton;
-lv_obj_t *ui_SettingTitleBackButtonLabel;
+lv_obj_t * ui_SettingTitleBackButton;
+lv_obj_t * ui_SettingTitleBackButtonImg;
 lv_obj_t *ui_SettingSidePanel;
 lv_obj_t *ui_SettingSideButton1;
 lv_obj_t *ui_SettingSideButton1Label;
@@ -504,8 +504,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingTitleBackButton, 30);
     lv_obj_set_height(ui_SettingTitleBackButton, 30);
     lv_obj_set_align(ui_SettingTitleBackButton, LV_ALIGN_LEFT_MID);
-    lv_obj_add_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
-    lv_obj_clear_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLLABLE);    /// Flags
+    lv_obj_add_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(ui_SettingTitleBackButton, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_SettingTitleBackButton, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_SettingTitleBackButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -518,15 +518,13 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_outline_width(ui_SettingTitleBackButton, 4, LV_PART_MAIN | LV_STATE_FOCUSED);
     lv_obj_set_style_outline_pad(ui_SettingTitleBackButton, 0, LV_PART_MAIN | LV_STATE_FOCUSED);
 
-    ui_SettingTitleBackButtonLabel = lv_label_create(ui_SettingTitleBackButton);
-    lv_obj_set_width(ui_SettingTitleBackButtonLabel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_SettingTitleBackButtonLabel, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_align(ui_SettingTitleBackButtonLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_SettingTitleBackButtonLabel, "Bak");
-    lv_obj_set_style_text_color(ui_SettingTitleBackButtonLabel, lv_color_hex(0x3B4255), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_SettingTitleBackButtonLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_SettingTitleBackButtonLabel, &ui_font_HanyiWenhei16ZhHans,
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_SettingTitleBackButtonImg = lv_img_create(ui_SettingTitleBackButton);
+    lv_img_set_src(ui_SettingTitleBackButtonImg, &ui_img_back);
+    lv_obj_set_width(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_SettingTitleBackButtonImg, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_SettingSidePanel = lv_obj_create(ui_SettingScreen);
     lv_obj_set_width(ui_SettingSidePanel, 60);
