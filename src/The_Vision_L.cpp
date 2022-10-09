@@ -104,19 +104,12 @@ OneButton *proxButton;
 KXTJ3 acc(0x0E);
 int rotation = 0;
 
-/* NVS */
-Preferences prefs;
-
-/* Booleans for whether the sensors enabled. */
-bool useProx;
-bool useAcc;
-bool useAutoBrightness;
-
 ////////////////////////
 //
 //  Function Declartions
 //
 ////////////////////////
+void loadSettings();
 bool checkSDFiles(String *errMsg);
 vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
@@ -185,6 +178,7 @@ void setup()
 
   // Init NVS
   prefs.begin("Project_Vision", false);
+  loadSettings();
 
 // SD card init
 #ifdef _CONFIG_SD_USE_SPI_
@@ -199,7 +193,7 @@ void setup()
   SD_MMC.begin();
 #endif
 
-  // Check 
+  // Check Screen panel
   if (digitalRead(audioPin) == HIGH)
   {
     audioPin = 26;
@@ -279,6 +273,12 @@ void setup()
   // vTaskDelete(NULL);
 }
 
+void loadSettings()
+{
+  setting_autoBright = prefs.getBool("useAutoBright", true);
+  setting_useAccel = prefs.getBool("useAccelMeter", true);
+}
+
 void mjpegInit()
 {
   // Mjpeg初始化
@@ -348,27 +348,26 @@ vision_hw_result_t checkHardware(String *errMsg)
     apds.enableProximityInterrupt();
     pinMode(PROX_INT, INPUT_PULLUP);
     proxButton->attachDoubleClick(onChangeVideo);
-    useProx = true;
-    useAutoBrightness = true;
+    info_hasProx = true;
   }
   else
   {
     hwErrDetected = VISION_HW_SENSOR_ERR;
     errMsg->concat("距离传感器初始化失败\n");
-    useProx = false;
+    info_hasProx = false;
     LV_LOG_ERROR("Prox sensor init failed!");
   }
 
   // lv_label_set_text(ui_StartupLabel2, "检查加速度计...");
   if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
   {
-    useAcc = true;
+    info_hasAccel = true;
   }
   else
   {
     hwErrDetected = VISION_HW_SENSOR_ERR;
     errMsg->concat("加速度计初始化失败\n");
-    useAcc = false;
+    info_hasAccel = false;
     LV_LOG_ERROR("IMU init failed!");
   }
 
@@ -939,7 +938,7 @@ void screenAdjustLoop(void *parameter)
   {
     pwrButton->tick();
 
-    if (useProx)
+    if (info_hasProx)
     {
       proxButton->tick();
       if (!digitalRead(PROX_INT))
@@ -950,7 +949,7 @@ void screenAdjustLoop(void *parameter)
         }
       }
 
-      if (useAutoBrightness)
+      if (setting_autoBright)
       {
         apds.getColorData(&r, &g, &b, &c);
         int light = (c / 2) > 191 ? 191 : (c / 2);
@@ -959,7 +958,7 @@ void screenAdjustLoop(void *parameter)
       }
     }
 
-    if (useAcc)
+    if (info_hasAccel && setting_useAccel)
     {
       accX = acc.axisAccel(X);
       accY = acc.axisAccel(Y);

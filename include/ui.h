@@ -103,7 +103,10 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
+
+void cb_dispSettings(lv_event_t * e);
 void cb_getDailyNoteFromResinScreen(lv_event_t * e);
+
 void cb_leaveResinScreen(lv_event_t * e);
 void cb_leaveClockScreen(lv_event_t * e);
 void cb_leaveSettingScreen(lv_event_t * e);
@@ -112,6 +115,9 @@ void cb_loadClockScreen(lv_event_t * e);
 void cb_loadSettingScreen(lv_event_t * e);
 
 void cb_loadVideoScreen(lv_event_t * e);
+
+void cb_setAutoBright(bool val);
+void cb_setUseAccel(bool val);
 
 LV_IMG_DECLARE(ui_img_back);    // assets\UI_IconSmall_Back.png
 

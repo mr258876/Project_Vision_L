@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Preferences.h>
 #include "ui.h"
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
@@ -74,4 +75,37 @@ void cb_loadSettingScreen(lv_event_t *e)
   ui_SettingScreen_screen_init();
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
   lv_async_call(delScr, ui_MenuScreen);
+}
+
+void cb_dispSettings(lv_event_t *e)
+{
+  if (info_hasProx)
+  {
+    if (setting_autoBright)
+      lv_obj_add_state(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED);
+  }
+  else
+  {
+    lv_obj_add_state(ui_SettingPanel2SW1Switch1, LV_STATE_DISABLED);
+  }
+
+  if (info_hasAccel)
+  {
+    if (setting_useAccel)
+      lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED);
+  }
+  else
+  {
+    lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED);
+  }
+}
+
+void cb_setAutoBright(bool val)
+{
+  prefs.putBool("useAutoBright", val);
+}
+
+void cb_setUseAccel(bool val)
+{
+  prefs.putBool("useAccelMeter", val);
 }

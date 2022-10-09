@@ -241,7 +241,7 @@ void ui_event_ResinScreen(lv_event_t *e)
     {
         switch (lv_event_get_key(e))
         {
-        case LV_KEY_DOWN:
+        case LV_KEY_PREV:
             cb_getDailyNoteFromResinScreen(e);
             break;
         }
@@ -366,6 +366,7 @@ void ui_event_SettingPanel2SW1Switch1(lv_event_t * e)
     lv_obj_t * target = lv_event_get_target(e);
     if(event_code == LV_EVENT_CLICKED) {
         _ui_state_modify(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
+        cb_setAutoBright(lv_obj_has_state(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED));
     }
 }
 
@@ -375,6 +376,16 @@ void ui_event_SettingPanel2SW2Switch1(lv_event_t * e)
     lv_obj_t * target = lv_event_get_target(e);
     if(event_code == LV_EVENT_CLICKED) {
         _ui_state_modify(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
+        cb_setUseAccel(lv_obj_has_state(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED));
+    }
+}
+
+void ui_event_SettingScreen(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_SCREEN_LOADED) {
+        cb_dispSettings(e);
     }
 }
 
@@ -778,7 +789,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingInfoPanelAboutLabel3, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingInfoPanelAboutLabel3, 0);
     lv_obj_set_y(ui_SettingInfoPanelAboutLabel3, 50);
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel3, "L0.2.0-Indev22A091");
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel3, "L0.2.0-Indev22A092");
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel3, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -806,6 +817,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_add_event_cb(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
 
     lv_obj_add_state(ui_SettingSideButton1, LV_STATE_PRESSED);
 }
