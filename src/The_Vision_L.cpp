@@ -1168,14 +1168,14 @@ void onDoubleClick()
     if (inEditMode)
     {
       inEditMode = false;
-      lv_obj_clear_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
+      lv_group_set_editing(ui_group, false);
       return;
     }
 
     if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
     {
       inEditMode = true;
-      lv_obj_add_state(lv_group_get_focused(ui_group), LV_STATE_PRESSED);
+      lv_group_set_editing(ui_group, true);
       return;
     }
   }

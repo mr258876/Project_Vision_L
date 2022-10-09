@@ -1,8 +1,3 @@
-// SquareLine LVGL GENERATED FILE
-// EDITOR VERSION: SquareLine Studio 1.0.5
-// LVGL VERSION: 8.2
-// PROJECT: The_Vision_L
-
 #ifndef _THE_VISION_L_UI_H
 #define _THE_VISION_L_UI_H
 
@@ -24,22 +19,40 @@ extern lv_obj_t * ui_StartupTitle2;
 extern lv_obj_t * ui_StartupLabel1;
 extern lv_obj_t * ui_StartupLabel2;
 extern lv_obj_t * ui_StartupSpinner;
+
 extern lv_obj_t * ui_SettingScreen;
-extern lv_obj_t * ui_SettingsTitlePanel;
-extern lv_obj_t * ui_SettingsTitle;
-extern lv_obj_t * ui_SettingsSidePanel;
-extern lv_obj_t * ui_Button1;
-extern lv_obj_t * ui_Label1;
-extern lv_obj_t * ui_Button2;
-extern lv_obj_t * ui_Label2;
-extern lv_obj_t * ui_Button3;
-extern lv_obj_t * ui_Label3;
-extern lv_obj_t * ui_Button4;
-extern lv_obj_t * ui_Label4;
-extern lv_obj_t * ui_Button5;
-extern lv_obj_t * ui_Label5;
-extern lv_obj_t * ui_SettingsInfoPanel;
+extern lv_obj_t * ui_SettingTitlePanel;
+extern lv_obj_t * ui_SettingTitleLabel;
+extern lv_obj_t * ui_SettingTitleBackButton;
+extern lv_obj_t * ui_SettingTitleBackButtonLabel;
+extern lv_obj_t * ui_SettingSidePanel;
+extern lv_obj_t * ui_SettingSideButton1;
+extern lv_obj_t * ui_SettingSideButton1Label;
+extern lv_obj_t * ui_SettingSideButton2;
+extern lv_obj_t * ui_SettingSideButton2Label;
+extern lv_obj_t * ui_SettingSideButton3;
+extern lv_obj_t * ui_SettingSideButton3Label;
+extern lv_obj_t * ui_SettingInfoPanel1;
+extern lv_obj_t * ui_SettingPanel1Label1;
+extern lv_obj_t * ui_SettingPanel1Label2;
+extern lv_obj_t * ui_SettingPanel1QR1;
+extern lv_obj_t * ui_SettingInfoPanel2;
+extern lv_obj_t * ui_SettingPanel2Label1;
+extern lv_obj_t * ui_SettingPanel2SW1;
+extern lv_obj_t * ui_SettingPanel2SW1Label1;
+extern lv_obj_t * ui_SettingPanel2SW1Switch1;
+extern lv_obj_t * ui_SettingPanel2SW2;
+extern lv_obj_t * ui_SettingPanel2SW2Label1;
+extern lv_obj_t * ui_SettingPanel2SW2Switch1;
+extern lv_obj_t * ui_SettingInfoPanelAbout;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel1;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel2;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel3;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel4;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel5;
+
 extern lv_obj_t * ui_VideoScreen;
+
 extern lv_obj_t * ui_MenuScreen;
 extern lv_obj_t * ui_MenuTitlePanel;
 extern lv_obj_t * ui_MenutitleLabel;
@@ -55,6 +68,7 @@ extern lv_obj_t * ui_MenuButton3Label;
 extern lv_obj_t * ui_MenuButton4;
 extern lv_obj_t * ui_MenuButton4Image;
 extern lv_obj_t * ui_MenuButton4Label;
+
 extern lv_obj_t * ui_ResinScreen;
 extern lv_obj_t * ui_DailyNotePanel;
 extern lv_obj_t * ui_NoteResinLabel;
@@ -66,6 +80,7 @@ extern lv_obj_t * ui_NoteHomeCoinImage;
 extern lv_obj_t * ui_NoteExpeditionsImage;
 extern lv_obj_t * ui_NoteTransformerImage;
 extern lv_obj_t * ui_NoteUpdateTimeLabel;
+
 extern lv_obj_t * ui_ClockScreen;
 extern lv_obj_t * ui_Horoscpoe1;
 extern lv_obj_t * ui_Horoscope2;

@@ -15,6 +15,7 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "lvgl.h": "c"
+        "lvgl.h": "c",
+        "functional": "c"
     }
 }
