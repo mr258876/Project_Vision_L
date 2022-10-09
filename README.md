@@ -37,8 +37,42 @@ LinkedList  https://github.com/ivanseidel/LinkedList
 - 从米游社API获取树脂🚧
 
 ## 使用方法
-### 切换元素(切换视频)
-- 短按两次距离传感器
+### L0.1版本
+- 短按两次距离传感器切换元素(切换视频)
+
+### L0.2版本及以上
+- 单击按钮将光标移至下一项
+- 双击按钮与按钮进行交互，或与无按钮屏幕进行交互(回到菜单)
+- 三击按钮将光标移至上一项，或与无按钮屏幕进行第二交互(切换元素/手动更新树脂数据)
+
+### 米游社/HoyoLab cookie设置
+- 打开SD卡根目录`Hoyolab.json`，并设定玩家id及米游社/Hoyolab cookie。文件格式参考如下：
+```
+{
+    "uid": "100000000",
+    "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值"
+}
+```
+- 对于米游社，请打开米游社并登录，随后将以下代码粘贴至浏览器控制台中获取cookie：
+```
+let cookie_keys = ['_MHYUUID', 'ltoken', 'ltuid', 'cookie_token', 'account_id'];
+var cookie = document.cookie;
+var Str_Num = cookie.indexOf('_MHYUUID=');
+var cookies = cookie.substring(Str_Num).split('; ');
+for(var i = 0; i < cookies.length; i++){
+    if(!cookie_keys.includes(cookies[i].split("=")[0])){
+        cookies.splice(i--,1);
+    }
+}
+cookie = '"cookie": "' + cookies.join('; ') + '"';
+var ask = confirm('按"确认"复制cookie至剪贴板');
+if (ask == true) {
+  copy(cookie);
+  msg = cookie
+} else {
+  msg = 'Cancel'
+}
+```
 
 ### 自定义元素顺序(自定义视频文件及顺序)
 - 打开SD卡根目录`playFiles.json`，并设定视频/图片文件顺序及路径。路径需要以盘符'S'开头。文件格式参考如下：
