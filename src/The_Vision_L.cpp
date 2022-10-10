@@ -780,6 +780,8 @@ void getDailyNoteFromResinScreen(void *parameter)
   String errMsg = "";
   bool updateRes = false;
 
+  info_updatingResinData = true;
+
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_label_set_text(ui_NoteUpdateTimeLabel, LV_SYMBOL_REFRESH "正在更新...");
@@ -787,6 +789,8 @@ void getDailyNoteFromResinScreen(void *parameter)
   }
 
   updateRes = getDailyNote(&nd, &errMsg);
+
+  info_updatingResinData = false;
 
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {

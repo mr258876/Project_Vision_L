@@ -98,9 +98,11 @@ extern lv_group_t * ui_group;
 
 extern lv_timer_t *ui_timer_ResinDispTimer;
 extern lv_timer_t *ui_timer_ClockTimer;
+extern lv_timer_t *ui_timer_ScrDelTimer;
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimer(lv_timer_t *timer);
+void cb_timer_ScrDelTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
 

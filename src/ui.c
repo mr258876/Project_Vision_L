@@ -98,6 +98,7 @@ lv_group_t *ui_group;
 
 lv_timer_t *ui_timer_ResinDispTimer;
 lv_timer_t *ui_timer_ClockTimer;
+lv_timer_t *ui_timer_ScrDelTimer;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16

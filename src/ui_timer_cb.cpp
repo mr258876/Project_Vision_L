@@ -4,13 +4,16 @@
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer)
 {
-    if (nd._last_update_time > 0)
+    if (info_updatingResinData)
     {
-        lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd._last_update_time) / 60));
+        lv_label_set_text(ui_NoteUpdateTimeLabel, LV_SYMBOL_REFRESH "正在更新...");
     }
     else
     {
-        lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
+        if (nd._last_update_time > 0)
+            lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd._last_update_time) / 60));
+        else
+            lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
     }
 
     lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd.resinRemain, nd.resinMax);
