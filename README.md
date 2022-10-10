@@ -9,20 +9,21 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 稳定版 / Stable Release
 - [L0.1.1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.1.1)
 ### 测试版 / Beta Release
-- None
+- [L0.2.0-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta1)
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22A092](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22A092)
+- None
 
 ## 支持库 / Referenced Libraries
 ```
 Adafruit BusIO  1.13.2
-ArduinoJson 6.19.4
-KXTJ3-1057  0.0.1
-LovyanGFX   0.4.18
-LVGL        8.3.2
-OneButton   2.0.3
-APDS-9930   https://github.com/Depau/APDS9930
-LinkedList  https://github.com/ivanseidel/LinkedList
+ArduinoJson     6.19.4
+KXTJ3-1057      0.0.1
+LovyanGFX       0.4.18
+LVGL            8.3.2
+OneButton       2.0.3
+APDS-9930       https://github.com/Depau/APDS9930
+LinkedList      https://github.com/ivanseidel/LinkedList
+RGB565_video    https://github.com/moononournation/RGB565_video
 ```
 
 ## 中文
