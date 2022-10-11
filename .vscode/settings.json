@@ -17,6 +17,11 @@
         "utility": "cpp",
         "lvgl.h": "c",
         "functional": "c",
-        "ui.h": "c"
+        "ui.h": "c",
+        "ui_multilanguage.h": "c",
+        "array": "cpp",
+        "string_view": "cpp",
+        "lv_hal_indev.h": "c",
+        "lv_indev.h": "c"
     }
 }

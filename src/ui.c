@@ -3,6 +3,7 @@
 
 #include "ui.h"
 #include "ui_helpers.h"
+#include "ui_multiLanguage.h"
 
 ///////////////////// VARIABLES ////////////////////
 void aniTitleSlideInY_Animation(lv_obj_t *TargetObject, int delay);
@@ -23,8 +24,8 @@ lv_obj_t *ui_SettingScreen;
 lv_obj_t *ui_SettingScreen;
 lv_obj_t *ui_SettingTitlePanel;
 lv_obj_t *ui_SettingTitleLabel;
-lv_obj_t * ui_SettingTitleBackButton;
-lv_obj_t * ui_SettingTitleBackButtonImg;
+lv_obj_t *ui_SettingTitleBackButton;
+lv_obj_t *ui_SettingTitleBackButtonImg;
 lv_obj_t *ui_SettingSidePanel;
 lv_obj_t *ui_SettingSideButton1;
 lv_obj_t *ui_SettingSideButton1Label;
@@ -44,6 +45,9 @@ lv_obj_t *ui_SettingPanel2SW1Switch1;
 lv_obj_t *ui_SettingPanel2SW2;
 lv_obj_t *ui_SettingPanel2SW2Label1;
 lv_obj_t *ui_SettingPanel2SW2Switch1;
+lv_obj_t *ui_SettingPanel2DP1;
+lv_obj_t *ui_SettingPanel2DP1Label1;
+lv_obj_t *ui_SettingPanel2DP1Dropdown1;
 lv_obj_t *ui_SettingInfoPanelAbout;
 lv_obj_t *ui_SettingInfoPanelAboutLabel1;
 lv_obj_t *ui_SettingInfoPanelAboutLabel2;
@@ -361,31 +365,55 @@ void ui_event_SettingSideButton3(lv_event_t *e)
     }
 }
 
-void ui_event_SettingPanel2SW1Switch1(lv_event_t * e)
+void ui_event_SettingPanel2SW1Switch1(lv_event_t *e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_CLICKED)
+    {
         _ui_state_modify(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
         cb_setAutoBright(lv_obj_has_state(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED));
     }
 }
 
-void ui_event_SettingPanel2SW2Switch1(lv_event_t * e)
+void ui_event_SettingPanel2SW2Switch1(lv_event_t *e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_CLICKED)
+    {
         _ui_state_modify(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
         cb_setUseAccel(lv_obj_has_state(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED));
     }
 }
 
-void ui_event_SettingScreen(lv_event_t * e)
+void ui_event_SettingPanel2DP1Dropdown1(lv_event_t *e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_SCREEN_LOADED) {
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_CLICKED)
+    {
+        lv_dropdown_open(ui_SettingPanel2DP1Dropdown1);
+        lv_obj_invalidate(ui_SettingScreen);
+        lv_obj_invalidate(lv_dropdown_get_list(ui_SettingPanel2DP1Dropdown1));
+        lv_obj_invalidate(lv_layer_top());
+    }
+    else if (event_code == LV_EVENT_VALUE_CHANGED)
+    {
+        cb_setLanguage(lv_dropdown_get_selected(ui_SettingPanel2DP1Dropdown1));
+
+        lv_obj_invalidate(ui_SettingScreen);
+        lv_obj_invalidate(lv_dropdown_get_list(ui_SettingPanel2DP1Dropdown1));
+        lv_obj_invalidate(lv_layer_top());
+    }
+}
+
+void ui_event_SettingScreen(lv_event_t *e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_SCREEN_LOADED)
+    {
         cb_dispSettings(e);
     }
 }
@@ -395,95 +423,68 @@ void ui_StartupScreen_screen_init(void)
 {
 
     // ui_StartupScreen
-
     ui_StartupScreen = lv_obj_create(NULL);
-
     lv_obj_clear_flag(ui_StartupScreen, LV_OBJ_FLAG_SCROLLABLE);
-
     lv_obj_add_event_cb(ui_StartupScreen, ui_event_StartupScreen, LV_EVENT_ALL, NULL);
     lv_obj_set_style_bg_color(ui_StartupScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_StartupScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_StartupTitle1
-
     ui_StartupTitle1 = lv_label_create(ui_StartupScreen);
-
     lv_obj_set_width(ui_StartupTitle1, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_StartupTitle1, LV_SIZE_CONTENT);
-
     lv_obj_set_x(ui_StartupTitle1, 25);
     lv_obj_set_y(ui_StartupTitle1, 55);
-
-    lv_label_set_text(ui_StartupTitle1, "The Vision L");
-
+    lv_label_set_text(ui_StartupTitle1, lang[curr_lang][0]); // "The Vision L"
     lv_obj_set_style_text_color(ui_StartupTitle1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_StartupTitle1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_StartupTitle1, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_StartupTitle2
-
     ui_StartupTitle2 = lv_label_create(ui_StartupScreen);
-
     lv_obj_set_width(ui_StartupTitle2, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_StartupTitle2, LV_SIZE_CONTENT);
-
     lv_obj_set_x(ui_StartupTitle2, 25);
     lv_obj_set_y(ui_StartupTitle2, 90);
-
-    lv_label_set_text(ui_StartupTitle2, "神之眼 L");
-
+    lv_label_set_text(ui_StartupTitle2, lang[curr_lang][1]); // "神之眼L"
     lv_obj_set_style_text_color(ui_StartupTitle2, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_StartupTitle2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_StartupTitle2, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_StartupLabel1
-
     ui_StartupLabel1 = lv_label_create(ui_StartupScreen);
-
-    lv_obj_set_width(ui_StartupLabel1, LV_SIZE_CONTENT);
+    lv_obj_set_width(ui_StartupLabel1, 120);
     lv_obj_set_height(ui_StartupLabel1, LV_SIZE_CONTENT);
-
     lv_obj_set_x(ui_StartupLabel1, 30);
     lv_obj_set_y(ui_StartupLabel1, 155);
-
-    lv_label_set_text(ui_StartupLabel1, "正在启动");
-
+    lv_label_set_long_mode(ui_StartupLabel1, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_StartupLabel1, lang[curr_lang][2]); // "正在启动"
     lv_obj_set_style_text_color(ui_StartupLabel1, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_StartupLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_StartupLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_StartupLabel2
-
     ui_StartupLabel2 = lv_label_create(ui_StartupScreen);
-
-    lv_obj_set_width(ui_StartupLabel2, LV_SIZE_CONTENT);
+    lv_obj_set_width(ui_StartupLabel2, 120);
     lv_obj_set_height(ui_StartupLabel2, LV_SIZE_CONTENT);
-
     lv_obj_set_x(ui_StartupLabel2, 30);
     lv_obj_set_y(ui_StartupLabel2, 180);
-
-    lv_label_set_text(ui_StartupLabel2, "请稍候...");
-
+    lv_label_set_long_mode(ui_StartupLabel2, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][3]); // "请稍候..."
     lv_obj_set_style_text_color(ui_StartupLabel2, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_StartupLabel2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_StartupLabel2, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // ui_StartupSpinner
-
     ui_StartupSpinner = lv_spinner_create(ui_StartupScreen, 1000, 90);
-
     lv_obj_set_width(ui_StartupSpinner, 45);
     lv_obj_set_height(ui_StartupSpinner, 45);
-
     lv_obj_set_x(ui_StartupSpinner, 165);
     lv_obj_set_y(ui_StartupSpinner, 155);
-
     lv_obj_clear_flag(ui_StartupSpinner, LV_OBJ_FLAG_CLICKABLE);
-
     lv_obj_set_style_arc_color(ui_StartupSpinner, lv_color_hex(0x313131), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_opa(ui_StartupSpinner, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_width(ui_StartupSpinner, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
-
     lv_obj_set_style_arc_color(ui_StartupSpinner, lv_color_hex(0xFFCC33), LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_opa(ui_StartupSpinner, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_width(ui_StartupSpinner, 8, LV_PART_INDICATOR | LV_STATE_DEFAULT);
@@ -507,7 +508,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingTitleLabel, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_SettingTitleLabel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingTitleLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_SettingTitleLabel, "设置");
+    lv_label_set_text(ui_SettingTitleLabel, lang[curr_lang][28]); // "设置"
     lv_obj_set_style_text_color(ui_SettingTitleLabel, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SettingTitleLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SettingTitleLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -516,8 +517,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingTitleBackButton, 30);
     lv_obj_set_height(ui_SettingTitleBackButton, 30);
     lv_obj_set_align(ui_SettingTitleBackButton, LV_ALIGN_LEFT_MID);
-    lv_obj_add_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
-    lv_obj_clear_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_add_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
+    lv_obj_clear_flag(ui_SettingTitleBackButton, LV_OBJ_FLAG_SCROLLABLE);    /// Flags
     lv_obj_set_style_radius(ui_SettingTitleBackButton, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_SettingTitleBackButton, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_SettingTitleBackButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -532,11 +533,11 @@ void ui_SettingScreen_screen_init(void)
 
     ui_SettingTitleBackButtonImg = lv_img_create(ui_SettingTitleBackButton);
     lv_img_set_src(ui_SettingTitleBackButtonImg, &ui_img_back);
-    lv_obj_set_width(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_SettingTitleBackButtonImg, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingTitleBackButtonImg, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
-    lv_obj_clear_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_add_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_SettingTitleBackButtonImg, LV_OBJ_FLAG_SCROLLABLE); /// Flags
 
     ui_SettingSidePanel = lv_obj_create(ui_SettingScreen);
     lv_obj_set_width(ui_SettingSidePanel, 60);
@@ -571,7 +572,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingSideButton1Label, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_SettingSideButton1Label, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingSideButton1Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_SettingSideButton1Label, "网络");
+    lv_label_set_text(ui_SettingSideButton1Label, lang[curr_lang][29]); // "网络"
     lv_obj_set_style_text_font(ui_SettingSideButton1Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingSideButton2 = lv_btn_create(ui_SettingSidePanel);
@@ -598,7 +599,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingSideButton2Label, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_SettingSideButton2Label, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingSideButton2Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_SettingSideButton2Label, "常规");
+    lv_label_set_text(ui_SettingSideButton2Label, lang[curr_lang][30]); // "常规"
     lv_obj_set_style_text_font(ui_SettingSideButton2Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingSideButton3 = lv_btn_create(ui_SettingSidePanel);
@@ -625,7 +626,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingSideButton3Label, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_SettingSideButton3Label, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingSideButton3Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_SettingSideButton3Label, "关于");
+    lv_label_set_text(ui_SettingSideButton3Label, lang[curr_lang][31]); // "关于"
     lv_obj_set_style_text_font(ui_SettingSideButton3Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingInfoPanel1 = lv_obj_create(ui_SettingScreen);
@@ -640,9 +641,9 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_border_side(ui_SettingInfoPanel1, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel1Label1 = lv_label_create(ui_SettingInfoPanel1);
-    lv_obj_set_width(ui_SettingPanel1Label1, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_SettingPanel1Label1, LV_SIZE_CONTENT); /// 1
-    lv_label_set_text(ui_SettingPanel1Label1, "网络配置");
+    lv_obj_set_width(ui_SettingPanel1Label1, LV_SIZE_CONTENT);      /// 1
+    lv_obj_set_height(ui_SettingPanel1Label1, LV_SIZE_CONTENT);     /// 1
+    lv_label_set_text(ui_SettingPanel1Label1, lang[curr_lang][32]); // "网络配置"
     lv_obj_set_style_text_color(ui_SettingPanel1Label1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SettingPanel1Label1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SettingPanel1Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -652,12 +653,11 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingPanel1Label2, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingPanel1Label2, 0);
     lv_obj_set_y(ui_SettingPanel1Label2, 25);
-    lv_label_set_text(ui_SettingPanel1Label2, "使用微信扫描QR码\n进行网络配置");
+    lv_label_set_text(ui_SettingPanel1Label2, lang[curr_lang][33]); // "使用微信扫描QR码\n进行网络配置"
     lv_obj_set_style_text_font(ui_SettingPanel1Label2, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel1QR1 = lv_qrcode_create(ui_SettingInfoPanel1, 100, lv_color_black(), lv_color_white());
-    const char *data = "http://iot.espressif.cn/configWXDeviceWiFi.html";
-    lv_qrcode_update(ui_SettingPanel1QR1, data, strlen(data));
+    lv_qrcode_update(ui_SettingPanel1QR1, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
     lv_obj_set_x(ui_SettingPanel1QR1, 0);
     lv_obj_set_y(ui_SettingPanel1QR1, 70);
     lv_obj_clear_flag(ui_SettingPanel1QR1, LV_OBJ_FLAG_SCROLLABLE); /// Flags
@@ -680,9 +680,9 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_border_side(ui_SettingInfoPanel2, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel2Label1 = lv_label_create(ui_SettingInfoPanel2);
-    lv_obj_set_width(ui_SettingPanel2Label1, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_SettingPanel2Label1, LV_SIZE_CONTENT); /// 1
-    lv_label_set_text(ui_SettingPanel2Label1, "常规设置");
+    lv_obj_set_width(ui_SettingPanel2Label1, LV_SIZE_CONTENT);      /// 1
+    lv_obj_set_height(ui_SettingPanel2Label1, LV_SIZE_CONTENT);     /// 1
+    lv_label_set_text(ui_SettingPanel2Label1, lang[curr_lang][36]); // "常规设置"
     lv_obj_set_style_text_color(ui_SettingPanel2Label1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SettingPanel2Label1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SettingPanel2Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -706,7 +706,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingPanel2SW1Label1, 100);
     lv_obj_set_height(ui_SettingPanel2SW1Label1, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingPanel2SW1Label1, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(ui_SettingPanel2SW1Label1, "自动亮度");
+    lv_label_set_long_mode(ui_SettingPanel2SW1Label1, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_SettingPanel2SW1Label1, lang[curr_lang][37]); // "自动亮度"
     lv_obj_set_style_text_font(ui_SettingPanel2SW1Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel2SW1Switch1 = lv_switch_create(ui_SettingPanel2SW1);
@@ -740,7 +741,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingPanel2SW2Label1, 100);
     lv_obj_set_height(ui_SettingPanel2SW2Label1, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_SettingPanel2SW2Label1, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(ui_SettingPanel2SW2Label1, "自动旋转");
+    lv_label_set_long_mode(ui_SettingPanel2SW2Label1, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_SettingPanel2SW2Label1, lang[curr_lang][38]); // "自动旋转"
     lv_obj_set_style_text_font(ui_SettingPanel2SW2Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel2SW2Switch1 = lv_switch_create(ui_SettingPanel2SW2);
@@ -755,6 +757,64 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_bg_color(ui_SettingPanel2SW2Switch1, lv_color_hex(0xCCBB99), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_set_style_bg_opa(ui_SettingPanel2SW2Switch1, 255, LV_PART_INDICATOR | LV_STATE_CHECKED);
 
+    ui_SettingPanel2DP1 = lv_obj_create(ui_SettingInfoPanel2);
+    lv_obj_set_width(ui_SettingPanel2DP1, 160);
+    lv_obj_set_height(ui_SettingPanel2DP1, 40);
+    lv_obj_set_x(ui_SettingPanel2DP1, 0);
+    lv_obj_set_y(ui_SettingPanel2DP1, 90);
+    lv_obj_clear_flag(ui_SettingPanel2DP1, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_set_style_radius(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_SettingPanel2DP1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_SettingPanel2DP1, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_SettingPanel2DP1Label1 = lv_label_create(ui_SettingPanel2DP1);
+    lv_obj_set_width(ui_SettingPanel2DP1Label1, 60);
+    lv_obj_set_height(ui_SettingPanel2DP1Label1, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_align(ui_SettingPanel2DP1Label1, LV_ALIGN_LEFT_MID);
+    lv_label_set_long_mode(ui_SettingPanel2DP1Label1, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_SettingPanel2DP1Label1, lang[curr_lang][51]); // "语言"
+    lv_obj_set_style_text_font(ui_SettingPanel2DP1Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_SettingPanel2DP1Dropdown1 = lv_dropdown_create(ui_SettingPanel2DP1);
+    lv_dropdown_set_options(ui_SettingPanel2DP1Dropdown1, lang[curr_lang][52]); // Language List
+    lv_dropdown_set_symbol(ui_SettingPanel2DP1Dropdown1, LV_SYMBOL_UP);
+    lv_obj_set_width(ui_SettingPanel2DP1Dropdown1, 90);
+    lv_obj_set_height(ui_SettingPanel2DP1Dropdown1, 30);
+    lv_obj_set_align(ui_SettingPanel2DP1Dropdown1, LV_ALIGN_RIGHT_MID);
+    lv_obj_add_flag(ui_SettingPanel2DP1Dropdown1, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
+    lv_obj_set_style_text_color(ui_SettingPanel2DP1Dropdown1, lv_color_hex(0x495366), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_SettingPanel2DP1Dropdown1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_SettingPanel2DP1Dropdown1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_SettingPanel2DP1Dropdown1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui_SettingPanel2DP1Dropdown1, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_SettingPanel2DP1Dropdown1, lv_color_hex(0xD8CDB9), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_SettingPanel2DP1Dropdown1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_SettingPanel2DP1Dropdown1, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_SettingPanel2DP1Dropdown1, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_SettingPanel2DP1Dropdown1, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_SettingPanel2DP1Dropdown1, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_SettingPanel2DP1Dropdown1, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_color(ui_SettingPanel2DP1Dropdown1, lv_color_hex(0xFFCC33), LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_outline_opa(ui_SettingPanel2DP1Dropdown1, 255, LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_outline_width(ui_SettingPanel2DP1Dropdown1, 4, LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_outline_pad(ui_SettingPanel2DP1Dropdown1, 0, LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_t *DropdownList = lv_dropdown_get_list(ui_SettingPanel2DP1Dropdown1);
+    lv_obj_set_style_text_color(DropdownList, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(DropdownList, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(DropdownList, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(DropdownList, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(DropdownList, lv_color_hex(0x495366), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(DropdownList, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(DropdownList, lv_color_hex(0x606979), LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_CHECKED);
+
     ui_SettingInfoPanelAbout = lv_obj_create(ui_SettingScreen);
     lv_obj_set_width(ui_SettingInfoPanelAbout, 180);
     lv_obj_set_height(ui_SettingInfoPanelAbout, 200);
@@ -768,9 +828,9 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_border_side(ui_SettingInfoPanelAbout, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingInfoPanelAboutLabel1 = lv_label_create(ui_SettingInfoPanelAbout);
-    lv_obj_set_width(ui_SettingInfoPanelAboutLabel1, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_SettingInfoPanelAboutLabel1, LV_SIZE_CONTENT); /// 1
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel1, "关于");
+    lv_obj_set_width(ui_SettingInfoPanelAboutLabel1, LV_SIZE_CONTENT);      /// 1
+    lv_obj_set_height(ui_SettingInfoPanelAboutLabel1, LV_SIZE_CONTENT);     /// 1
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel1, lang[curr_lang][39]); // "关于"
     lv_obj_set_style_text_color(ui_SettingInfoPanelAboutLabel1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SettingInfoPanelAboutLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel1, &ui_font_HanyiWenhei16ZhHans,
@@ -781,7 +841,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingInfoPanelAboutLabel2, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingInfoPanelAboutLabel2, 0);
     lv_obj_set_y(ui_SettingInfoPanelAboutLabel2, 25);
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel2, "Project Vision L");
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel2, lang[curr_lang][40]); // "Project Vision L"
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel2, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -790,7 +850,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingInfoPanelAboutLabel3, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingInfoPanelAboutLabel3, 0);
     lv_obj_set_y(ui_SettingInfoPanelAboutLabel3, 50);
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel3, "L0.2.0-Indev22A092");
+    lv_label_set_long_mode(ui_SettingInfoPanelAboutLabel3, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel3, info_visionVersion); // example: L0.2.0-Indev22A101 = 1st Indev release Oct 10, 2022
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel3, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -799,7 +860,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingInfoPanelAboutLabel4, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingInfoPanelAboutLabel4, 0);
     lv_obj_set_y(ui_SettingInfoPanelAboutLabel4, 100);
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel4, "@mr258876");
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][41]); // "@mr258876"
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel4, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -808,7 +869,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_height(ui_SettingInfoPanelAboutLabel5, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_SettingInfoPanelAboutLabel5, 0);
     lv_obj_set_y(ui_SettingInfoPanelAboutLabel5, 125);
-    lv_label_set_text(ui_SettingInfoPanelAboutLabel5, "If you like this\nproject, please\nstar on github!");
+    lv_label_set_text(ui_SettingInfoPanelAboutLabel5, lang[curr_lang][42]); // "If you like this\nproject, please\nstar on github!"
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel5, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -818,6 +879,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_add_event_cb(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel2DP1Dropdown1, ui_event_SettingPanel2DP1Dropdown1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
 
     lv_obj_add_state(ui_SettingSideButton1, LV_STATE_PRESSED);
@@ -857,7 +919,7 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_width(ui_MenutitleLabel, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_MenutitleLabel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_MenutitleLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_MenutitleLabel, "菜单");
+    lv_label_set_text(ui_MenutitleLabel, lang[curr_lang][24]); // "菜单"
     lv_obj_set_style_text_color(ui_MenutitleLabel, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_MenutitleLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenutitleLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -897,7 +959,7 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_x(ui_MenuButton1Label, 0);
     lv_obj_set_y(ui_MenuButton1Label, 30);
     lv_obj_set_align(ui_MenuButton1Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_MenuButton1Label, "神之眼");
+    lv_label_set_text(ui_MenuButton1Label, lang[curr_lang][25]); // "神之眼"
     lv_obj_set_style_text_color(ui_MenuButton1Label, lv_color_hex(0xC5C2BD), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_MenuButton1Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton1Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -937,7 +999,7 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_x(ui_MenuButton2Label, 0);
     lv_obj_set_y(ui_MenuButton2Label, 30);
     lv_obj_set_align(ui_MenuButton2Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_MenuButton2Label, "树脂");
+    lv_label_set_text(ui_MenuButton2Label, lang[curr_lang][26]); // "树脂"
     lv_obj_set_style_text_color(ui_MenuButton2Label, lv_color_hex(0xC5C2BD), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_MenuButton2Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton2Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -977,7 +1039,7 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_x(ui_MenuButton3Label, 0);
     lv_obj_set_y(ui_MenuButton3Label, 30);
     lv_obj_set_align(ui_MenuButton3Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_MenuButton3Label, "时钟");
+    lv_label_set_text(ui_MenuButton3Label, lang[curr_lang][27]); // "时钟"
     lv_obj_set_style_text_color(ui_MenuButton3Label, lv_color_hex(0xC5C2BD), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_MenuButton3Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton3Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1017,7 +1079,7 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_x(ui_MenuButton4Label, 0);
     lv_obj_set_y(ui_MenuButton4Label, 30);
     lv_obj_set_align(ui_MenuButton4Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_MenuButton4Label, "设置");
+    lv_label_set_text(ui_MenuButton4Label, lang[curr_lang][28]); // "设置"
     lv_obj_set_style_text_color(ui_MenuButton4Label, lv_color_hex(0xC5C2BD), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_MenuButton4Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton4Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);

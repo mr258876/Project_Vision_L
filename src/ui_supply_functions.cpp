@@ -3,6 +3,7 @@
 #include "ui.h"
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
+#include "ui_multiLanguage.h"
 
 void removeStyles(lv_obj_t *obj)
 {
@@ -113,14 +114,26 @@ void cb_dispSettings(lv_event_t *e)
   {
     lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED);
   }
+
+  lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
 }
 
 void cb_setAutoBright(bool val)
 {
+  setting_autoBright = val;
   prefs.putBool("useAutoBright", val);
 }
 
 void cb_setUseAccel(bool val)
 {
+  setting_useAccel = val;
   prefs.putBool("useAccelMeter", val);
+}
+
+void cb_setLanguage(uint16_t val)
+{
+  curr_lang = val;
+  prefs.putUInt("language", val);
+
+  esp_restart();  // Temporary solution
 }

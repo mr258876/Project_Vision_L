@@ -1,19 +1,20 @@
 #include <Arduino.h>
 #include "ui.h"
+#include "ui_multiLanguage.h"
 #include "The_Vision_L_globals.h"
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer)
 {
     if (info_updatingResinData)
     {
-        lv_label_set_text(ui_NoteUpdateTimeLabel, LV_SYMBOL_REFRESH "正在更新...");
+        lv_label_set_text(ui_NoteUpdateTimeLabel, lang[curr_lang][44]); // LV_SYMBOL_REFRESH "正在更新..."
     }
     else
     {
         if (nd._last_update_time > 0)
-            lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, "%d分钟前更新", (int)((time(NULL) - nd._last_update_time) / 60));
+            lv_label_set_text_fmt(ui_NoteUpdateTimeLabel, lang[curr_lang][43], (int)((time(NULL) - nd._last_update_time) / 60)); // "%d分钟前更新"
         else
-            lv_label_set_text(ui_NoteUpdateTimeLabel, "数据未初始化");
+            lv_label_set_text(ui_NoteUpdateTimeLabel, lang[curr_lang][45]); // "数据未初始化"
     }
 
     lv_label_set_text_fmt(ui_NoteResinLabel, "%d/%d", nd.resinRemain, nd.resinMax);
@@ -25,31 +26,34 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
     }
     else
     {
-        lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%.1fK/%.1fK", (nd.homecoinRemain / 1000.0), (nd.homecoinMax / 1000.0));
+        if (nd.homecoinRemain < 1000)
+            lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%d/%.1fK", nd.homecoinRemain, (nd.homecoinMax / 1000.0));
+        else
+            lv_label_set_text_fmt(ui_NoteHomeCoinLabel, "%.1fK/%.1fK", (nd.homecoinRemain / 1000.0), (nd.homecoinMax / 1000.0));
     }
 
     if (nd.hasTransformer)
     {
         if (nd.transformerRecoverTime > 86400)
         {
-            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d天", (int)(nd.transformerRecoverTime / 86400));
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, lang[curr_lang][46], (int)(nd.transformerRecoverTime / 86400));  // "%d天"
         }
         else if (nd.transformerRecoverTime > 3600)
         {
-            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d小时", (int)(nd.transformerRecoverTime / 3600));
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, lang[curr_lang][47], (int)(nd.transformerRecoverTime / 3600));   // "%d小时"
         }
         else if (nd.transformerRecoverTime > 60)
         {
-            lv_label_set_text_fmt(ui_NoteTransformerLabel, "%d分钟", (int)(nd.transformerRecoverTime / 60));
+            lv_label_set_text_fmt(ui_NoteTransformerLabel, lang[curr_lang][48], (int)(nd.transformerRecoverTime / 60)); // "%d分钟"
         }
         else
         {
-            lv_label_set_text(ui_NoteTransformerLabel, "已就绪");
+            lv_label_set_text(ui_NoteTransformerLabel, lang[curr_lang][49]);    // "已就绪"
         }
     }
     else
     {
-        lv_label_set_text(ui_NoteTransformerLabel, "未解锁");
+        lv_label_set_text(ui_NoteTransformerLabel, lang[curr_lang][50]);    // "未解锁"
     }
 }
 
