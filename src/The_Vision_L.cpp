@@ -39,6 +39,7 @@
 #include <esp_now.h>
 
 #include "Hoyoverse.h"
+#include "APIServer.h"
 
 // Freertos
 #include "rtc_wdt.h"
@@ -77,6 +78,7 @@ static LCD_panel_t LCD_panel = LCD_ST7789;
 static LGFX_Device gfx;
 
 /* SD Card*/
+FS *SDFS;
 
 /* LVGL Stuff */
 static uint32_t screenWidth;
@@ -175,7 +177,13 @@ void setup()
   loadSettings();
 
   // Check Hardware Pinout
-  getPinout(&po);
+  if (!info_hwType)
+  {
+    info_hwType = getHWType();
+    prefs.putUInt("hwType", info_hwType);
+  }
+  ESP_LOGW("getPinout", "HW_version:%d", info_hwType);
+  getVisionPinout(&po, info_hwType);
 
   // I2C pins
   if (po.I2C_SDA && po.I2C_SCL)
@@ -185,28 +193,33 @@ void setup()
 
   // SD card Pull-Ups
   pinMode(po.SD_DAT0, INPUT_PULLUP);
-  pinMode(po.SD_DAT1, INPUT_PULLUP);
-  pinMode(po.SD_DAT2, INPUT_PULLUP);
   pinMode(po.SD_DAT3, INPUT_PULLUP);
   pinMode(po.SD_CLK, INPUT_PULLUP);
   pinMode(po.SD_CMD, INPUT_PULLUP);
+  if (po.SD_DAT1) pinMode(po.SD_DAT1, INPUT_PULLUP);
+  if (po.SD_DAT2) pinMode(po.SD_DAT2, INPUT_PULLUP);
 
-// SD card init
-#ifdef _CONFIG_SD_USE_SPI_
-  SPIClass SDSPI = SPIClass(HSPI);
-  SDSPI.begin(CLK, DAT0, CMD, DAT3);
-  SD.begin(DAT3, SDSPI, 80000000);
-#else
-  if (po.SD_use_1_bit)
+  // SD card init
+  if (po.SD_use_sdmmc)
   {
-    SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, NULL, NULL, po.SD_DAT3);
+    if (po.SD_use_1_bit)
+    {
+      SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0);
+    }
+    else
+    {
+      SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
+    }
+    SD_MMC.begin("/sdcard", po.SD_use_1_bit);
   }
   else
   {
-    SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
+    SPIClass SDSPI = SPIClass(HSPI);
+    SDSPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
+    SD.begin(po.SD_DAT3, SDSPI, 80000000);
+
+    // SDFS = &SD;
   }
-  SD_MMC.begin("/sdcard", po.SD_use_1_bit);
-#endif
 
   // Buttons
   pwrButton = new OneButton(po.PWR_BTN, true);
@@ -215,7 +228,7 @@ void setup()
   pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
 
   // Init Display
-  LCDinit(&gfx, LCD_panel, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MISO, po.LCD_MOSI, po.SD_shared_spi, po.LCD_clock_speed);
+  LCDinit(&gfx, LCD_panel, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_shared_spi, po.LCD_clock_speed);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
@@ -275,12 +288,13 @@ void setup()
 
     LV_LOG_INFO("LVGL booted.");
   }
-
+  // startSettingServer();
   // vTaskDelete(NULL);
 }
 
 void loadSettings()
 {
+  info_hwType = prefs.getUInt("hwType", 0);
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
   curr_lang = prefs.getUInt("language", 0);

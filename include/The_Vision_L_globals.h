@@ -3,6 +3,7 @@
 #include "Hardware.h"
 
 /* Hardware Pinout */
+extern uint8_t info_hwType;
 extern Pinout po;
 
 /* Hoyolab Client */

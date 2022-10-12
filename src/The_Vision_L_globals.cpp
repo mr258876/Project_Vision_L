@@ -1,6 +1,7 @@
 #include "The_Vision_L_globals.h"
 
 /* Hardware Pinout */
+uint8_t info_hwType = 0;
 Pinout po;
 
 /* Hoyolab Client */
