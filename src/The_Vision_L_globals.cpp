@@ -1,5 +1,8 @@
 #include "The_Vision_L_globals.h"
 
+/* Hardware Pinout */
+Pinout po;
+
 /* Hoyolab Client */
 HoyoverseClient hyc;
 Notedata nd;

@@ -24,6 +24,7 @@
 
 #include "MjpegClass.h"
 
+#include "Wire.h"
 #if defined(_CONFIG_PROX_LIGHT_USE_APDS9960_)
 #include "APDS9960.h"
 #elif defined(_CONFIG_PROX_LIGHT_USE_APDS9930_)
@@ -69,13 +70,13 @@ typedef enum
 //
 ////////////////////////
 /* Pwr button & Audio */
-uint8_t audioPin = 25;
-uint8_t pwrBtnPin = 26;
 static OneButton *pwrButton;
 
 /* LCD screen */
 static LCD_panel_t LCD_panel = LCD_ST7789;
 static LGFX_Device gfx;
+
+/* SD Card*/
 
 /* LVGL Stuff */
 static uint32_t screenWidth;
@@ -98,7 +99,7 @@ bool mjpegInited = false;
 /* Proximity sensor Object */
 PROX_LIGHT_METER apds;
 uint16_t r, g, b, c;
-OneButton *proxButton;
+OneButton *proxButton = NULL;
 
 /* Accelmeter Object */
 #define LOW_POWER
@@ -166,14 +167,6 @@ void setup()
   // Disable watchdog write protect to feed manually
   rtc_wdt_protect_off();
 
-  // SD card Pull-Ups
-  pinMode(DAT0, INPUT_PULLUP);
-  pinMode(DAT1, INPUT_PULLUP);
-  pinMode(DAT2, INPUT_PULLUP);
-  pinMode(DAT3, INPUT_PULLUP);
-  pinMode(CLK, INPUT_PULLUP);
-  pinMode(CMD, INPUT_PULLUP);
-
   // Enable Serial output
   Serial.begin(115200);
 
@@ -181,42 +174,54 @@ void setup()
   prefs.begin("Project_Vision", false);
   loadSettings();
 
+  // Check Hardware Pinout
+  getPinout(&po);
+
+  // I2C pins
+  if (po.I2C_SDA && po.I2C_SCL)
+  {
+    Wire.setPins(po.I2C_SDA, po.I2C_SCL);
+  }
+
+  // SD card Pull-Ups
+  pinMode(po.SD_DAT0, INPUT_PULLUP);
+  pinMode(po.SD_DAT1, INPUT_PULLUP);
+  pinMode(po.SD_DAT2, INPUT_PULLUP);
+  pinMode(po.SD_DAT3, INPUT_PULLUP);
+  pinMode(po.SD_CLK, INPUT_PULLUP);
+  pinMode(po.SD_CMD, INPUT_PULLUP);
+
 // SD card init
 #ifdef _CONFIG_SD_USE_SPI_
   SPIClass SDSPI = SPIClass(HSPI);
   SDSPI.begin(CLK, DAT0, CMD, DAT3);
   SD.begin(DAT3, SDSPI, 80000000);
-#endif
-#ifdef _CONFIG_SD_USE_SDMMC_1BIT_
-  SD_MMC.begin("/sdcard", true);
-#endif
-#ifdef _CONFIG_SD_USE_SDMMC_4BIT_
-  SD_MMC.begin();
-#endif
-
-  // Check Screen panel
-  if (digitalRead(audioPin) == HIGH)
+#else
+  if (po.SD_use_1_bit)
   {
-    audioPin = 26;
-    pwrBtnPin = 25;
-    LCD_panel = LCD_GC9A01;
+    SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, NULL, NULL, po.SD_DAT3);
   }
+  else
+  {
+    SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
+  }
+  SD_MMC.begin("/sdcard", po.SD_use_1_bit);
+#endif
 
   // Buttons
-  pwrButton = new OneButton(pwrBtnPin, true);
-  proxButton = new OneButton(PROX_INT, true);
+  pwrButton = new OneButton(po.PWR_BTN, true);
 
   // Audio Output
-  pinMode(audioPin, INPUT_PULLDOWN);
+  pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
 
   // Init Display
-  LCDinit(&gfx, LCD_panel);
+  LCDinit(&gfx, LCD_panel, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MISO, po.LCD_MOSI, po.SD_shared_spi, po.LCD_clock_speed);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
   gfx.fillScreen(TFT_BLACK);
 
-  ledcAttachPin(LCD_BL, 1);     // assign TFT_BL pin to channel 1
+  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
   ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
   ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
@@ -342,35 +347,39 @@ vision_hw_result_t checkHardware(String *errMsg)
 {
   vision_hw_result_t hwErrDetected = VISION_HW_OK;
   // lv_label_set_text(ui_StartupLabel2, "检查距离传感器...");
-  if (apds.begin())
+  if (po.I2C_SDA && po.I2C_SCL)
   {
-    apds.enableColor(true);
-    apds.enableProximity(true);
-    apds.setProximityInterruptThreshold(0, PROX_THRS);
-    apds.enableProximityInterrupt();
-    pinMode(PROX_INT, INPUT_PULLUP);
-    proxButton->attachDoubleClick(onChangeVideo);
-    info_hasProx = true;
-  }
-  else
-  {
-    hwErrDetected = VISION_HW_SENSOR_ERR;
-    errMsg->concat(lang[curr_lang][9]); // "距离传感器初始化失败\n"
-    info_hasProx = false;
-    ESP_LOGE("checkHardware", "Prox sensor init failed!");
-  }
+    if (apds.begin())
+    {
+      apds.enableColor(true);
+      apds.enableProximity(true);
+      apds.setProximityInterruptThreshold(0, PROX_THRS);
+      apds.enableProximityInterrupt();
+      pinMode(po.PROX_INT, INPUT_PULLUP);
+      proxButton = new OneButton(po.PROX_INT, true);
+      proxButton->attachDoubleClick(onChangeVideo);
+      info_hasProx = true;
+    }
+    else
+    {
+      hwErrDetected = VISION_HW_SENSOR_ERR;
+      errMsg->concat(lang[curr_lang][9]); // "距离传感器初始化失败\n"
+      info_hasProx = false;
+      ESP_LOGE("checkHardware", "Prox sensor init failed!");
+    }
 
-  // lv_label_set_text(ui_StartupLabel2, "检查加速度计...");
-  if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
-  {
-    info_hasAccel = true;
-  }
-  else
-  {
-    hwErrDetected = VISION_HW_SENSOR_ERR;
-    errMsg->concat(lang[curr_lang][10]); // "加速度计初始化失败\n"
-    info_hasAccel = false;
-    ESP_LOGE("checkHardware", "Accel Meter init failed!");
+    // lv_label_set_text(ui_StartupLabel2, "检查加速度计...");
+    if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
+    {
+      info_hasAccel = true;
+    }
+    else
+    {
+      hwErrDetected = VISION_HW_SENSOR_ERR;
+      errMsg->concat(lang[curr_lang][10]); // "加速度计初始化失败\n"
+      info_hasAccel = false;
+      ESP_LOGE("checkHardware", "Accel Meter init failed!");
+    }
   }
 
   // lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
@@ -661,7 +670,7 @@ void hardwareSetup(void *parameter)
     }
   }
 
-  pinMode(pwrBtnPin, INPUT);
+  pinMode(po.PWR_BTN, INPUT);
   pwrButton->attachClick(onSingleClick);
   pwrButton->attachDoubleClick(onDoubleClick);
   pwrButton->attachMultiClick(onMultiClick);
@@ -946,8 +955,12 @@ void screenAdjustLoop(void *parameter)
 
     if (info_hasProx)
     {
-      proxButton->tick();
-      if (!digitalRead(PROX_INT))
+      if (proxButton)
+      {
+        proxButton->tick();
+      }
+
+      if (!digitalRead(po.PROX_INT))
       {
         if (apds.readProximity() < PROX_THRS)
         {

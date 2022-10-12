@@ -1,5 +1,9 @@
 #include "Hoyoverse.h"
 #include <Preferences.h>
+#include "Hardware.h"
+
+/* Hardware Pinout */
+extern Pinout po;
 
 /* Hoyolab Client */
 extern HoyoverseClient hyc;
