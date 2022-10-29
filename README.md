@@ -11,7 +11,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 测试版 / Beta Release
 - [L0.2.0-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta1)
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22A111](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22A111)
+- [L0.2.0-Indev22A291](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22A291)
 
 ## 支持库 / Referenced Libraries
 ```
@@ -29,6 +29,11 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 ## 中文
 
 该项目为硬件项目[璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")的对应固件。
+
+固件目前支持以下几种硬件：
+- [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (未测试)
 
 ## 开发进度
 
@@ -109,4 +114,18 @@ if (ask == true) {
 ![image](images/self_updating.png)
 
 
-<!-- ## English -->
+## English
+
+This is the firmware of hardware project [璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended").
+
+These following hardwares are also supported:
+- [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Untested)
+
+## Development Process
+
+- Picture/Video display✅
+- Setting menu🔲
+- Multi-language support✅
+- Resin data syncing✅
