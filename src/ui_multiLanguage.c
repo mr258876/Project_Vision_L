@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22A111";
+const char *info_visionVersion = "L0.2.0-Indev22A281";
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L
@@ -63,8 +63,8 @@ const char *zh_Hans[] = {
 };
 
 const char *en_US[] = {
-    "The Vision L",                                                         // 0 The Vision L
-    "",                                                                     // 1 The Vision L (Localized)
+    "",                                                                     // 0 The Vision L
+    "The Vision L",                                                         // 1 The Vision L (Localized)
     "Booting up",                                                           // 2 Booting up
     "Please wait...",                                                       // 3 Please wait...
     "Checking hardware...",                                                 // 4 Checking hardware...

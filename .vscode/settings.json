@@ -22,6 +22,12 @@
         "array": "cpp",
         "string_view": "cpp",
         "lv_hal_indev.h": "c",
-        "lv_indev.h": "c"
+        "lv_indev.h": "c",
+        "the_vision_l_globals.h": "c",
+        "fstream": "cpp",
+        "unordered_map": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp"
     }
 }

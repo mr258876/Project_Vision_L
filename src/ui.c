@@ -761,7 +761,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_width(ui_SettingPanel2DP1, 160);
     lv_obj_set_height(ui_SettingPanel2DP1, 40);
     lv_obj_set_x(ui_SettingPanel2DP1, 0);
-    lv_obj_set_y(ui_SettingPanel2DP1, 90);
+    lv_obj_set_y(ui_SettingPanel2DP1, 100);
     lv_obj_clear_flag(ui_SettingPanel2DP1, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_radius(ui_SettingPanel2DP1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_SettingPanel2DP1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);

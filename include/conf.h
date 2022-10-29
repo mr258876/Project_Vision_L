@@ -11,19 +11,6 @@
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-
-// SD Card Bus
-// #define _CONFIG_SD_USE_SPI_
-// #define _CONFIG_SD_USE_SDMMC_1BIT_
-#define _CONFIG_SD_USE_SDMMC_4BIT_
-
-// SD Card Class Name
-#if defined(_CONFIG_SD_USE_SPI_)
-#define SD_CLASS SD
-#else
-#define SD_CLASS SD_MMC
-#endif
-
 // Proximiter / Lightingmeter type
 #define _CONFIG_PROX_LIGHT_USE_APDS9930_
 // #define _CONFIG_PROX_LIGHT_USE_APDS9960_

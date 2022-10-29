@@ -13,9 +13,14 @@ extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
 
+// SPI 互斥锁
+extern bool is_SPI_shared;
+extern SemaphoreHandle_t SPIMutex;
+
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
 extern TaskHandle_t lvglLoopHandle;
+extern TaskHandle_t APILoopHandle;
 
 // ESP Timer 计时器
 extern esp_timer_handle_t resinCalcTimer;

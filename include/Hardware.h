@@ -13,9 +13,11 @@ struct Pinout
     uint8_t LCD_CS;
     uint8_t LCD_CLK;
     uint8_t LCD_MOSI;
+    uint8_t LCD_MISO;
 
     // LCD Panel type
     LCD_panel_t LCD_panel;
+    spi_host_device_t LCD_spi_host;
     uint32_t LCD_clock_speed;
     bool LCD_shared_spi;
 

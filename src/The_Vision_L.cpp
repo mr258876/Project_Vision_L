@@ -74,11 +74,11 @@ typedef enum
 static OneButton *pwrButton;
 
 /* LCD screen */
-static LCD_panel_t LCD_panel = LCD_ST7789;
 static LGFX_Device gfx;
 
 /* SD Card*/
-FS *SDFS;
+SPIClass SDSPI;
+fs::FS *sdfs;
 
 /* LVGL Stuff */
 static uint32_t screenWidth;
@@ -155,8 +155,12 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 
   if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
   {
+    if (is_SPI_shared)
+      xSemaphoreTake(SPIMutex, portMAX_DELAY);
     gfx.setAddrWindow(area->x1, area->y1, w, h);
     gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
+    if (is_SPI_shared)
+      xSemaphoreGive(SPIMutex);
     xSemaphoreGive(LCDMutex);
   }
 
@@ -177,12 +181,13 @@ void setup()
   loadSettings();
 
   // Check Hardware Pinout
-  if (!info_hwType)
+  uint8_t ht = getHWType();
+  if (ht && info_hwType != ht)
   {
-    info_hwType = getHWType();
+    info_hwType = ht;
     prefs.putUInt("hwType", info_hwType);
   }
-  ESP_LOGW("getPinout", "HW_version:%d", info_hwType);
+  ESP_LOGI("getPinout", "HW_version:%d", info_hwType);
   getVisionPinout(&po, info_hwType);
 
   // I2C pins
@@ -191,13 +196,24 @@ void setup()
     Wire.setPins(po.I2C_SDA, po.I2C_SCL);
   }
 
+  // Buttons
+  pwrButton = new OneButton(po.PWR_BTN, true);
+
+  // Audio Output
+  if (po.AUDIO_OUT)
+  {
+    pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
+  }
+
   // SD card Pull-Ups
   pinMode(po.SD_DAT0, INPUT_PULLUP);
   pinMode(po.SD_DAT3, INPUT_PULLUP);
   pinMode(po.SD_CLK, INPUT_PULLUP);
   pinMode(po.SD_CMD, INPUT_PULLUP);
-  if (po.SD_DAT1) pinMode(po.SD_DAT1, INPUT_PULLUP);
-  if (po.SD_DAT2) pinMode(po.SD_DAT2, INPUT_PULLUP);
+  if (po.SD_DAT1)
+    pinMode(po.SD_DAT1, INPUT_PULLUP);
+  if (po.SD_DAT2)
+    pinMode(po.SD_DAT2, INPUT_PULLUP);
 
   // SD card init
   if (po.SD_use_sdmmc)
@@ -211,24 +227,21 @@ void setup()
       SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
     }
     SD_MMC.begin("/sdcard", po.SD_use_1_bit);
+    sdfs = &SD_MMC;
   }
   else
   {
-    SPIClass SDSPI = SPIClass(HSPI);
-    SDSPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    SD.begin(po.SD_DAT3, SDSPI, 80000000);
+    SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD);
 
-    // SDFS = &SD;
+    digitalWrite(po.SD_DAT3, LOW);
+
+    SD.begin(po.SD_DAT3, SPI, 10000000);
+    sdfs = &SD;
   }
 
-  // Buttons
-  pwrButton = new OneButton(po.PWR_BTN, true);
-
-  // Audio Output
-  pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
-
   // Init Display
-  LCDinit(&gfx, LCD_panel, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_shared_spi, po.LCD_clock_speed);
+  is_SPI_shared = po.LCD_shared_spi;
+  LCDinit(&gfx, po.LCD_panel, po.LCD_spi_host, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_MISO, po.LCD_shared_spi, po.LCD_clock_speed);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
@@ -238,6 +251,7 @@ void setup()
   ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
   ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
+  // LVGL init
   lv_init();
 
   screenWidth = gfx.width();
@@ -278,18 +292,18 @@ void setup()
 
     ui_init();
 
-    xTaskCreatePinnedToCore(lvglLoop,        //任务函数
-                            "lvglLoop",      //任务名称
-                            8192,            //任务堆栈大小
-                            NULL,            //任务参数
-                            1,               //任务优先级
-                            &lvglLoopHandle, //任务句柄
-                            1);              //执行任务核心
+    xTaskCreatePinnedToCore(lvglLoop,        // 任务函数
+                            "lvglLoop",      // 任务名称
+                            8192,            // 任务堆栈大小
+                            NULL,            // 任务参数
+                            1,               // 任务优先级
+                            &lvglLoopHandle, // 任务句柄
+                            1);              // 执行任务核心
 
     LV_LOG_INFO("LVGL booted.");
   }
   // startSettingServer();
-  // vTaskDelete(NULL);
+  vTaskDelete(NULL);
 }
 
 void loadSettings()
@@ -297,7 +311,7 @@ void loadSettings()
   info_hwType = prefs.getUInt("hwType", 0);
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
-  curr_lang = prefs.getUInt("language", 0);
+  curr_lang = prefs.getUInt("language", 1);
 }
 
 void mjpegInit()
@@ -310,13 +324,13 @@ void mjpegInit()
   }
 
   // Create task of video playing
-  xTaskCreatePinnedToCore(playVideo,        //任务函数
-                          "playVideo",      //任务名称
-                          2048,             //任务堆栈大小
-                          NULL,             //任务参数
-                          2,                //任务优先级
-                          &playVideoHandle, //任务句柄
-                          1);               //执行任务核心
+  xTaskCreatePinnedToCore(playVideo,        // 任务函数
+                          "playVideo",      // 任务名称
+                          2048,             // 任务堆栈大小
+                          NULL,             // 任务参数
+                          2,                // 任务优先级
+                          &playVideoHandle, // 任务句柄
+                          1);               // 执行任务核心
 }
 
 static int switchScreenDelay = 0;
@@ -349,7 +363,7 @@ void switchToVideoScreen(void *delayTime)
     mjpegInited = true;
   }
 
-  vTaskDelete(NULL);
+  // vTaskDelete(NULL);
 }
 
 ////////////////////////
@@ -397,7 +411,14 @@ vision_hw_result_t checkHardware(String *errMsg)
   }
 
   // lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
-  switch (SD_CLASS.cardType())
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+  sdcard_type_t cardType;
+  if (po.SD_use_sdmmc)
+    cardType = SD_MMC.cardType();
+  else
+    cardType = SD.cardType();
+  switch (cardType)
   {
   case CARD_MMC:
   case CARD_SD:
@@ -413,6 +434,8 @@ vision_hw_result_t checkHardware(String *errMsg)
     errMsg->concat(lang[curr_lang][12]); // "未检测到SD卡\n"
     ESP_LOGE("checkHardware", "No SD Card!");
   }
+  if (is_SPI_shared)
+    xSemaphoreGive(SPIMutex);
 
   return hwErrDetected;
 }
@@ -422,15 +445,18 @@ bool checkSDFiles(String *errMsg)
   bool fileErrDetected = false;
   // lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
 
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+
   // 读取播放文件列表
-  File f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
+  File f = sdfs->open(PLAY_FILE_CONF_PATH);
   if (!f || f.isDirectory())
   {
     f.close();
-    f = SD_CLASS.open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
+    f = sdfs->open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
     f.print(PLAY_FILE_DEFAULT_CONF);
     f.close();
-    f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
+    f = sdfs->open(PLAY_FILE_CONF_PATH);
   }
 
   StaticJsonDocument<0> filter;
@@ -440,8 +466,14 @@ bool checkSDFiles(String *errMsg)
 
   DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
 
+  if (is_SPI_shared)
+    xSemaphoreGive(SPIMutex);
+
   if (error)
   {
+    errMsg->concat(PLAY_FILE_CONF_PATH);
+    errMsg->concat("\n");
+    errMsg->concat("JSON deser failed:\n");
     errMsg->concat(error.c_str());
     ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
     return true;
@@ -452,6 +484,8 @@ bool checkSDFiles(String *errMsg)
   JsonArray files = doc["files"];
 
   filePaths.clear();
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
   for (const char *fp : files)
   {
     lv_fs_res_t _input_op_result;
@@ -463,6 +497,8 @@ bool checkSDFiles(String *errMsg)
     }
     lv_fs_close(&_input);
   }
+  if (is_SPI_shared)
+    xSemaphoreGive(SPIMutex);
 
   files.clear();
   doc.clear();
@@ -474,21 +510,30 @@ bool checkSDFiles(String *errMsg)
     return true;
   }
 
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+
   // 读取米游社配置
-  f = SD_CLASS.open(HOYOLAB_CONF_PATH);
+  f = sdfs->open(HOYOLAB_CONF_PATH);
   if (!f || f.isDirectory())
   {
     f.close();
-    f = SD_CLASS.open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
+    f = sdfs->open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
     f.print(HOYOLAB_DEFAULT_CONF);
     f.close();
-    f = SD_CLASS.open(HOYOLAB_CONF_PATH);
+    f = sdfs->open(HOYOLAB_CONF_PATH);
   }
 
   error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
 
+  if (is_SPI_shared)
+    xSemaphoreGive(SPIMutex);
+
   if (error)
   {
+    errMsg->concat(HOYOLAB_CONF_PATH);
+    errMsg->concat("\n");
+    errMsg->concat("JSON deser failed:\n");
     errMsg->concat(error.c_str());
     ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
     return true;
@@ -516,13 +561,13 @@ void cb_switchToVideoScreen()
     xSemaphoreGive(LVGLMutex);
   }
 
-  xTaskCreatePinnedToCore(screenAdjustLoop, //任务函数
-                          "screenAdjLoop",  //任务名称
-                          4096,             //任务堆栈大小
-                          NULL,             //任务参数
-                          1,                //任务优先级
-                          NULL,             //任务句柄
-                          1);               //执行任务核心
+  xTaskCreatePinnedToCore(screenAdjustLoop, // 任务函数
+                          "screenAdjLoop",  // 任务名称
+                          4096,             // 任务堆栈大小
+                          NULL,             // 任务参数
+                          1,                // 任务优先级
+                          NULL,             // 任务句柄
+                          1);               // 执行任务核心
 
   // 每30s计算一次树脂数据
   esp_timer_create_args_t resinCalc_timer_args = {
@@ -540,13 +585,13 @@ void cb_switchToVideoScreen()
 
   switchScreenDelay = 2500;
 
-  xTaskCreatePinnedToCore(switchToVideoScreen,        //任务函数
-                          "swToVideoScr",             //任务名称
-                          4096,                       //任务堆栈大小
-                          (void *)&switchScreenDelay, //任务参数
-                          1,                          //任务优先级
-                          NULL,                       //任务句柄
-                          0);                         //执行任务核心
+  xTaskCreatePinnedToCore(switchToVideoScreen,        // 任务函数
+                          "swToVideoScr",             // 任务名称
+                          4096,                       // 任务堆栈大小
+                          (void *)&switchScreenDelay, // 任务参数
+                          1,                          // 任务优先级
+                          NULL,                       // 任务句柄
+                          0);                         // 执行任务核心
 }
 
 void hardwareSetup(void *parameter)
@@ -573,18 +618,6 @@ void hardwareSetup(void *parameter)
     }
     updateStatus = updateFromSD(&errMsg);
     fileErr = checkSDFiles(&errMsg);
-  }
-
-  if (updateStatus == VISION_UPDATE_STARTED)
-  {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-    {
-      lv_label_set_text(ui_StartupLabel1, lang[curr_lang][6]); // "正在升级..."
-      lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]); // "请不要关闭电源\n或拔出SD卡"
-      xSemaphoreGive(LVGLMutex);
-    }
-
-    vTaskDelete(NULL);
   }
 
   // 若检查到错误则停止启动
@@ -847,7 +880,11 @@ void getDailyNoteFromResinScreen(void *parameter)
 //*****************************/
 vision_update_result_t updateFromSD(String *errMsg)
 {
-  File f = SD_CLASS.open(UPDATE_FILE_PATH);
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+  File f = sdfs->open(UPDATE_FILE_PATH);
+  if (is_SPI_shared)
+    xSemaphoreGive(SPIMutex);
   if (!f)
   {
     f.close();
@@ -870,6 +907,15 @@ vision_update_result_t updateFromSD(String *errMsg)
     return VISION_UPDATE_START_FAIL;
   }
 
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text(ui_StartupLabel1, lang[curr_lang][6]); // "正在升级..."
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]); // "请不要关闭电源\n或拔出SD卡"
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  if (is_SPI_shared)
+    xSemaphoreTake(SPIMutex, portMAX_DELAY);
   ESP_LOGI("updateFromSD", "Start update...");
   Update.writeStream(f);
 
@@ -879,7 +925,7 @@ vision_update_result_t updateFromSD(String *errMsg)
     {
       ESP_LOGI("updateFromSD", "Update finished!");
       f.close();
-      SD_CLASS.remove(UPDATE_FILE_PATH);
+      sdfs->remove(UPDATE_FILE_PATH);
       esp_restart();
     }
   }
@@ -905,35 +951,35 @@ vision_update_result_t updateFromSD(String *errMsg)
 
 void cb_hardwareSetup(lv_event_t *e)
 {
-  xTaskCreatePinnedToCore(hardwareSetup,   //任务函数
-                          "hardwareSetup", //任务名称
-                          8192,            //任务堆栈大小
-                          NULL,            //任务参数
-                          1,               //任务优先级
-                          NULL,            //任务句柄
-                          0);              //执行任务核心
+  xTaskCreatePinnedToCore(hardwareSetup,   // 任务函数
+                          "hardwareSetup", // 任务名称
+                          8192,            // 任务堆栈大小
+                          NULL,            // 任务参数
+                          1,               // 任务优先级
+                          NULL,            // 任务句柄
+                          0);              // 执行任务核心
 }
 
 void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 {
-  xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, //任务函数
-                          "getDailyNoteFRS",           //任务名称
-                          6144,                        //任务堆栈大小
-                          NULL,                        //任务参数
-                          1,                           //任务优先级
-                          NULL,                        //任务句柄
-                          0);                          //执行任务核心
+  xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, // 任务函数
+                          "getDailyNoteFRS",           // 任务名称
+                          6144,                        // 任务堆栈大小
+                          NULL,                        // 任务参数
+                          1,                           // 任务优先级
+                          NULL,                        // 任务句柄
+                          0);                          // 执行任务核心
 }
 
 void cb_loadVideoScreen(lv_event_t *e)
 {
-  xTaskCreatePinnedToCore(loadVideoScreen,   //任务函数
-                          "loadVideoScreen", //任务名称
-                          3072,              //任务堆栈大小
-                          NULL,              //任务参数
-                          2,                 //任务优先级
-                          NULL,              //任务句柄
-                          1);                //执行任务核心
+  xTaskCreatePinnedToCore(loadVideoScreen,   // 任务函数
+                          "loadVideoScreen", // 任务名称
+                          3072,              // 任务堆栈大小
+                          NULL,              // 任务参数
+                          2,                 // 任务优先级
+                          NULL,              // 任务句柄
+                          1);                // 执行任务核心
 }
 
 ////////////////////
@@ -1215,13 +1261,13 @@ void onDoubleClick()
   }
   else
   {
-    xTaskCreatePinnedToCore(leaveVideoScreen, //任务函数
-                            "leaveVideoScr",  //任务名称
-                            3072,             //任务堆栈大小
-                            NULL,             //任务参数
-                            2,                //任务优先级
-                            NULL,             //任务句柄
-                            1);               //执行任务核心
+    xTaskCreatePinnedToCore(leaveVideoScreen, // 任务函数
+                            "leaveVideoScr",  // 任务名称
+                            3072,             // 任务堆栈大小
+                            NULL,             // 任务参数
+                            2,                // 任务优先级
+                            NULL,             // 任务句柄
+                            1);               // 执行任务核心
   }
 }
 

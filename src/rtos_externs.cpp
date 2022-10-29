@@ -12,9 +12,14 @@ SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
 
+/* SPI */
+bool is_SPI_shared = true;
+SemaphoreHandle_t SPIMutex = xSemaphoreCreateMutex();
+
 /* tsk handle */
 TaskHandle_t playVideoHandle;
 TaskHandle_t lvglLoopHandle;
+TaskHandle_t APILoopHandle;
 
 esp_timer_handle_t resinCalcTimer;
 esp_timer_handle_t resinSyncTimer;
