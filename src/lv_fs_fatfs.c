@@ -1,7 +1,7 @@
 /**
  * @file lv_fs_fatfs.c
- * 
-*/
+ *
+ */
 #if 1
 
 /*********************
@@ -11,6 +11,7 @@
 #include "conf.h"
 #include "ff.h"
 #include <lvgl.h>
+#include "rtos_externs.h"
 
 /*********************
  *      DEFINES
@@ -25,17 +26,17 @@
  **********************/
 static void fs_init(void);
 
-static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode);
-static lv_fs_res_t fs_close(lv_fs_drv_t * drv, void * file_p);
-static lv_fs_res_t fs_read(lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br);
-static lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_t btw, uint32_t * bw);
-static lv_fs_res_t fs_seek(lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence_t whence);
+static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
+static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p);
+static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
+static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw);
+static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence);
 // static lv_fs_res_t fs_size(lv_fs_drv_t * drv, void * file_p, uint32_t * size_p);
-static lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
+static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 
-static void * fs_dir_open(lv_fs_drv_t * drv, const char * path);
-static lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn);
-static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * rddir_p);
+static void *fs_dir_open(lv_fs_drv_t *drv, const char *path);
+static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *rddir_p, char *fn);
+static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p);
 
 /**********************
  *  STATIC VARIABLES
@@ -45,10 +46,10 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * rddir_p);
  * GLOBAL PROTOTYPES
  **********************/
 /* Create a type to store the required data about your file.*/
-typedef  FIL file_t;
+typedef FIL file_t;
 
 /*Similarly to `file_t` create a type for directory reading too */
-typedef  FF_DIR dir_t;
+typedef FF_DIR dir_t;
 
 /**********************
  *      MACROS
@@ -107,29 +108,40 @@ static void fs_init(void)
  * @param mode      read: FS_MODE_RD, write: FS_MODE_WR, both: FS_MODE_RD | FS_MODE_WR
  * @return          a file descriptor or NULL on error
  */
-static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
-{   
+static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
+{
     uint8_t flags = 0;
 
-    if(mode == LV_FS_MODE_WR) flags = FA_WRITE | FA_OPEN_ALWAYS;
-    else if(mode == LV_FS_MODE_RD) flags = FA_READ;
-    else if(mode == (LV_FS_MODE_WR | LV_FS_MODE_RD)) flags = FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
+    if (mode == LV_FS_MODE_WR)
+        flags = FA_WRITE | FA_OPEN_ALWAYS;
+    else if (mode == LV_FS_MODE_RD)
+        flags = FA_READ;
+    else if (mode == (LV_FS_MODE_WR | LV_FS_MODE_RD))
+        flags = FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
 
-    FIL * f = lv_mem_alloc(sizeof(FIL));
-    if(f == NULL) {
+    FIL *f = lv_mem_alloc(sizeof(FIL));
+    if (f == NULL)
+    {
         LV_LOG_ERROR("No memory to open file!");
         return NULL;
     }
 
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_open(f, path, flags);
+    xSemaphoreGive(SDMutex);
 
-    if(res == FR_OK) {
-    	f_lseek(f, 0);
-    	return f;
-    } else {
-        LV_LOG_ERROR("Unable to open file! Result was FRESULT:: %d , Path: %s", res, path);
+    if (res == FR_OK)
+    {
+        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        f_lseek(f, 0);
+        xSemaphoreGive(SDMutex);
+        return f;
+    }
+    else
+    {
+        LV_LOG_ERROR("Unable to open file! Result was FRESULT::%d, Path:%s", res, path);
         lv_mem_free(f);
-    	return NULL;
+        return NULL;
     }
 }
 
@@ -139,9 +151,12 @@ static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
  * @param file_p    pointer to a file_t variable. (opened with fs_open)
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_close (lv_fs_drv_t * drv, void * file_p)
+static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p)
 {
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
     f_close(file_p);
+    xSemaphoreGive(SDMutex);
+
     lv_mem_free(file_p);
     return LV_FS_RES_OK;
 }
@@ -155,11 +170,16 @@ static lv_fs_res_t fs_close (lv_fs_drv_t * drv, void * file_p)
  * @param br        the real number of read bytes (Byte Read)
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_read (lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br)
+static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
 {
-    FRESULT res = f_read(file_p, buf, btr, (UINT*)br);
-    if(res == FR_OK) return LV_FS_RES_OK;
-    else return LV_FS_RES_UNKNOWN;
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    FRESULT res = f_read(file_p, buf, btr, (UINT *)br);
+    xSemaphoreGive(SDMutex);
+
+    if (res == FR_OK)
+        return LV_FS_RES_OK;
+    else
+        return LV_FS_RES_UNKNOWN;
 }
 
 /**
@@ -171,11 +191,16 @@ static lv_fs_res_t fs_read (lv_fs_drv_t * drv, void * file_p, void * buf, uint32
  * @param bw        the number of real written bytes (Bytes Written). NULL if unused.
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_t btw, uint32_t * bw)
+static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw)
 {
-	FRESULT res = f_write(file_p, buf, btw, (UINT*)bw);
-    if(res == FR_OK) return LV_FS_RES_OK;
-    else return LV_FS_RES_UNKNOWN;
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    FRESULT res = f_write(file_p, buf, btw, (UINT *)bw);
+    xSemaphoreGive(SDMutex);
+
+    if (res == FR_OK)
+        return LV_FS_RES_OK;
+    else
+        return LV_FS_RES_UNKNOWN;
 }
 
 /**
@@ -186,8 +211,9 @@ static lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, 
  * @param whence    tells from where to interpret the `pos`. See @lv_fs_whence_t
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_seek (lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence_t whence)
+static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence)
 {
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
     switch (whence)
     {
     case LV_FS_SEEK_SET:
@@ -202,6 +228,8 @@ static lv_fs_res_t fs_seek (lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_f
     default:
         break;
     }
+    xSemaphoreGive(SDMutex);
+
     return LV_FS_RES_OK;
 }
 
@@ -212,9 +240,12 @@ static lv_fs_res_t fs_seek (lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_f
  * @param pos_p     pointer to to store the result
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_tell (lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
+static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 {
-	*pos_p = f_tell(((FIL *)file_p));
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    *pos_p = f_tell(((FIL *)file_p));
+    xSemaphoreGive(SDMutex);
+
     return LV_FS_RES_OK;
 }
 
@@ -224,13 +255,17 @@ static lv_fs_res_t fs_tell (lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
  * @param path      path to a directory
  * @return          pointer to the directory read descriptor or NULL on error
  */
-static void * fs_dir_open (lv_fs_drv_t * drv, const char *path)
+static void *fs_dir_open(lv_fs_drv_t *drv, const char *path)
 {
-    FF_DIR * d = lv_mem_alloc(sizeof(FF_DIR));
-    if(d == NULL) return NULL;
+    FF_DIR *d = lv_mem_alloc(sizeof(FF_DIR));
+    if (d == NULL)
+        return NULL;
 
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_opendir(d, path);
-    if(res != FR_OK) {
+    xSemaphoreGive(SDMutex);
+    if (res != FR_OK)
+    {
         lv_mem_free(d);
         d = NULL;
     }
@@ -245,23 +280,29 @@ static void * fs_dir_open (lv_fs_drv_t * drv, const char *path)
  * @param fn        pointer to a buffer to store the filename
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_dir_read (lv_fs_drv_t * drv, void * dir_p, char *fn)
+static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *dir_p, char *fn)
 {
-	FRESULT res;
-	FILINFO fno;
-	fn[0] = '\0';
+    FRESULT res;
+    FILINFO fno;
+    fn[0] = '\0';
 
-    do {
-    	res = f_readdir(dir_p, &fno);
-    	if(res != FR_OK) return LV_FS_RES_UNKNOWN;
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    do
+    {
+        res = f_readdir(dir_p, &fno);
+        if (res != FR_OK)
+            return LV_FS_RES_UNKNOWN;
 
-		if(fno.fattrib & AM_DIR) {
-			fn[0] = '/';
-			strcpy(&fn[1], fno.fname);
-		}
-		else strcpy(fn, fno.fname);
+        if (fno.fattrib & AM_DIR)
+        {
+            fn[0] = '/';
+            strcpy(&fn[1], fno.fname);
+        }
+        else
+            strcpy(fn, fno.fname);
 
-    } while(strcmp(fn, "/.") == 0 || strcmp(fn, "/..") == 0);
+    } while (strcmp(fn, "/.") == 0 || strcmp(fn, "/..") == 0);
+    xSemaphoreGive(SDMutex);
 
     return LV_FS_RES_OK;
 }
@@ -272,9 +313,12 @@ static lv_fs_res_t fs_dir_read (lv_fs_drv_t * drv, void * dir_p, char *fn)
  * @param rddir_p   pointer to an initialized 'lv_fs_dir_t' variable
  * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
  */
-static lv_fs_res_t fs_dir_close (lv_fs_drv_t * drv, void * dir_p)
+static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *dir_p)
 {
-	  f_closedir(dir_p);
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    f_closedir(dir_p);
+    xSemaphoreGive(SDMutex);
+    
     lv_mem_free(dir_p);
     return LV_FS_RES_OK;
 }

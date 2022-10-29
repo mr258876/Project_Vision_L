@@ -7,14 +7,14 @@
 
 /* mutex */
 SemaphoreHandle_t LVGLMutex = xSemaphoreCreateMutex();
-SemaphoreHandle_t LCDMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
 
 /* SPI */
-bool is_SPI_shared = true;
-SemaphoreHandle_t SPIMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t SDMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t LCDMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t *LCDMutexptr = nullptr;
 
 /* tsk handle */
 TaskHandle_t playVideoHandle;

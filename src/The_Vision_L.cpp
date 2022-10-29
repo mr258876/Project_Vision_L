@@ -153,15 +153,11 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
 
-  if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
+  if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
   {
-    if (is_SPI_shared)
-      xSemaphoreTake(SPIMutex, portMAX_DELAY);
     gfx.setAddrWindow(area->x1, area->y1, w, h);
     gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
-    if (is_SPI_shared)
-      xSemaphoreGive(SPIMutex);
-    xSemaphoreGive(LCDMutex);
+    xSemaphoreGive(*LCDMutexptr);
   }
 
   lv_disp_flush_ready(disp);
@@ -205,6 +201,16 @@ void setup()
     pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
   }
 
+  // SPI Mutex
+  if (po.LCD_shared_spi)
+  {
+    LCDMutexptr = &SDMutex;
+  }
+  else
+  {
+    LCDMutexptr = &LCDMutex;
+  }
+
   // SD card Pull-Ups
   pinMode(po.SD_DAT0, INPUT_PULLUP);
   pinMode(po.SD_DAT3, INPUT_PULLUP);
@@ -214,6 +220,17 @@ void setup()
     pinMode(po.SD_DAT1, INPUT_PULLUP);
   if (po.SD_DAT2)
     pinMode(po.SD_DAT2, INPUT_PULLUP);
+
+  // Init Display
+  LCDinit(&gfx, po.LCD_panel, po.LCD_spi_host, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_MISO, po.LCD_shared_spi, po.LCD_clock_speed);
+  gfx.init();
+  gfx.setColorDepth(16);
+  gfx.setSwapBytes(false);
+  gfx.fillScreen(TFT_BLACK);
+
+  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
+  ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
+  ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
   // SD card init
   if (po.SD_use_sdmmc)
@@ -231,25 +248,11 @@ void setup()
   }
   else
   {
-    SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD);
-
+    SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
     digitalWrite(po.SD_DAT3, LOW);
-
     SD.begin(po.SD_DAT3, SPI, 10000000);
     sdfs = &SD;
   }
-
-  // Init Display
-  is_SPI_shared = po.LCD_shared_spi;
-  LCDinit(&gfx, po.LCD_panel, po.LCD_spi_host, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_MISO, po.LCD_shared_spi, po.LCD_clock_speed);
-  gfx.init();
-  gfx.setColorDepth(16);
-  gfx.setSwapBytes(false);
-  gfx.fillScreen(TFT_BLACK);
-
-  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
-  ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
-  ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
   // LVGL init
   lv_init();
@@ -363,7 +366,7 @@ void switchToVideoScreen(void *delayTime)
     mjpegInited = true;
   }
 
-  // vTaskDelete(NULL);
+  vTaskDelete(NULL);
 }
 
 ////////////////////////
@@ -411,8 +414,7 @@ vision_hw_result_t checkHardware(String *errMsg)
   }
 
   // lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
   sdcard_type_t cardType;
   if (po.SD_use_sdmmc)
     cardType = SD_MMC.cardType();
@@ -434,8 +436,7 @@ vision_hw_result_t checkHardware(String *errMsg)
     errMsg->concat(lang[curr_lang][12]); // "未检测到SD卡\n"
     ESP_LOGE("checkHardware", "No SD Card!");
   }
-  if (is_SPI_shared)
-    xSemaphoreGive(SPIMutex);
+  xSemaphoreGive(SDMutex);
 
   return hwErrDetected;
 }
@@ -444,30 +445,28 @@ bool checkSDFiles(String *errMsg)
 {
   bool fileErrDetected = false;
   // lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
-
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
-
-  // 读取播放文件列表
-  File f = sdfs->open(PLAY_FILE_CONF_PATH);
-  if (!f || f.isDirectory())
-  {
-    f.close();
-    f = sdfs->open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
-    f.print(PLAY_FILE_DEFAULT_CONF);
-    f.close();
-    f = sdfs->open(PLAY_FILE_CONF_PATH);
-  }
-
+  File f;
   StaticJsonDocument<0> filter;
   filter.set(true);
-
   StaticJsonDocument<JSON_CONF_BUFFER_SIZE> doc;
+  DeserializationError error;
 
-  DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    // 读取播放文件列表
+    File f = sdfs->open(PLAY_FILE_CONF_PATH);
+    if (!f || f.isDirectory())
+    {
+      f.close();
+      f = sdfs->open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
+      f.print(PLAY_FILE_DEFAULT_CONF);
+      f.close();
+      f = sdfs->open(PLAY_FILE_CONF_PATH);
+    }
 
-  if (is_SPI_shared)
-    xSemaphoreGive(SPIMutex);
+    error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+  }
+  xSemaphoreGive(SDMutex);
 
   if (error)
   {
@@ -484,8 +483,7 @@ bool checkSDFiles(String *errMsg)
   JsonArray files = doc["files"];
 
   filePaths.clear();
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+
   for (const char *fp : files)
   {
     lv_fs_res_t _input_op_result;
@@ -497,8 +495,6 @@ bool checkSDFiles(String *errMsg)
     }
     lv_fs_close(&_input);
   }
-  if (is_SPI_shared)
-    xSemaphoreGive(SPIMutex);
 
   files.clear();
   doc.clear();
@@ -510,24 +506,22 @@ bool checkSDFiles(String *errMsg)
     return true;
   }
 
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
-
-  // 读取米游社配置
-  f = sdfs->open(HOYOLAB_CONF_PATH);
-  if (!f || f.isDirectory())
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
   {
-    f.close();
-    f = sdfs->open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
-    f.print(HOYOLAB_DEFAULT_CONF);
-    f.close();
+    // 读取米游社配置
     f = sdfs->open(HOYOLAB_CONF_PATH);
+    if (!f || f.isDirectory())
+    {
+      f.close();
+      f = sdfs->open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
+      f.print(HOYOLAB_DEFAULT_CONF);
+      f.close();
+      f = sdfs->open(HOYOLAB_CONF_PATH);
+    }
+
+    error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
   }
-
-  error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
-
-  if (is_SPI_shared)
-    xSemaphoreGive(SPIMutex);
+  xSemaphoreGive(SDMutex);
 
   if (error)
   {
@@ -880,11 +874,9 @@ void getDailyNoteFromResinScreen(void *parameter)
 //*****************************/
 vision_update_result_t updateFromSD(String *errMsg)
 {
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
   File f = sdfs->open(UPDATE_FILE_PATH);
-  if (is_SPI_shared)
-    xSemaphoreGive(SPIMutex);
+  xSemaphoreGive(SDMutex);
   if (!f)
   {
     f.close();
@@ -914,10 +906,10 @@ vision_update_result_t updateFromSD(String *errMsg)
     xSemaphoreGive(LVGLMutex);
   }
 
-  if (is_SPI_shared)
-    xSemaphoreTake(SPIMutex, portMAX_DELAY);
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
   ESP_LOGI("updateFromSD", "Start update...");
   Update.writeStream(f);
+  xSemaphoreGive(SDMutex);
 
   if (Update.end())
   {
@@ -1061,12 +1053,12 @@ void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
         {
           gfx.setRotation(toRotate);
           rotation = toRotate;
           lv_obj_invalidate(lv_scr_act());
-          xSemaphoreGive(LCDMutex);
+          xSemaphoreGive(*LCDMutexptr);
         }
       }
     }

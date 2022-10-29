@@ -8,14 +8,14 @@
 
 // FreeRTOS互斥锁
 extern SemaphoreHandle_t LVGLMutex;
-extern SemaphoreHandle_t LCDMutex;
 extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
 
 // SPI 互斥锁
-extern bool is_SPI_shared;
-extern SemaphoreHandle_t SPIMutex;
+extern SemaphoreHandle_t SDMutex;
+extern SemaphoreHandle_t LCDMutex;
+extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI bus
 
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
