@@ -27,7 +27,7 @@ struct Notedata
 
 typedef enum
 {
-    HOYO_CLI_HTTP_OPEN_FAIL = -5,
+    HOYO_CLI_HTTP_OPEN_FAIL = -6,
     HOYO_CLI_HTTP_READ_FAIL,
     HOYO_CLI_JSON_DESER_FAIL,
     HOYO_CLI_RESP_ERR,

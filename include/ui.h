@@ -108,6 +108,8 @@ void cb_timer_ClockTimer(lv_timer_t *timer);
 void cb_timer_ScrDelTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
+void cb_startWifiReConfigure(lv_event_t * e);
+void cb_stopWifiReConfigure(lv_event_t * e);
 
 void cb_dispSettings(lv_event_t * e);
 void cb_getDailyNoteFromResinScreen(lv_event_t * e);

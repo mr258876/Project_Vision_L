@@ -20,6 +20,7 @@ extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI b
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
 extern TaskHandle_t lvglLoopHandle;
+extern TaskHandle_t wifiConfigHandle;
 extern TaskHandle_t APILoopHandle;
 
 // ESP Timer 计时器

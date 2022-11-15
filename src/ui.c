@@ -412,10 +412,19 @@ void ui_event_SettingScreen(lv_event_t *e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t *target = lv_event_get_target(e);
-    if (event_code == LV_EVENT_SCREEN_LOADED)
+    if (event_code == LV_EVENT_SCREEN_LOAD_START)
+    {
+        cb_startWifiReConfigure(e);
+    }
+    else if (event_code == LV_EVENT_SCREEN_LOADED)
     {
         cb_dispSettings(e);
     }
+    else if (event_code == LV_EVENT_DELETE)
+    {
+        cb_stopWifiReConfigure(e);
+    }
+    
 }
 
 ///////////////////// SCREENS ////////////////////

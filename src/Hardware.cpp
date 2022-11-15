@@ -3,29 +3,27 @@
 uint8_t getHWType()
 {
     pinMode(26, INPUT_PULLUP);
-    pinMode(23, INPUT_PULLUP);
-    pinMode(18, INPUT_PULLUP);
-    pinMode(16, INPUT_PULLUP);
-
-    ESP_LOGI("getHWType", "Pin 26:%d", digitalRead(26));
-    ESP_LOGI("getHWType", "Pin 23:%d", digitalRead(23));
-    ESP_LOGI("getHWType", "Pin 18:%d", digitalRead(18));
-    ESP_LOGI("getHWType", "Pin 16:%d", digitalRead(16));
-
     if (digitalRead(26) == LOW)
         // 璃月神之眼挂件 Extended
         // https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended
         return 1;
+    ESP_LOGI("getHWType", "Pin 26:%d", digitalRead(26));
 
+    pinMode(23, INPUT_PULLUP);
+    pinMode(18, INPUT_PULLUP);
     if (digitalRead(23) == LOW && digitalRead(18) == HIGH)
         // 璃月神之眼挂件
         // https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian
         return 2;
+    ESP_LOGI("getHWType", "Pin 23:%d", digitalRead(23));
+    ESP_LOGI("getHWType", "Pin 18:%d", digitalRead(18));
 
+    pinMode(16, INPUT_PULLUP);
     if (digitalRead(16) == LOW)
         // 神之眼挂件V1.2_ESP32U
         // https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u
         return 3;
+    ESP_LOGI("getHWType", "Pin 16:%d", digitalRead(16));
 
     return 0;
 }

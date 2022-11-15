@@ -20,6 +20,7 @@ SemaphoreHandle_t *LCDMutexptr = nullptr;
 TaskHandle_t playVideoHandle;
 TaskHandle_t lvglLoopHandle;
 TaskHandle_t APILoopHandle;
+TaskHandle_t wifiConfigHandle;
 
 esp_timer_handle_t resinCalcTimer;
 esp_timer_handle_t resinSyncTimer;

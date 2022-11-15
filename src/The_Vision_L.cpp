@@ -117,7 +117,7 @@ void loadSettings();
 bool checkSDFiles(String *errMsg);
 vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
-void wifiConfigure();
+void wifiConfigure(void *parameter);
 bool getDailyNote(Notedata *nd, String *errMsg);
 void resinCalc(void *parameter);
 bool connectWiFi();
@@ -177,9 +177,9 @@ void setup()
   loadSettings();
 
   // Check Hardware Pinout
-  uint8_t ht = getHWType();
-  if (ht && info_hwType != ht)
+  if (!info_hwType)
   {
+    uint8_t ht = getHWType();
     info_hwType = ht;
     prefs.putUInt("hwType", info_hwType);
   }
@@ -249,8 +249,7 @@ void setup()
   else
   {
     SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    digitalWrite(po.SD_DAT3, LOW);
-    SD.begin(po.SD_DAT3, SPI, 10000000);
+    SD.begin(po.SD_DAT3);
     sdfs = &SD;
   }
 
@@ -412,6 +411,11 @@ vision_hw_result_t checkHardware(String *errMsg)
       ESP_LOGE("checkHardware", "Accel Meter init failed!");
     }
   }
+  else
+  {
+    setting_autoBright = false;
+    setting_useAccel = false;
+  }
 
   // lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
   xSemaphoreTake(SDMutex, portMAX_DELAY);
@@ -465,6 +469,7 @@ bool checkSDFiles(String *errMsg)
     }
 
     error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+    f.close();
   }
   xSemaphoreGive(SDMutex);
 
@@ -477,8 +482,6 @@ bool checkSDFiles(String *errMsg)
     ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
     return true;
   }
-
-  f.close();
 
   JsonArray files = doc["files"];
 
@@ -520,6 +523,7 @@ bool checkSDFiles(String *errMsg)
     }
 
     error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+    f.close();
   }
   xSemaphoreGive(SDMutex);
 
@@ -532,8 +536,6 @@ bool checkSDFiles(String *errMsg)
     ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
     return true;
   }
-
-  f.close();
 
   const char *uid = doc["uid"];
   const char *cookie = doc["cookie"];
@@ -678,7 +680,7 @@ void hardwareSetup(void *parameter)
       xSemaphoreGive(LVGLMutex);
     }
 
-    wifiConfigure();
+    wifiConfigure(NULL);
 
     vTaskDelete(NULL);
   }
@@ -721,7 +723,7 @@ void hardwareSetup(void *parameter)
   vTaskDelete(NULL);
 }
 
-void wifiConfigure()
+void wifiConfigure(void *parameter)
 {
   // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 
@@ -907,22 +909,24 @@ vision_update_result_t updateFromSD(String *errMsg)
   }
 
   xSemaphoreTake(SDMutex, portMAX_DELAY);
-  ESP_LOGI("updateFromSD", "Start update...");
-  Update.writeStream(f);
-  xSemaphoreGive(SDMutex);
-
-  if (Update.end())
   {
-    if (Update.isFinished())
-    {
-      ESP_LOGI("updateFromSD", "Update finished!");
-      f.close();
-      sdfs->remove(UPDATE_FILE_PATH);
-      esp_restart();
-    }
-  }
+    ESP_LOGI("updateFromSD", "Start update...");
+    Update.writeStream(f);
 
-  f.close();
+    if (Update.end())
+    {
+      if (Update.isFinished())
+      {
+        ESP_LOGI("updateFromSD", "Update finished!");
+        f.close();
+        sdfs->remove(UPDATE_FILE_PATH);
+        esp_restart();
+      }
+    }
+
+    f.close();
+  }
+  xSemaphoreGive(SDMutex);
 
   ESP_LOGE("updateFromSD", "Update failed!");
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -972,6 +976,24 @@ void cb_loadVideoScreen(lv_event_t *e)
                           2,                 // 任务优先级
                           NULL,              // 任务句柄
                           1);                // 执行任务核心
+}
+
+void cb_startWifiReConfigure(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(wifiConfigure,     // 任务函数
+                          "wifiConfigure",   // 任务名称
+                          4096,              // 任务堆栈大小
+                          NULL,              // 任务参数
+                          1,                 // 任务优先级
+                          &wifiConfigHandle, // 任务句柄
+                          1);                // 执行任务核心
+}
+
+void cb_stopWifiReConfigure(lv_event_t *e)
+{
+  vTaskDelete(wifiConfigHandle);
+  WiFi.stopSmartConfig();
+  WiFi.mode(WIFI_OFF);
 }
 
 ////////////////////
@@ -1157,7 +1179,14 @@ bool getDailyNote(Notedata *nd, String *errMsg)
 
     if (r < 0)
     {
-      errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
+      if (nd->respCode == 1034)
+      {
+        errMsg->concat(lang[curr_lang][53]); // "错误1034：\n请使用米游社app查看体力后重试\n"
+      }
+      else
+      {
+        errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
+      }
       res = false;
     }
     else if (r == 0)
