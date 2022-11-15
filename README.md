@@ -11,7 +11,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 测试版 / Beta Release
 - [L0.2.0-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta1)
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22A292](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22A292)
+- [L0.2.0-Indev22B161](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B161)
 
 ## 支持库 / Referenced Libraries
 ```
@@ -32,13 +32,13 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 
 固件目前支持以下几种硬件：
 - [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
-- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (未测试)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (SD卡存在BUG)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (未测试，预计SD卡存在BUG)
 
 ## 开发进度
 
 - 显示图片/视频✅
-- 设置菜单/管理界面🔲
+- 设置菜单✅/管理界面🔲
 - 多语言支持✅
 - 从米游社API获取树脂✅
 
@@ -113,6 +113,13 @@ if (ask == true) {
 2. 将SD卡插入神之眼，神之眼会自动开始升级过程。
 ![image](images/self_updating.png)
 
+## 已知问题
+- 使用微信AirKiss协议进行配网时，无法使用密码为空的SSID进行配网
+- 当屏幕与SD卡共享一个SPI总线时，无法正确播放SD卡中视频文件
+
+## FAQ
+### 为什么获取体力时会出现“错误1034”？
+- 受米游社风控策略影响，部分情况米游社api会直接返回错误1034。目前的解决办法为在手机上使用米游社app查询体力并签到，随后神之眼上的树脂功能将恢复正常。
 
 ## English
 
@@ -120,12 +127,12 @@ This is the firmware of hardware project [璃月神之眼 Extended]("https://osh
 
 These following hardwares are also supported:
 - [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
-- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Untested)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (Issues with SD card)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Untested, Issues with SD card)
 
 ## Development Process
 
 - Picture/Video display✅
-- Setting menu🔲
+- Setting menu✅/Management webpage🔲
 - Multi-language support✅
 - Resin data syncing✅
