@@ -308,12 +308,14 @@ void setup()
   vTaskDelete(NULL);
 }
 
+// Load Settings From NVS
 void loadSettings()
 {
   info_hwType = prefs.getUInt("hwType", 0);
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
   curr_lang = prefs.getUInt("language", 1);
+  info_deviceGuid = prefs.getString("deviceGuid", "");
 }
 
 void mjpegInit()
@@ -539,7 +541,29 @@ bool checkSDFiles(String *errMsg)
 
   const char *uid = doc["uid"];
   const char *cookie = doc["cookie"];
+  const char *guid = doc["device_guid"];
   hyc.begin(cookie, uid);
+
+  if (strlen(guid) == 32) // 手动指定guid
+  {
+    if (!info_deviceGuid.equals(guid))
+    {
+      info_deviceGuid = String(guid);
+      prefs.putString("deviceGuid", info_deviceGuid);
+    }
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  else if (info_deviceGuid.length() != 32) // 未手动指定guid且guid不存在则生成一个guid并保存
+  {
+    info_deviceGuid = HoyoverseClient::generateGuid();
+    prefs.putString("deviceGuid", info_deviceGuid);
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  else  // 未手动指定guid但已生成则使用已有guid
+  {
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  
 
   doc.clear();
 

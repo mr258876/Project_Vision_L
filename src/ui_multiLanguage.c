@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22B161";
+const char *info_visionVersion = "L0.2.0-Indev22B162";
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L
@@ -49,7 +49,7 @@ const char *zh_Hans[] = {
     "关于",                                                                 // 39 About
     "Project Vision L",                                                     // 40 Project Vision L
     "@mr258876",                                                            // 41 @mr258876
-    "If you like this\nproject, please\nstar on github!",                   // 42 If you like this project, please star on github!
+    "如果您喜欢该项目，\n请在github上\n为project点亮star！",                   // 42 If you like this project, please star on github!
     "%d分钟前更新",                                                         // 43 Updated %d min ago
     LV_SYMBOL_REFRESH "正在更新...",                                        // 44 Updating...
     "数据未初始化",                                                         // 45 Data uninitialized
@@ -117,7 +117,7 @@ const char *en_US[] = {
     "Not obtained",                                                             // 50 Not obtained
     "Language",                                                                 // 51 Language
     "ENG\n中文",                                                                // 52 Language List
-    "Error 1034:\nPlease use Hoyolab app,\ncheck resin,\nand then try again.\n" // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
+    "Error 1034:\nPlease use Hoyolab app\nto check resin,\nand then try again.\n" // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
 };
 
 const char **lang[] = {

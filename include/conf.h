@@ -54,6 +54,6 @@
 
 /* Hoyolab cookie */
 #define HOYOLAB_CONF_PATH "/Hoyolab.json"
-#define HOYOLAB_DEFAULT_CONF "{\"uid\":\"\", \"cookie\":\"\"}"
+#define HOYOLAB_DEFAULT_CONF "{\"uid\":\"\", \"cookie\":\"\", \"device_guid\": \"\"}"
 
 #endif // _VISION_CONFIGURATIONS_H_

@@ -15,6 +15,7 @@ Preferences prefs;
 bool info_hasProx = false;
 bool info_hasAccel = false;
 bool info_updatingResinData = false;
+String info_deviceGuid = "";
 
 /* Setting vars */
 bool setting_useAccel = true;

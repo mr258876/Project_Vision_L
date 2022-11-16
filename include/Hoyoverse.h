@@ -46,14 +46,22 @@ public:
 
     HoyoverseClient_result_t syncDailyNote(Notedata *data); // Sync resin data from server
     static void updateDailyNote(Notedata *data);            // Calculate resin locally
+
+    void setDeviceGuid(const char *guid);
+    String getDeviceGuid();
+    static String generateGuid();
+
 private:
     String _uid;
     String _cookie;
+    String _device_guid;
 
     static uint8_t getForumType(const char *uid);
     static const char *getServer(const char *uid);
 
     String getDynamicSalt(const char *body = "", const char *param = "");
+
+    static String genGuid4Byte();
 };
 
 #endif

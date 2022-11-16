@@ -31,8 +31,8 @@ const PROGMEM char *Hoyoverse_salt[] = {"xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs", "okr
 
 const PROGMEM char *Hoyoverse_App_version[] = {"2.38.1", "2.9.0"};
 const PROGMEM char *Hoyoverse_App_UA[] = {
-    "Mozilla/5.0 (FreeRTOS; The Vision L; Espressif ESP32) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.38.1",
-    "Mozilla/5.0 (FreeRTOS; The Vision L; Espressif ESP32) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBSOversea/2.9.0"};
+    "Mozilla/5.0 (FreeRTOS; The Vision L; Espressif ESP32) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.40.1",
+    "Mozilla/5.0 (FreeRTOS; The Vision L; Espressif ESP32) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBSOversea/2.22.0"};
 const PROGMEM char *Hoyoverse_App_client_type[] = {"5", "2"};
 const PROGMEM char *Hoyoverse_App_origin[] = {
     "https://webstatic.mihoyo.com",

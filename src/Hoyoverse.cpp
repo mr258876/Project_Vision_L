@@ -18,6 +18,16 @@ void HoyoverseClient::begin(const char *cookie, const char *uid)
     _cookie = String(cookie);
 }
 
+void HoyoverseClient::setDeviceGuid(const char *guid)
+{
+    _device_guid = String(guid);
+}
+
+String HoyoverseClient::getDeviceGuid()
+{
+    return _device_guid;
+}
+
 uint8_t HoyoverseClient::getForumType(const char *uid)
 {
     switch (uid[0])
@@ -96,7 +106,7 @@ String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
 }
 
 HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
-{   
+{
     if (_uid.length() < 1 || _cookie.length() < 1)
     {
         return HOYO_CLI_CONFIG_ERR;
@@ -149,6 +159,10 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     esp_http_client_set_header(client, "X_Requested_With", Hoyoverse_App_x_requested_with[forumtype]);
     esp_http_client_set_header(client, "x-rpc-app_version", Hoyoverse_App_version[forumtype]);
     esp_http_client_set_header(client, "x-rpc-client_type", Hoyoverse_App_client_type[forumtype]);
+    if (_device_guid.length() == 32)
+    {
+        esp_http_client_set_header(client, "x-rpc-device_id", _device_guid.c_str());
+    }
 
     esp_err_t http_err;
     if ((http_err = esp_http_client_open(client, 0)) != ESP_OK)
@@ -206,16 +220,16 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     }
 
     JsonObject data = doc["data"];
-    nd->resinRemain = data["current_resin"];                         // 120
-    nd->resinMax = data["max_resin"];                                // 160
-    nd->resinRecoverTime = atol(data["resin_recovery_time"]);        // "19104"
+    nd->resinRemain = data["current_resin"];                  // 120
+    nd->resinMax = data["max_resin"];                         // 160
+    nd->resinRecoverTime = atol(data["resin_recovery_time"]); // "19104"
 
     nd->homecoinRemain = data["current_home_coin"];                  // 750
     nd->homecoinMax = data["max_home_coin"];                         // 2400
     nd->homecoinRecoverTime = atol(data["home_coin_recovery_time"]); // "195774"
 
-    nd->expeditionOngoing = data["current_expedition_num"];         // 5
-    nd->expeditionMax = data["max_expedition_num"];                  // 5
+    nd->expeditionOngoing = data["current_expedition_num"]; // 5
+    nd->expeditionMax = data["max_expedition_num"];         // 5
     nd->expeditionFinished = 0;
     memset(nd->expeditionRecoverTime, 0, sizeof(nd->expeditionRecoverTime));
     int i = 0;
@@ -233,10 +247,10 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     {
         JsonObject data_transformer_recovery_time = data_transformer["recovery_time"];
         nd->transformerRecoverTime = ((int)data_transformer_recovery_time["Day"]) * 86400 + ((int)data_transformer_recovery_time["Hour"]) * 3600 + ((int)data_transformer_recovery_time["Minute"]) * 60;
-        
+
         if ((int)data_transformer_recovery_time["Day"] > 0)
         {
-            nd->transformerRecoverTime += 43200;    // 1天23小时也只会返回1天，因此当剩余时间>1天时再添加12小时时间
+            nd->transformerRecoverTime += 43200; // 1天23小时也只会返回1天，因此当剩余时间>1天时再添加12小时时间
         }
     }
 
@@ -347,4 +361,19 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
     }
 
     nd->_last_calc_time = t;
+}
+
+String HoyoverseClient::generateGuid()
+{
+    String guid = "";
+    for (size_t i = 0; i < 8; i++)
+    {
+        guid.concat(genGuid4Byte());
+    }
+    return guid;
+}
+
+String HoyoverseClient::genGuid4Byte()
+{
+    return String(random(65536, 131071), HEX).substring(1);
 }

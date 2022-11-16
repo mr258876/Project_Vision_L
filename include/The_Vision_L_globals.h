@@ -17,6 +17,7 @@ extern Preferences prefs;
 extern bool info_hasProx;
 extern bool info_hasAccel;
 extern bool info_updatingResinData;
+extern String info_deviceGuid;  // Device guid, notice there's no dash lines!
 
 /* Setting vars */
 extern bool setting_useAccel;
