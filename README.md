@@ -28,12 +28,12 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 
 ## 中文
 
-该项目为硬件项目[璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")的对应固件。
+该项目为硬件项目[璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)的对应固件。
 
 固件目前支持以下几种硬件：
-- [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (SD卡存在BUG)
-- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (未测试，预计SD卡存在BUG)
+- [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (实验性)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (实验性，未测试)
 
 ## 开发进度
 
@@ -60,6 +60,7 @@ RGB565_video    https://github.com/moononournation/RGB565_video
     "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值"
 }
 ```
+- `device_guid` 是选填项。其值应为不含短横线的guid，共32位字符。若留空，神之眼将会自动生成该值。
 - 对于米游社，请打开米游社并登录，随后将以下代码粘贴至浏览器控制台中获取cookie：
 ```
 let cookie_keys = ['_MHYUUID', 'ltoken', 'ltuid', 'cookie_token', 'account_id'];
@@ -98,15 +99,15 @@ if (ask == true) {
 ### 刷入预编译固件
 0. 建立串口连接。若使用的主板为开发版，使用Type-C接口直接连接电脑即可，无需额外操作；若使用的主板为普通版，则需使用额外USB-串口转换器，并按下图建立有线连接(以CH341A下载器为例)。
 ![image](/images/serial_conn.png)
-1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载ESP Download Tool(Flash下载工具)。
+1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载`ESP Download Tool(Flash下载工具)`。
 
-2. 打开ESP Download Tool，芯片类型选择ESP32，工作模式选择开发模式。
+2. 打开ESP Download Tool，芯片类型选择`ESP32`，工作模式选择`开发模式`。
 ![image](/images/flash_step1.png)
 3. 按照下图设置刷入的文件、flash地址、flash速度，串口及下载速度按实际情况选择。
 ![image](/images/flash_step2.png)
-4. 点击下载按钮。若使用的主板为普通版，还需在按住BOOT键的同时短按EN键。若下载状态一直显示等待上电同步，重复此步骤。
+4. 点击`下载`按钮。若使用的主板为普通版，还需在按住BOOT键的同时短按EN键。若下载状态一直显示等待上电同步，重复此步骤。
 ![image](/images/boot_en_button.png)
-5. 当状态显示完成后，断开串口连接。
+5. 当状态显示`完成`后，断开串口连接。
 
 ### 固件升级
 1. 将firmware.bin重命名为update.bin，并放置于SD卡根目录下。
@@ -116,20 +117,20 @@ if (ask == true) {
 
 ### 已知问题
 - 使用微信AirKiss协议进行配网时，无法使用密码为空的SSID进行配网
-- 当屏幕与SD卡共享一个SPI总线时，无法正确播放SD卡中视频文件
+- 在SD卡与屏幕共享SPI总线的设备上，通过SD卡更新固件时画面显示被冻结
 
-### FAQ
+### 常见问题解答
 #### 为什么获取体力时会出现“错误1034”？
 - 受米游社风控策略影响，部分情况米游社api会直接返回错误1034。目前的解决办法为在手机上使用米游社app查询体力并签到，随后神之眼上的树脂功能将恢复正常。
 
 ## English
 
-This is the firmware of hardware project [璃月神之眼 Extended]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended").
+This is the firmware of hardware project [璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended).
 
 These following hardwares are also supported:
-- [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (Issues with SD card)
-- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Untested, Issues with SD card)
+- [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (Experimental)
+- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Experimental, Untested)
 
 ## Development Process
 
@@ -138,3 +139,64 @@ These following hardwares are also supported:
 - Multi-language support✅
 - Resin data syncing✅
 - Auto update🔲
+
+## How to Use
+### For version L0.1
+- 短按两次距离传感器切换元素(切换视频)
+
+### For version L0.2 or above
+- 单击按钮将光标移至下一项
+- 双击按钮与按钮进行交互，或与无按钮屏幕进行交互(回到菜单)
+- 三击按钮将光标移至上一项，或与无按钮屏幕进行第二交互(切换元素/手动更新树脂数据)
+
+### HoyoLab cookie settings
+- Open `Hoyolab.json` in the root directory of SD card, then set character id and Hoyolab cookie. Example shown as below:
+```
+{
+    "uid": "100000000",
+    "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值",
+    "device_guid": ""
+}
+```
+- `device_guid` is optional. It should be a random generated guid without dash line, 32 characters in total. The vision will generate one if left blank.
+
+### 自定义元素顺序(自定义视频文件及顺序)
+- Open `playFiles.json`in the root directory of SD card, then set the path and sequence of videos and pictures. The paths need include driver letter 'S'. Example shown as below:
+```
+{
+    "files": [
+        "S:/The_Vision_L/Pyro.mjpeg",
+        "S:/水.mjpeg",
+        "S:/风.jpg",
+    ]
+}
+```
+- Note: The format of pictures should be JPG/JPEG, with size 240px\*240px, file size less than 12KB; videos should be MJPEG, size 240px\*240px, less than 12 KB for each frame.
+
+## Flashing Firmware
+### Flashing recompiled firmware
+0. Setup serial connection with the vision. If using a development version board, just connect the vision with a Type-C wire, no further operations required; otherwise you need a USB-TTL dongle, and setup the connection as shown (e.g. connect using a CH341A downloader).
+![image](/images/serial_conn.png)
+1. Move to [Espressif Systems](https://www.espressif.com.cn/en/support/download/other-tools) and download `ESP Download Tool (Flash Download Tool)`。
+
+2. Open ESP Download Tool，select `ESP32` for chip type, `development` for work mode.
+![image](/images/flash_step1.png)
+3. Set the files, flash address, flash speed according to the figure below. Set serial port and download speed according to the actual situation.
+![image](/images/flash_step2.png)
+4. Click `Download`. If not using a development version board, short press the EN key while holding the BOOT key. If the status always shows `sync`, repeat this step.
+![image](/images/boot_en_button.png)
+5. Disconnect when the status shows `Finish`.
+
+### Updating Firmware
+1. Rename `firmware.bin` to `update.bin` and place it in the SD card root directory.
+![image](images/update_rename.png)
+2. Insert SD card back in, the vision will start update automatically.
+![image](images/self_updating.png)
+
+### Known Issues
+- Failure on wifi configuration through Wechat AirKiss protocol using SSID without password
+- Screen will get frozen when updating firmware through SD card on devices with SD card and LCD screen sharing same SPI bus
+
+### FAQ
+#### Why do I get "Error 1034" when I getting resin data?
+- Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.

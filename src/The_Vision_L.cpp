@@ -85,6 +85,7 @@ static uint32_t screenWidth;
 static uint32_t screenHeight;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
+static lv_color_t *disp_draw_buf_2;
 static lv_disp_drv_t disp_drv;
 unsigned long startup_time;
 bool isInLVGL = true;
@@ -249,7 +250,7 @@ void setup()
   else
   {
     SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    SD.begin(po.SD_DAT3);
+    SD.begin(po.SD_DAT3, SPI, 20000000);
     sdfs = &SD;
   }
 
@@ -264,15 +265,16 @@ void setup()
     ESP_LOGE("setup", "Video file buffer allocate failed!");
   }
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 32, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
-  if (!disp_draw_buf)
+  if (!disp_draw_buf || !disp_draw_buf_2)
   {
     ESP_LOGE("setup", "LVGL disp_draw_buf allocate failed!");
   }
   else
   {
-    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, screenWidth * 32);
+    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 48);
 
     /* Initialize the display */
     lv_disp_drv_init(&disp_drv);
@@ -354,9 +356,13 @@ void switchToVideoScreen(void *delayTime)
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-
+    
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
+    {
     vTaskSuspend(lvglLoopHandle);
     isInLVGL = false;
+    }
+    xSemaphoreGive(*LCDMutexptr);
 
     xSemaphoreGive(LVGLMutex);
   }

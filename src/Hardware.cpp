@@ -44,7 +44,7 @@ void getVisionPinout(Pinout *po, uint8_t hw_type)
         po->LCD_MISO = 2;  // For SD card
         po->LCD_panel = LCD_ST7789;
         po->LCD_spi_host = VSPI_HOST;
-        po->LCD_clock_speed = 40000000;
+        po->LCD_clock_speed = 80000000;
         po->LCD_shared_spi = true;
         po->SD_DAT2 = NULL;
         po->SD_DAT3 = 13;
@@ -74,7 +74,7 @@ void getVisionPinout(Pinout *po, uint8_t hw_type)
         po->LCD_MISO = 2;  // For SD card
         po->LCD_panel = LCD_GC9A01;
         po->LCD_spi_host = VSPI_HOST;
-        po->LCD_clock_speed = 40000000;
+        po->LCD_clock_speed = 80000000;
         po->LCD_shared_spi = true;
         po->SD_DAT2 = NULL;
         po->SD_DAT3 = 13;

@@ -9,6 +9,7 @@
 #include "lvgl.h"
 #include "tjpgdClass.h"
 #include "ui.h"
+#include "rtos_externs.h"
 
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -369,12 +370,16 @@ private:
   {
     MjpegClass *me = (MjpegClass *)jdec->device;
 
-    if (y == 0)
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);
     {
-      me->_tft->setAddrWindow(me->_jpg_x, me->_jpg_y, jdec->width, jdec->height);
-    }
+      if (y == 0)
+      {
+        me->_tft->setAddrWindow(me->_jpg_x, me->_jpg_y, jdec->width, jdec->height);
+      }
 
-    me->_tft->pushPixelsDMA((uint16_t *)me->_out_buf, me->_out_width * h);
+      me->_tft->pushPixelsDMA((uint16_t *)me->_out_buf, me->_out_width * h);
+    }
+    xSemaphoreGive(*LCDMutexptr);
 
     return 1;
   }
