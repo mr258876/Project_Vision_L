@@ -15,6 +15,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 <!-- - [L0.2.0-Indev22B162](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B162) -->
 
 ## 支持库 / Referenced Libraries
+- 以下库需要手动安装 / Following libraries require manual installation before compile
 ```
 Adafruit BusIO  1.13.2
 ArduinoJson     6.19.4
@@ -22,6 +23,9 @@ KXTJ3-1057      0.0.1
 LovyanGFX       0.4.18
 LVGL            8.3.2
 OneButton       2.0.3
+```
+- 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
+```
 APDS-9930       https://github.com/Depau/APDS9930
 LinkedList      https://github.com/ivanseidel/LinkedList
 RGB565_video    https://github.com/moononournation/RGB565_video
@@ -35,19 +39,6 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 - [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
 - [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (实验性)
 - [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (实验性，未测试)
-
-## 开发进度
-
-- 显示图片/视频✅
-- 设置菜单✅/管理界面🔲
-- 多语言支持✅
-- 从米游社API获取树脂✅
-- 自动更新🔲
-
-固件目前支持以下几种硬件：
-- [璃月神之眼 Extended by mr258876]("https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended")
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (SD卡存在BUG)
-- [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (未测试，预计SD卡存在BUG)
 
 ## 开发进度
 
@@ -157,12 +148,12 @@ These following hardwares are also supported:
 
 ## How to Use
 ### For version L0.1
-- 短按两次距离传感器切换元素(切换视频)
+- Short press twice on the distance sensor to switch elements (switch video)
 
 ### For version L0.2 or above
-- 单击按钮将光标移至下一项
-- 双击按钮与按钮进行交互，或与无按钮屏幕进行交互(回到菜单)
-- 三击按钮将光标移至上一项，或与无按钮屏幕进行第二交互(切换元素/手动更新树脂数据)
+- Click power button to move cursor to next item
+- Double-click power button to interact with a button item, or to interact with a buttonless screen (go back to menu)
+- Triple-click power button to move cursor to previous item, or perform second interaction with a buttonless screen (switch element / manually update resin data)
 
 ### HoyoLab cookie settings
 - Open `Hoyolab.json` in the root directory of SD card, then set character id and Hoyolab cookie. Example shown as below:
@@ -175,7 +166,7 @@ These following hardwares are also supported:
 ```
 - `device_guid` is optional. It should be a random generated guid without dash line, 32 characters in total. The vision will generate one if left blank.
 
-### 自定义元素顺序(自定义视频文件及顺序)
+### Customizing element order (custom video file and order)
 - Open `playFiles.json`in the root directory of SD card, then set the path and sequence of videos and pictures. The paths need include driver letter 'S'. Example shown as below:
 ```
 {
