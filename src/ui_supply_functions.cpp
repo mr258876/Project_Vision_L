@@ -77,6 +77,18 @@ void cb_loadResinScreen(lv_event_t *e)
 
 void cb_loadClockScreen(lv_event_t *e)
 {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo))
+  {
+    lv_obj_t *mbox = lv_msgbox_create(ui_MenuScreen, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
+    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_center(mbox);
+    lv_obj_move_foreground(mbox);
+    ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
+    lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
+    return;
+  }
+
   lv_group_remove_all_objs(ui_group);
   ui_ClockScreen_screen_init();
   lv_scr_load_anim(ui_ClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
@@ -135,5 +147,5 @@ void cb_setLanguage(uint16_t val)
   curr_lang = val;
   prefs.putUInt("language", val);
 
-  esp_restart();  // Temporary solution
+  esp_restart(); // Temporary solution
 }
