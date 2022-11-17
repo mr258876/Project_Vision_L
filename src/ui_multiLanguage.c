@@ -90,7 +90,7 @@ const char *en_US[] = {
     "Cookie not configured\n",                                                    // 23 Cookie not configured
     "Menu",                                                                       // 24 Menu
     "Vision",                                                                     // 25 The Vision
-    "Resin",                                                                      // 26 Daily Note (Resin)
+    "Resin",                                                                 // 26 Daily Note (Resin)
     "Clock",                                                                      // 27 Clock
     "Settings",                                                                   // 28 Settings
     LV_SYMBOL_WIFI,                                                               // 29 Network
