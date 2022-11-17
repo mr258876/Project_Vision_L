@@ -9,9 +9,10 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 稳定版 / Stable Release
 - [L0.1.1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.1.1)
 ### 测试版 / Beta Release
-- [L0.2.0-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta1)
+- [L0.2.0-Beta2](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta2)
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22B162](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B162)
+- None
+<!-- - [L0.2.0-Indev22B162](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B162) -->
 
 ## 支持库 / Referenced Libraries
 ```
