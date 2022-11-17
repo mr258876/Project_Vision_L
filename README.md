@@ -17,11 +17,11 @@ Do Virtual Gods Hand Out Electronic Visions?
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
 ```
-Adafruit BusIO  1.13.2
+Adafruit BusIO  1.14.1
 ArduinoJson     6.19.4
 KXTJ3-1057      0.0.1
 LovyanGFX       0.4.18
-LVGL            8.3.2
+LVGL            8.3.3
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
@@ -204,5 +204,5 @@ These following hardwares are also supported:
 - Screen will get frozen when updating firmware through SD card on devices with SD card and LCD screen sharing same SPI bus
 
 ### FAQ
-#### Why do I get "Error 1034" when I getting resin data?
+#### Why do I get "Error 1034" when getting resin data?
 - Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.
