@@ -1,5 +1,7 @@
 #include "conf.h"
 #include "rtos_externs.h"
+#include "The_Vision_L_globals.h"
+#include "ui_multiLanguage.h"
 
 #include <FS.h>
 #include <SD.h>
@@ -10,16 +12,19 @@
 #include <lvgl.h>
 #include "lv_fs_fatfs.h"
 #include "ui.h"
+#include "ui_supply_functions.h"
 
 #include <ArduinoJson.h>
 #include "LinkedList.h"
 #include <Preferences.h>
 
+#include "LCD.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 
 #include "MjpegClass.h"
 
+#include "Wire.h"
 #if defined(_CONFIG_PROX_LIGHT_USE_APDS9960_)
 #include "APDS9960.h"
 #elif defined(_CONFIG_PROX_LIGHT_USE_APDS9930_)
@@ -30,82 +35,60 @@
 #include <kxtj3-1057.h>
 #undef getName
 
+#include <WiFi.h>
+#include <esp_now.h>
+
+#include "Hoyoverse.h"
+#include "APIServer.h"
+
 // Freertos
 #include "rtc_wdt.h"
 
-// LCD screen
-class LGFX_PANEL : public lgfx::LGFX_Device
+////////////////////////
+//
+//  Typedef
+//
+////////////////////////
+typedef enum
 {
-  lgfx::Panel_ST7789 _panel_instance;
+  VISION_HW_OK = 0,
+  VISION_HW_SENSOR_ERR,
+  VISION_HW_SD_ERR
+} vision_hw_result_t;
 
-  lgfx::Bus_SPI _bus_instance;
+typedef enum
+{
+  VISION_NO_UPDATE = 0,     // No update file
+  VISION_UPDATE_BAD_FILE,   // not a updateable file
+  VISION_UPDATE_START_FAIL, // Update start failed
+  VISION_UPDATE_STARTED,    // Update started
+  VISION_UPDATE_OK          // Update finished (probably never gonna to use)
+} vision_update_result_t;
 
-public:
-  LGFX_PANEL(void)
-  {
-    {                                    // バス制御の設定を行います。        // 设置总线
-      auto cfg = _bus_instance.config(); // バス設定用の構造体を取得します。  // 获取总线设置结构体
+////////////////////////
+//
+//  Variables
+//
+////////////////////////
+/* Pwr button & Audio */
+static OneButton *pwrButton;
 
-      // SPIバスの設定  // SPI总线设置
-      cfg.spi_host = VSPI_HOST; // 使用するSPIを選択  ESP32-S2,C3 : SPI2_HOST or SPI3_HOST / ESP32 : VSPI_HOST or HSPI_HOST
-      // ※ ESP-IDFバージョンアップに伴い、VSPI_HOST , HSPI_HOSTの記述は非推奨になるため、エラーが出る場合は代わりにSPI2_HOST , SPI3_HOSTを使用してください。
-      // ※ ESP-IDF版本更新后，若使用VSPI_HOST、HSPI_HOST报错，请使用SPI2_HOST、SPI3_HOST代替。
-      cfg.spi_mode = 0;                  // SPI通信モードを設定 (0 ~ 3)   // SPI通信模式设置
-      cfg.freq_write = 80000000;         // 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)  // SPI写时钟频率(80MHz除以整数)
-      cfg.freq_read = 80000000;          // 受信時のSPIクロック // SPI读时钟频率
-      cfg.spi_3wire = true;              // 受信をMOSIピンで行う場合はtrueを設定  // 使用MOSI pin进行读操作时设定为true
-      cfg.use_lock = true;               // トランザクションロックを使用する場合はtrueを設定  // 使用事务锁
-      cfg.dma_channel = SPI_DMA_CH_AUTO; // 使用するDMAチャンネルを設定 (0=DMA不使用 / 1=1ch / 2=2ch / SPI_DMA_CH_AUTO=自動設定) // 指定DMA通道
-      // ※ ESP-IDFバージョンアップに伴い、DMAチャンネルはSPI_DMA_CH_AUTO(自動設定)が推奨になりました。1ch,2chの指定は非推奨になります。
-      // ※ ESP-IDF版本更新后，推荐使用SPI_DMA_CH_AUTO自动设置DMA通道。不推荐手动指定。
-      cfg.pin_sclk = LCD_CLK;  // SPIのSCLKピン番号を設定   // SPI CLK引脚
-      cfg.pin_mosi = LCD_MOSI; // SPIのMOSIピン番号を設定   // SPI MOSI引脚
-      cfg.pin_miso = -1;       // SPIのMISOピン番号を設定 (-1 = disable)  // SPI MISO引脚(-1禁用)
-      cfg.pin_dc = LCD_DC;     // SPIのD/Cピン番号を設定  (-1 = disable)  // SPI 数据/指令引脚(-1禁用)
-                               // SDカードと共通のSPIバスを使う場合、MISOは省略せず必ず設定してください。
-                               // 屏幕与SD卡共用一个SPI总线时，必须指定MISO引脚。
+/* LCD screen */
+static LGFX_Device gfx;
 
-      _bus_instance.config(cfg);              // 設定値をバスに反映します。   // 应用总线设置
-      _panel_instance.setBus(&_bus_instance); // バスをパネルにセットします。 // 为屏幕指定总线
-    }
-
-    {                                      // 表示パネル制御の設定を行います。    // 设置屏幕
-      auto cfg = _panel_instance.config(); // 表示パネル設定用の構造体を取得します。  //获取屏幕设置构造体
-
-      cfg.pin_cs = LCD_CS;   // CSが接続されているピン番号   (-1 = disable)   // 片选引脚
-      cfg.pin_rst = LCD_RST; // RSTが接続されているピン番号  (-1 = disable)   // 重置引脚
-      cfg.pin_busy = -1;     // BUSYが接続されているピン番号 (-1 = disable)   // busy信号引脚
-
-      // ※ 以下の設定値はパネル毎に一般的な初期値が設定されていますので、不明な項目はコメントアウトして試してみてください。
-
-      cfg.panel_width = 240;    // 実際に表示可能な幅   // 水平分辨率
-      cfg.panel_height = 240;   // 実際に表示可能な高さ // 垂直分辨率
-      cfg.offset_x = 0;         // パネルのX方向オフセット量  // X方向偏移量
-      cfg.offset_y = 0;         // パネルのY方向オフセット量  // Y方向偏移量
-      cfg.offset_rotation = 0;  // 回転方向の値のオフセット 0~7 (4~7は上下反転) // 屏幕旋转方向(4-7为垂直翻转)
-      cfg.dummy_read_pixel = 8; // ピクセル読出し前のダミーリードのビット数     // 读取显存前的dummy bit数
-      cfg.dummy_read_bits = 1;  // ピクセル以外のデータ読出し前のダミーリードのビット数 // 读取其他数据前的dummy bit数
-      cfg.readable = false;     // データ読出しが可能な場合 trueに設定    // 启用读操作
-      cfg.invert = true;        // パネルの明暗が反転してしまう場合 trueに設定  // 反色
-      cfg.rgb_order = false;    // パネルの赤と青が入れ替わってしまう場合 trueに設定  // 像素使用RGB顺序
-      cfg.dlen_16bit = false;   // 16bitパラレルやSPIでデータ長を16bit単位で送信するパネルの場合 trueに設定 // 一次写入16 bit数据
-      cfg.bus_shared = false;   // SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います) // 与SD卡共享总线
-
-      _panel_instance.config(cfg); // 应用屏幕设置
-    }
-
-    setPanel(&_panel_instance); // 使用するパネルをセットします。 // 设置屏幕
-  }
-};
-static LGFX_PANEL gfx;
+/* SD Card*/
+SPIClass SDSPI;
+fs::FS *sdfs;
 
 /* LVGL Stuff */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
+static lv_color_t *disp_draw_buf_2;
 static lv_disp_drv_t disp_drv;
 unsigned long startup_time;
+bool isInLVGL = true;
 
 /* Things of files */
 static LinkedList<String> filePaths;
@@ -114,59 +97,71 @@ uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 
 /* Mjpeg decoder & Image Buffers */
 static MjpegClass mjpeg;
-uint8_t *imgBufs[IMG_BUF_CHUNKS];
 bool mjpegInited = false;
 
 /* Proximity sensor Object */
 PROX_LIGHT_METER apds;
 uint16_t r, g, b, c;
-OneButton proxButton(PROX_INT, true);
-OneButton pwrButton(BUTTON_PIN, true);
+OneButton *proxButton = NULL;
 
 /* Accelmeter Object */
 #define LOW_POWER
 KXTJ3 acc(0x0E);
 int rotation = 0;
 
-/* NVS */
-Preferences prefs;
-
-/* Booleans for whether the sensors enabled. */
-bool useProx;
-bool useAcc;
-bool useAutoBrightness;
-
+////////////////////////
+//
+//  Function Declartions
+//
+////////////////////////
+void loadSettings();
 bool checkSDFiles(String *errMsg);
-void screenAdjustLoop(void *parameter);
+vision_update_result_t updateFromSD(String *errMsg);
+vision_hw_result_t checkHardware(String *errMsg);
 void wifiConfigure(void *parameter);
-void playVideo(void *parameter);
-void getDailyNote(void *parameter);
+bool getDailyNote(Notedata *nd, String *errMsg);
+void resinCalc(void *parameter);
 bool connectWiFi();
+
 void cb_switchToVideoScreen();
 void mjpegInit();
+void leaveVideoScreen(void *parameter);
+void loadVideoScreen(void *parameter);
+void playVideo(void *parameter);
+
+void getDailyNoteFromResinScreen(void *parameter);
+
+void lvglLoop(void *parameter);
+void screenAdjustLoop(void *parameter);
 
 void onChangeVideo();
+void onSingleClick();
+void onDoubleClick();
+void onMultiClick();
 
-/* Display flushing */
+////////////////////////
+//
+//  Functions
+//
+////////////////////////
+/**
+ *
+ * @brief Custom scren update function for LVGL
+ *
+ */
 void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
 
-  if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
+  if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
   {
     gfx.setAddrWindow(area->x1, area->y1, w, h);
     gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
-    xSemaphoreGive(LCDMutex);
+    xSemaphoreGive(*LCDMutexptr);
   }
 
   lv_disp_flush_ready(disp);
-}
-
-/* Serial Debug Output */
-void serialPrint(const char *str)
-{
-  Serial.print(str);
 }
 
 /* Setup Function */
@@ -175,66 +170,111 @@ void setup()
   // Disable watchdog write protect to feed manually
   rtc_wdt_protect_off();
 
-  // SD card Pull-Ups
-  pinMode(DAT0, INPUT_PULLUP);
-  pinMode(DAT1, INPUT_PULLUP);
-  pinMode(DAT2, INPUT_PULLUP);
-  pinMode(DAT3, INPUT_PULLUP);
-  pinMode(CLK, INPUT_PULLUP);
-  pinMode(CMD, INPUT_PULLUP);
-
   // Enable Serial output
   Serial.begin(115200);
 
   // Init NVS
   prefs.begin("Project_Vision", false);
+  loadSettings();
 
-// SD card init
-#ifdef _CONFIG_SD_USE_SPI_
-  SPIClass SDSPI = SPIClass(HSPI);
-  SDSPI.begin(14, 2, 15, 13);
-  SD.begin(13, SDSPI, 80000000);
-#endif
-#ifdef _CONFIG_SD_USE_SDMMC_1BIT_
-  SD_MMC.begin("/sdcard", true);
-#endif
-#ifdef _CONFIG_SD_USE_SDMMC_4BIT_
-  SD_MMC.begin();
-#endif
+  // Check Hardware Pinout
+  if (!info_hwType)
+  {
+    uint8_t ht = getHWType();
+    info_hwType = ht;
+    prefs.putUInt("hwType", info_hwType);
+  }
+  ESP_LOGI("getPinout", "HW_version:%d", info_hwType);
+  getVisionPinout(&po, info_hwType);
+
+  // I2C pins
+  if (po.I2C_SDA && po.I2C_SCL)
+  {
+    Wire.setPins(po.I2C_SDA, po.I2C_SCL);
+  }
+
+  // Buttons
+  pwrButton = new OneButton(po.PWR_BTN, true);
 
   // Audio Output
-  pinMode(AUDIO_OUT, INPUT_PULLDOWN);
+  if (po.AUDIO_OUT)
+  {
+    pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
+  }
+
+  // SPI Mutex
+  if (po.LCD_shared_spi)
+  {
+    LCDMutexptr = &SDMutex;
+  }
+  else
+  {
+    LCDMutexptr = &LCDMutex;
+  }
+
+  // SD card Pull-Ups
+  pinMode(po.SD_DAT0, INPUT_PULLUP);
+  pinMode(po.SD_DAT3, INPUT_PULLUP);
+  pinMode(po.SD_CLK, INPUT_PULLUP);
+  pinMode(po.SD_CMD, INPUT_PULLUP);
+  if (po.SD_DAT1)
+    pinMode(po.SD_DAT1, INPUT_PULLUP);
+  if (po.SD_DAT2)
+    pinMode(po.SD_DAT2, INPUT_PULLUP);
 
   // Init Display
+  LCDinit(&gfx, po.LCD_panel, po.LCD_spi_host, po.LCD_DC, po.LCD_RST, po.LCD_CS, po.LCD_CLK, po.LCD_MOSI, po.LCD_MISO, po.LCD_shared_spi, po.LCD_clock_speed);
   gfx.init();
   gfx.setColorDepth(16);
   gfx.setSwapBytes(false);
   gfx.fillScreen(TFT_BLACK);
 
-  ledcAttachPin(LCD_BL, 1);     // assign TFT_BL pin to channel 1
+  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
   ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
   ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
 
+  // SD card init
+  if (po.SD_use_sdmmc)
+  {
+    if (po.SD_use_1_bit)
+    {
+      SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0);
+    }
+    else
+    {
+      SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
+    }
+    SD_MMC.begin("/sdcard", po.SD_use_1_bit);
+    sdfs = &SD_MMC;
+  }
+  else
+  {
+    SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
+    SD.begin(po.SD_DAT3, SPI, 20000000);
+    sdfs = &SD;
+  }
+
+  // LVGL init
   lv_init();
-  lv_log_register_print_cb(serialPrint);
 
   screenWidth = gfx.width();
   screenHeight = gfx.height();
 
   if (!vFileReadBuf)
   {
-    LV_LOG_ERROR("Video file buffer allocate failed!");
+    ESP_LOGE("setup", "Video file buffer allocate failed!");
   }
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 32, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
-  if (!disp_draw_buf)
+  if (!disp_draw_buf || !disp_draw_buf_2)
   {
-    LV_LOG_ERROR("LVGL disp_draw_buf allocate failed!");
+    ESP_LOGE("setup", "LVGL disp_draw_buf allocate failed!");
   }
   else
   {
-    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, screenWidth * 32);
+    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 48);
 
     /* Initialize the display */
     lv_disp_drv_init(&disp_drv);
@@ -244,6 +284,7 @@ void setup()
     disp_drv.flush_cb = disp_flush;
     disp_drv.draw_buf = &draw_buf;
     disp_drv.sw_rotate = 0;
+    disp_drv.full_refresh = 0;
 
     lv_disp_drv_register(&disp_drv);
 
@@ -255,48 +296,47 @@ void setup()
 
     ui_init();
 
+    xTaskCreatePinnedToCore(lvglLoop,        // 任务函数
+                            "lvglLoop",      // 任务名称
+                            8192,            // 任务堆栈大小
+                            NULL,            // 任务参数
+                            1,               // 任务优先级
+                            &lvglLoopHandle, // 任务句柄
+                            1);              // 执行任务核心
+
     LV_LOG_INFO("LVGL booted.");
   }
+  // startSettingServer();
+  vTaskDelete(NULL);
+}
+
+// Load Settings From NVS
+void loadSettings()
+{
+  info_hwType = prefs.getUInt("hwType", 0);
+  setting_autoBright = prefs.getBool("useAutoBright", true);
+  setting_useAccel = prefs.getBool("useAccelMeter", true);
+  curr_lang = prefs.getUInt("language", 1);
+  info_deviceGuid = prefs.getString("deviceGuid", "");
 }
 
 void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
-  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, imgBufs, IMG_BUF_CHUNKS, true, screenWidth, screenHeight))
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, &gfx, true, screenWidth, screenHeight))
   {
-    LV_LOG_ERROR("Mjpeg decoder init failed!");
-  }
-
-  // 划显存
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    imgBufs[i] = (uint8_t *)heap_caps_malloc(LCD_WIDTH * LCD_HEIGHT / IMG_BUF_CHUNKS * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!imgBufs[i])
-    {
-      LV_LOG_ERROR("Img buf #%d allocate failed!", i);
-    }
-  }
-
-  // 创建视频块参数
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    ui_VideoImageConfs[i].header.always_zero = 0;
-    ui_VideoImageConfs[i].header.w = screenWidth;
-    ui_VideoImageConfs[i].header.h = screenHeight / IMG_BUF_CHUNKS;
-    ui_VideoImageConfs[i].data_size = screenWidth * screenHeight / IMG_BUF_CHUNKS * LV_COLOR_SIZE / 8;
-    ui_VideoImageConfs[i].header.cf = LV_IMG_CF_TRUE_COLOR;
-    ui_VideoImageConfs[i].data = (uint8_t *)imgBufs[i % IMG_BUF_CHUNKS];
+    ESP_LOGE("mjpegInit", "Mjpeg decoder init failed!");
   }
 
   // Create task of video playing
-  xTaskCreatePinnedToCore(playVideo,        //任务函数
-                          "playVideo",      //任务名称
-                          2048,             //任务堆栈大小
-                          NULL,             //任务参数
-                          2,                //任务优先级
-                          &playVideoHandle, //任务句柄
-                          0);               //执行任务核心
+  xTaskCreatePinnedToCore(playVideo,        // 任务函数
+                          "playVideo",      // 任务名称
+                          2048,             // 任务堆栈大小
+                          NULL,             // 任务参数
+                          2,                // 任务优先级
+                          &playVideoHandle, // 任务句柄
+                          1);               // 执行任务核心
 }
 
 static int switchScreenDelay = 0;
@@ -304,7 +344,28 @@ void switchToVideoScreen(void *delayTime)
 {
   // 等待延时
   vTaskDelay(pdMS_TO_TICKS(*((int *)delayTime)));
-  ui_VideoScreen_screen_init();
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    // 删除样式解决内存泄露
+    removeStyles(lv_scr_act());
+
+    ui_VideoScreen_screen_init();
+
+    // 切换屏幕
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+
+    lv_task_handler();
+    
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
+    {
+    vTaskSuspend(lvglLoopHandle);
+    isInLVGL = false;
+    }
+    xSemaphoreGive(*LCDMutexptr);
+
+    xSemaphoreGive(LVGLMutex);
+  }
 
   if (!mjpegInited)
   {
@@ -312,67 +373,66 @@ void switchToVideoScreen(void *delayTime)
     mjpegInited = true;
   }
 
-  // 设置视频块参数
-  for (int i = 0; i < IMG_BUF_CHUNKS; ++i)
-  {
-    lv_img_set_src(ui_VideoImages[i], &ui_VideoImageConfs[i]);
-  }
-
-  // 切换屏幕
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-  {
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, true);
-    xSemaphoreGive(LVGLMutex);
-  }
-
   vTaskDelete(NULL);
 }
 
-typedef enum
-{
-  VISION_HW_OK = 0,
-  VISION_HW_SENSOR_ERR,
-  VISION_HW_SD_ERR
-} vision_hw_result_t;
-
+////////////////////////
+//
+//  Hardware Checkup
+//
+////////////////////////
 vision_hw_result_t checkHardware(String *errMsg)
 {
   vision_hw_result_t hwErrDetected = VISION_HW_OK;
-  lv_label_set_text(ui_StartupLabel2, "检查距离传感器...");
-  if (apds.begin())
+  // lv_label_set_text(ui_StartupLabel2, "检查距离传感器...");
+  if (po.I2C_SDA && po.I2C_SCL)
   {
-    apds.enableColor(true);
-    apds.enableProximity(true);
-    apds.setProximityInterruptThreshold(0, PROX_THRS);
-    apds.enableProximityInterrupt();
-    pinMode(PROX_INT, INPUT_PULLUP);
-    proxButton.attachDoubleClick(onChangeVideo);
-    useProx = true;
-    useAutoBrightness = true;
+    if (apds.begin())
+    {
+      apds.enableColor(true);
+      apds.enableProximity(true);
+      apds.setProximityInterruptThreshold(0, PROX_THRS);
+      apds.enableProximityInterrupt();
+      pinMode(po.PROX_INT, INPUT_PULLUP);
+      proxButton = new OneButton(po.PROX_INT, true);
+      proxButton->attachDoubleClick(onChangeVideo);
+      info_hasProx = true;
+    }
+    else
+    {
+      hwErrDetected = VISION_HW_SENSOR_ERR;
+      errMsg->concat(lang[curr_lang][9]); // "距离传感器初始化失败\n"
+      info_hasProx = false;
+      ESP_LOGE("checkHardware", "Prox sensor init failed!");
+    }
+
+    // lv_label_set_text(ui_StartupLabel2, "检查加速度计...");
+    if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
+    {
+      info_hasAccel = true;
+    }
+    else
+    {
+      hwErrDetected = VISION_HW_SENSOR_ERR;
+      errMsg->concat(lang[curr_lang][10]); // "加速度计初始化失败\n"
+      info_hasAccel = false;
+      ESP_LOGE("checkHardware", "Accel Meter init failed!");
+    }
   }
   else
   {
-    hwErrDetected = VISION_HW_SENSOR_ERR;
-    errMsg->concat("距离传感器初始化失败\n");
-    useProx = false;
-    LV_LOG_ERROR("Prox sensor init failed!");
+    setting_autoBright = false;
+    setting_useAccel = false;
   }
 
-  lv_label_set_text(ui_StartupLabel2, "检查加速度计...");
-  if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
-  {
-    useAcc = true;
-  }
+  // lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  sdcard_type_t cardType;
+  if (po.SD_use_sdmmc)
+    cardType = SD_MMC.cardType();
   else
-  {
-    hwErrDetected = VISION_HW_SENSOR_ERR;
-    errMsg->concat("加速度计初始化失败\n");
-    useAcc = false;
-    LV_LOG_ERROR("IMU init failed!");
-  }
-
-  lv_label_set_text(ui_StartupLabel2, "检查SD卡...");
-  switch (SD_CLASS.cardType())
+    cardType = SD.cardType();
+  switch (cardType)
   {
   case CARD_MMC:
   case CARD_SD:
@@ -380,14 +440,15 @@ vision_hw_result_t checkHardware(String *errMsg)
     break;
   case CARD_UNKNOWN:
     hwErrDetected = VISION_HW_SD_ERR;
-    errMsg->concat("SD卡无法读取\n");
-    LV_LOG_ERROR("Bad SD Card!");
+    errMsg->concat(lang[curr_lang][11]); // "SD卡无法读取\n"
+    ESP_LOGE("checkHardware", "Bad SD Card!");
     break;
   default:
     hwErrDetected = VISION_HW_SD_ERR;
-    errMsg->concat("未检测到SD卡\n");
-    LV_LOG_ERROR("No SD Card!");
+    errMsg->concat(lang[curr_lang][12]); // "未检测到SD卡\n"
+    ESP_LOGE("checkHardware", "No SD Card!");
   }
+  xSemaphoreGive(SDMutex);
 
   return hwErrDetected;
 }
@@ -395,37 +456,45 @@ vision_hw_result_t checkHardware(String *errMsg)
 bool checkSDFiles(String *errMsg)
 {
   bool fileErrDetected = false;
-  lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
-
-  File f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
-  if (!f || f.isDirectory())
-  {
-    f.close();
-    f = SD_CLASS.open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
-    f.print(PLAY_FILE_DEFAULT_CONF);
-    f.close();
-    f = SD_CLASS.open(PLAY_FILE_CONF_PATH);
-  }
-
+  // lv_label_set_text(ui_StartupLabel2, "正在检查文件...");
+  File f;
   StaticJsonDocument<0> filter;
   filter.set(true);
+  StaticJsonDocument<JSON_CONF_BUFFER_SIZE> doc;
+  DeserializationError error;
 
-  StaticJsonDocument<PLAY_FILE_CONF_BUFFER_SIZE> doc;
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    // 读取播放文件列表
+    File f = sdfs->open(PLAY_FILE_CONF_PATH);
+    if (!f || f.isDirectory())
+    {
+      f.close();
+      f = sdfs->open(PLAY_FILE_CONF_PATH, FILE_WRITE, true);
+      f.print(PLAY_FILE_DEFAULT_CONF);
+      f.close();
+      f = sdfs->open(PLAY_FILE_CONF_PATH);
+    }
 
-  DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+    error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+    f.close();
+  }
+  xSemaphoreGive(SDMutex);
 
   if (error)
   {
+    errMsg->concat(PLAY_FILE_CONF_PATH);
+    errMsg->concat("\n");
+    errMsg->concat("JSON deser failed:\n");
     errMsg->concat(error.c_str());
-    LV_LOG_ERROR("deserializeJson() failed:%s", error.c_str());
+    ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
     return true;
   }
-
-  f.close();
 
   JsonArray files = doc["files"];
 
   filePaths.clear();
+
   for (const char *fp : files)
   {
     lv_fs_res_t _input_op_result;
@@ -438,16 +507,71 @@ bool checkSDFiles(String *errMsg)
     lv_fs_close(&_input);
   }
 
+  files.clear();
   doc.clear();
 
   fileCount = filePaths.size();
   if (fileCount < 1)
   {
-    errMsg->concat("没有可播放的文件");
+    errMsg->concat(lang[curr_lang][13]); // "没有可播放的文件"
     return true;
   }
 
-  lv_label_set_text(ui_StartupLabel2, "请稍候...");
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    // 读取米游社配置
+    f = sdfs->open(HOYOLAB_CONF_PATH);
+    if (!f || f.isDirectory())
+    {
+      f.close();
+      f = sdfs->open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
+      f.print(HOYOLAB_DEFAULT_CONF);
+      f.close();
+      f = sdfs->open(HOYOLAB_CONF_PATH);
+    }
+
+    error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+    f.close();
+  }
+  xSemaphoreGive(SDMutex);
+
+  if (error)
+  {
+    errMsg->concat(HOYOLAB_CONF_PATH);
+    errMsg->concat("\n");
+    errMsg->concat("JSON deser failed:\n");
+    errMsg->concat(error.c_str());
+    ESP_LOGE("checkSDFiles", "deserializeJson() failed:%s", error.c_str());
+    return true;
+  }
+
+  const char *uid = doc["uid"];
+  const char *cookie = doc["cookie"];
+  const char *guid = doc["device_guid"];
+  hyc.begin(cookie, uid);
+
+  if (strlen(guid) == 32) // 手动指定guid
+  {
+    if (!info_deviceGuid.equals(guid))
+    {
+      info_deviceGuid = String(guid);
+      prefs.putString("deviceGuid", info_deviceGuid);
+    }
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  else if (info_deviceGuid.length() != 32) // 未手动指定guid且guid不存在则生成一个guid并保存
+  {
+    info_deviceGuid = HoyoverseClient::generateGuid();
+    prefs.putString("deviceGuid", info_deviceGuid);
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  else  // 未手动指定guid但已生成则使用已有guid
+  {
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  
+
+  doc.clear();
 
   // LV_FONT_DECLARE(ui_font_HanyiWenhei16);
   // LV_FONT_DECLARE(ui_font_HanyiWenhei24);
@@ -459,79 +583,332 @@ void cb_switchToVideoScreen()
 {
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_label_set_text(ui_StartupLabel2, "请稍候...");
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][3]); // "请稍候..."
     xSemaphoreGive(LVGLMutex);
   }
 
-  xTaskCreatePinnedToCore(screenAdjustLoop,   //任务函数
-                          "screenAdjustLoop", //任务名称
-                          2048,               //任务堆栈大小
-                          NULL,               //任务参数
-                          1,                  //任务优先级
-                          NULL,               //任务句柄
-                          0);                 //执行任务核心
+  xTaskCreatePinnedToCore(screenAdjustLoop, // 任务函数
+                          "screenAdjLoop",  // 任务名称
+                          4096,             // 任务堆栈大小
+                          NULL,             // 任务参数
+                          1,                // 任务优先级
+                          NULL,             // 任务句柄
+                          1);               // 执行任务核心
 
-  switchScreenDelay = 2500 + startup_time - millis();
-  if (switchScreenDelay < 0)
-  {
-    switchScreenDelay = 0;
-  }
+  // 每30s计算一次树脂数据
+  esp_timer_create_args_t resinCalc_timer_args = {
+      .callback = &resinCalc,
+      .name = "resinCalc"};
+  ESP_ERROR_CHECK(esp_timer_create(&resinCalc_timer_args, &resinCalcTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
 
-  xTaskCreatePinnedToCore(switchToVideoScreen,        //任务函数
-                          "switchToVideoScreen",      //任务名称
-                          4096,                       //任务堆栈大小
-                          (void *)&switchScreenDelay, //任务参数
-                          1,                          //任务优先级
-                          NULL,                       //任务句柄
-                          0);                         //执行任务核心
+  // 每15分钟同步一次树脂数据
+  // esp_timer_create_args_t resinSync_timer_args = {
+  //     .callback = &resinSync,
+  //     .name = "resinSync"};
+  // ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
+  // ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, 15000000));
+
+  switchScreenDelay = 2500;
+
+  xTaskCreatePinnedToCore(switchToVideoScreen,        // 任务函数
+                          "swToVideoScr",             // 任务名称
+                          4096,                       // 任务堆栈大小
+                          (void *)&switchScreenDelay, // 任务参数
+                          1,                          // 任务优先级
+                          NULL,                       // 任务句柄
+                          0);                         // 执行任务核心
 }
 
-//*****************************/
-//  Updating from SD
-//
-//*****************************/
-
-typedef enum
+void hardwareSetup(void *parameter)
 {
-  VISION_NO_UPDATE = 0,     // No update file
-  VISION_UPDATE_BAD_FILE,   // not a updateable file
-  VISION_UPDATE_START_FAIL, // Update start failed
-  VISION_UPDATE_STARTED,    // Update started
-  VISION_UPDATE_OK          // Update finished (probably never gonna to use)
-} vision_update_result_t;
-
-void performUpdateFromSD(void *parameter)
-{
-  File f = SD_CLASS.open(UPDATE_FILE_PATH);
-
-  LV_LOG_INFO("Start update...");
-  Update.writeStream(f);
-
-  if (Update.end())
-  {
-    if (Update.isFinished())
-    {
-      LV_LOG_INFO("Update finished!");
-      f.close();
-      SD_CLASS.remove(UPDATE_FILE_PATH);
-      esp_restart();
-    }
-  }
+  startup_time = millis();
+  vision_hw_result_t hwErr;
+  vision_update_result_t updateStatus = VISION_NO_UPDATE;
+  bool fileErr = false;
+  String errMsg = "";
 
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件", {}, false);
-    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_center(mbox);
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][4]); // "正在检查硬件..."
+    xSemaphoreGive(LVGLMutex);
+  }
+  hwErr = checkHardware(&errMsg);
+
+  if (hwErr != VISION_HW_SD_ERR)
+  {
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      lv_label_set_text(ui_StartupLabel2, lang[curr_lang][5]); //"正在检查文件..."
+      xSemaphoreGive(LVGLMutex);
+    }
+    updateStatus = updateFromSD(&errMsg);
+    fileErr = checkSDFiles(&errMsg);
+  }
+
+  // 若检查到错误则停止启动
+  if (hwErr == VISION_HW_SD_ERR || fileErr || updateStatus)
+  {
+    ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][8], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 发现如下问题,启动已终止:"
+      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_center(mbox);
+      xSemaphoreGive(LVGLMutex);
+    }
+    vTaskDelete(NULL);
+  }
+
+  // 检查网络配置
+  if (prefs.getUInt("wifiConfigured", 0) == 0)
+  {
+    // 若无已保存网络则进入配网
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      lv_obj_clean(ui_StartupScreen);
+
+      lv_obj_t *ui_NetConfigureTitle = lv_label_create(ui_StartupScreen);
+
+      lv_obj_set_width(ui_NetConfigureTitle, LV_SIZE_CONTENT);
+      lv_obj_set_height(ui_NetConfigureTitle, LV_SIZE_CONTENT);
+
+      lv_obj_set_x(ui_NetConfigureTitle, 25);
+      lv_obj_set_y(ui_NetConfigureTitle, 35);
+
+      lv_label_set_text(ui_NetConfigureTitle, lang[curr_lang][32]); // "网络配置"
+
+      lv_obj_set_style_text_color(ui_NetConfigureTitle, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_text_opa(ui_NetConfigureTitle, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_text_font(ui_NetConfigureTitle, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+      lv_obj_t *ui_NetConfigureLabel = lv_label_create(ui_StartupScreen);
+
+      lv_obj_set_width(ui_NetConfigureLabel, LV_SIZE_CONTENT);
+      lv_obj_set_height(ui_NetConfigureLabel, LV_SIZE_CONTENT);
+
+      lv_obj_set_x(ui_NetConfigureLabel, 30);
+      lv_obj_set_y(ui_NetConfigureLabel, 85);
+
+      lv_label_set_text(ui_NetConfigureLabel,
+                        lang[curr_lang][35]); // "神之眼的部分功能\n依赖网络。\n\n使用微信\n扫描右侧\nQR码配\n置网络。"
+
+      lv_obj_set_style_text_color(ui_NetConfigureLabel, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_text_opa(ui_NetConfigureLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_text_font(ui_NetConfigureLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+      lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen, 100, lv_color_black(), lv_color_white());
+
+      /*Set data*/
+      lv_qrcode_update(qr, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
+      lv_obj_set_x(qr, 105);
+      lv_obj_set_y(qr, 110);
+
+      /*Add a border with bg_color*/
+      lv_obj_set_style_border_color(qr, lv_color_white(), 0);
+      lv_obj_set_style_border_width(qr, 5, 0);
+      xSemaphoreGive(LVGLMutex);
+    }
+
+    wifiConfigure(NULL);
+
+    vTaskDelete(NULL);
+  }
+  else
+  {
+    // 若有已保存网络则尝试获取树脂数据
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      lv_label_set_text(ui_StartupLabel2, lang[curr_lang][14]); // "连接至网络..."
+      xSemaphoreGive(LVGLMutex);
+    }
+
+    if (!getDailyNote(&nd, &errMsg))
+    {
+      lv_obj_t *mbox;
+      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      {
+        lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
+        lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_center(mbox);
+        xSemaphoreGive(LVGLMutex);
+
+        vTaskDelay(5000);
+
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        // removeStyles(mbox);
+        lv_obj_del(mbox);
+        xSemaphoreGive(LVGLMutex);
+      }
+    }
+  }
+
+  pinMode(po.PWR_BTN, INPUT);
+  pwrButton->attachClick(onSingleClick);
+  pwrButton->attachDoubleClick(onDoubleClick);
+  pwrButton->attachMultiClick(onMultiClick);
+
+  cb_switchToVideoScreen();
+
+  vTaskDelete(NULL);
+}
+
+void wifiConfigure(void *parameter)
+{
+  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
+
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.beginSmartConfig(SC_TYPE_ESPTOUCH_AIRKISS);
+
+  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); // disable brownout detector
+
+  ESP_LOGI("wifiConfigure", "Waiting for Smartconfig...");
+
+  while (!WiFi.smartConfigDone() || WiFi.status() != WL_CONNECTED)
+  {
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+
+  ESP_LOGI("wifiConfigure", "Smartconfig success!");
+
+  prefs.putString("wifiSSID1", WiFi.SSID());
+  prefs.putString("wifiPSWD1", WiFi.psk());
+  prefs.putUInt("wifiConfigured", 1);
+  WiFi.stopSmartConfig();
+
+  esp_restart();
+}
+
+bool connectWiFi()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    return true;
+  }
+
+  WiFi.mode(WIFI_STA);
+  int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
+  // WiFi.scanDelete();
+  if (wifiCount < 1)
+  {
+    WiFi.mode(WIFI_OFF);
+    return false;
+  }
+
+  WiFi.begin();
+  unsigned long startConnect_ms = millis();
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    vTaskDelay(500);
+    if (millis() - startConnect_ms > 10000)
+    {
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+      return false;
+    }
+  }
+  return true;
+}
+
+void leaveVideoScreen(void *parameter)
+{
+  // 暂停解码
+  if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
+  {
+    vTaskSuspend(playVideoHandle);
+    mjpeg.pause();
+    xSemaphoreGive(MjpegMutex);
+  }
+
+  // 切换屏幕
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_group_remove_all_objs(ui_group);
+    removeStyles(lv_scr_act());
+    ui_MenuScreen_screen_init();
+    lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  vTaskResume(lvglLoopHandle);
+  isInLVGL = true;
+
+  vTaskDelete(NULL);
+}
+
+void loadVideoScreen(void *parameter)
+{
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_group_remove_all_objs(ui_group);                                   // 删除控制组内对象
+    ui_VideoScreen_screen_init();                                         // 初始化下个要显示的屏幕
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+    lv_async_call(delScr, ui_MenuScreen);                                 // 异步释放资源
+    lv_task_handler();                                                    // 调用任务处理器使LVGL完成操作
+    vTaskSuspend(lvglLoopHandle);                                         // 挂起LVGL
+    isInLVGL = false;                                                     // LVGL标志位设为false
+
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  // 恢复解码器工作
+  vTaskResume(playVideoHandle);
+  mjpeg.resume();
+
+  vTaskDelete(NULL);
+}
+
+void getDailyNoteFromResinScreen(void *parameter)
+{
+  String errMsg = "";
+  bool updateRes = false;
+
+  info_updatingResinData = true;
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text(ui_NoteUpdateTimeLabel, lang[curr_lang][44]); // LV_SYMBOL_REFRESH "正在更新..."
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  updateRes = getDailyNote(&nd, &errMsg);
+
+  info_updatingResinData = false;
+
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    if (!updateRes)
+    {
+      lv_obj_t *mbox = lv_msgbox_create(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
+      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_center(mbox);
+      lv_obj_move_foreground(mbox);
+      xSemaphoreGive(LVGLMutex);
+
+      vTaskDelay(5000);
+
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+      // removeStyles(mbox);
+      lv_obj_del(mbox);
+    }
+
+    lv_timer_ready(ui_timer_ResinDispTimer); // 立即更新树脂显示
+
     xSemaphoreGive(LVGLMutex);
   }
 
   vTaskDelete(NULL);
 }
 
+//*****************************/
+//  Updating from SD
+//
+//*****************************/
 vision_update_result_t updateFromSD(String *errMsg)
 {
-  File f = SD_CLASS.open(UPDATE_FILE_PATH);
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  File f = sdfs->open(UPDATE_FILE_PATH);
+  xSemaphoreGive(SDMutex);
   if (!f)
   {
     f.close();
@@ -541,7 +918,7 @@ vision_update_result_t updateFromSD(String *errMsg)
   if (f.isDirectory() || f.size() < 1024)
   {
     f.close();
-    errMsg->concat("升级文件错误\n");
+    errMsg->concat(lang[curr_lang][16]); // "升级文件错误\n"
     return VISION_UPDATE_BAD_FILE;
   }
 
@@ -550,18 +927,45 @@ vision_update_result_t updateFromSD(String *errMsg)
   if (!Update.begin(fSize))
   {
     f.close();
-    errMsg->concat("升级程序启动失败\n");
+    errMsg->concat(lang[curr_lang][17]); // "升级程序启动失败\n"
     return VISION_UPDATE_START_FAIL;
   }
 
-  f.close();
-  xTaskCreatePinnedToCore(performUpdateFromSD,   //任务函数
-                          "performUpdateFromSD", //任务名称
-                          8192,                  //任务堆栈大小
-                          NULL,                  //任务参数
-                          0,                     //任务优先级
-                          NULL,                  //任务句柄
-                          0);                    //执行任务核心
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text(ui_StartupLabel1, lang[curr_lang][6]); // "正在升级..."
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]); // "请不要关闭电源\n或拔出SD卡"
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    ESP_LOGI("updateFromSD", "Start update...");
+    Update.writeStream(f);
+
+    if (Update.end())
+    {
+      if (Update.isFinished())
+      {
+        ESP_LOGI("updateFromSD", "Update finished!");
+        f.close();
+        sdfs->remove(UPDATE_FILE_PATH);
+        esp_restart();
+      }
+    }
+
+    f.close();
+  }
+  xSemaphoreGive(SDMutex);
+
+  ESP_LOGE("updateFromSD", "Update failed!");
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件"
+    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_center(mbox);
+    xSemaphoreGive(LVGLMutex);
+  }
   return VISION_UPDATE_STARTED;
 }
 
@@ -571,47 +975,79 @@ vision_update_result_t updateFromSD(String *errMsg)
 //
 ////////////////////
 
-void hardwareSetup(lv_event_t *e)
+void cb_hardwareSetup(lv_event_t *e)
 {
-  startup_time = millis();
-  vision_hw_result_t hwErr;
-  vision_update_result_t updateStatus = VISION_NO_UPDATE;
-  bool fileErr = false;
-  String errMsg = "";
+  xTaskCreatePinnedToCore(hardwareSetup,   // 任务函数
+                          "hardwareSetup", // 任务名称
+                          8192,            // 任务堆栈大小
+                          NULL,            // 任务参数
+                          1,               // 任务优先级
+                          NULL,            // 任务句柄
+                          0);              // 执行任务核心
+}
 
-  hwErr = checkHardware(&errMsg);
+void cb_getDailyNoteFromResinScreen(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, // 任务函数
+                          "getDailyNoteFRS",           // 任务名称
+                          6144,                        // 任务堆栈大小
+                          NULL,                        // 任务参数
+                          1,                           // 任务优先级
+                          NULL,                        // 任务句柄
+                          0);                          // 执行任务核心
+}
 
-  if (hwErr != VISION_HW_SD_ERR)
-  {
-    updateStatus = updateFromSD(&errMsg);
-    fileErr = checkSDFiles(&errMsg);
-  }
+void cb_loadVideoScreen(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(loadVideoScreen,   // 任务函数
+                          "loadVideoScreen", // 任务名称
+                          3072,              // 任务堆栈大小
+                          NULL,              // 任务参数
+                          2,                 // 任务优先级
+                          NULL,              // 任务句柄
+                          1);                // 执行任务核心
+}
 
-  if (updateStatus == VISION_UPDATE_STARTED)
-  {
-    lv_label_set_text(ui_StartupLabel1, "正在升级...");
-    lv_label_set_text(ui_StartupLabel2, "请不要关闭电源\n或拔出SD卡");
-    return;
-  }
+void cb_startWifiReConfigure(lv_event_t *e)
+{
+  xTaskCreatePinnedToCore(wifiConfigure,     // 任务函数
+                          "wifiConfigure",   // 任务名称
+                          4096,              // 任务堆栈大小
+                          NULL,              // 任务参数
+                          1,                 // 任务优先级
+                          &wifiConfigHandle, // 任务句柄
+                          1);                // 执行任务核心
+}
 
-  if (hwErr || fileErr || updateStatus)
-  {
-    // Serial.println("Err Detected!!!");
-    lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, LV_SYMBOL_WARNING " 发现如下问题,启动已终止:", errMsg.c_str(), {}, false);
-    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_center(mbox);
-
-    return;
-  }
-
-  cb_switchToVideoScreen();
+void cb_stopWifiReConfigure(lv_event_t *e)
+{
+  vTaskDelete(wifiConfigHandle);
+  WiFi.stopSmartConfig();
+  WiFi.mode(WIFI_OFF);
 }
 
 ////////////////////
 //
-//  Loop Function
+//  Loop Functions
 //
 ////////////////////
+void loop()
+{
+  ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
+  vTaskDelay(pdMS_TO_TICKS(5000));
+}
+
+void lvglLoop(void *parameter)
+{
+  while (1)
+  {
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      lv_timer_handler(); /* let the GUI do its work */
+      xSemaphoreGive(LVGLMutex);
+    }
+  }
+}
 
 void screenAdjustLoop(void *parameter)
 {
@@ -619,12 +1055,16 @@ void screenAdjustLoop(void *parameter)
   float accY = 0;
   while (1)
   {
-    pwrButton.tick();
+    pwrButton->tick();
 
-    if (useProx)
+    if (info_hasProx)
     {
-      proxButton.tick();
-      if (!digitalRead(PROX_INT))
+      if (proxButton)
+      {
+        proxButton->tick();
+      }
+
+      if (!digitalRead(po.PROX_INT))
       {
         if (apds.readProximity() < PROX_THRS)
         {
@@ -632,7 +1072,7 @@ void screenAdjustLoop(void *parameter)
         }
       }
 
-      if (useAutoBrightness)
+      if (setting_autoBright)
       {
         apds.getColorData(&r, &g, &b, &c);
         int light = (c / 2) > 191 ? 191 : (c / 2);
@@ -641,7 +1081,7 @@ void screenAdjustLoop(void *parameter)
       }
     }
 
-    if (useAcc)
+    if (info_hasAccel && setting_useAccel)
     {
       accX = acc.axisAccel(X);
       accY = acc.axisAccel(Y);
@@ -665,12 +1105,12 @@ void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        if (xSemaphoreTake(LCDMutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
         {
           gfx.setRotation(toRotate);
           rotation = toRotate;
           lv_obj_invalidate(lv_scr_act());
-          xSemaphoreGive(LCDMutex);
+          xSemaphoreGive(*LCDMutexptr);
         }
       }
     }
@@ -683,36 +1123,38 @@ void screenAdjustLoop(void *parameter)
 //  Video Play Loop
 //
 //********************//
-
 unsigned long vfile_ms;
 unsigned long vfile_frame_start_ms;
 unsigned long vfile_frame_end_ms;
 void playVideo(void *parameter)
 {
-  LV_LOG_INFO("MJPEG video start");
+  ESP_LOGI("playVideo", "MJPEG video start");
   vfile_ms = millis();
   while (1)
   {
     vfile_frame_start_ms = millis();
-    rtc_wdt_feed(); // Feed watchdog manually
-    if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
+    if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
     {
-      if (mjpeg.readMjpegBuf())
+      if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
       {
-        xSemaphoreGive(MjpegReadMutex);
-        mjpeg.drawJpg();
-      }
-      else
-      {
-        xSemaphoreGive(MjpegReadMutex);
-        if (!mjpeg.reload())
+        if (mjpeg.readMjpegBuf())
         {
-          LV_LOG_ERROR("Unable to reload video file!");
-          break;
+          xSemaphoreGive(MjpegReadMutex);
+          mjpeg.drawJpg();
         }
-        LV_LOG_WARN("Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
-        vfile_ms = millis();
+        else
+        {
+          xSemaphoreGive(MjpegReadMutex);
+          if (!mjpeg.reload())
+          {
+            ESP_LOGE("playVideo", "Unable to reload video file!");
+            break;
+          }
+          ESP_LOGI("playVideo", "Video actual play time:%ds", (int)((millis() - vfile_ms) / 1000));
+          vfile_ms = millis();
+        }
       }
+      xSemaphoreGive(MjpegMutex);
     }
 
     vfile_frame_end_ms = millis();
@@ -720,21 +1162,83 @@ void playVideo(void *parameter)
     {
       vTaskDelay(pdMS_TO_TICKS(1000 / VIDEO_FPS + vfile_frame_start_ms - vfile_frame_end_ms));
     }
-    // LV_LOG_WARN("Current FPS:%d", (int)(1000 / (vfile_frame_end_ms - vfile_frame_start_ms)));
+    // ESP_LOGI("playVideo", "Current FPS:%d", (int)(1000 / (vfile_frame_end_ms - vfile_frame_start_ms)));
   }
   vTaskDelete(NULL);
 }
 
-unsigned long last_log_ms = millis();
-void loop()
+////////////////////////
+//
+//  Resin Functions
+//
+////////////////////////
+bool getDailyNote(Notedata *nd, String *errMsg)
 {
-  while (1)
+  if (!connectWiFi())
   {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    errMsg->concat(lang[curr_lang][20]); // "无法连接至网络\n"
+    return false;
+  }
+
+  bool res = true;
+
+  configTime(GMTOFFSET, DAYLIGHTOFFSET, "pool.ntp.org");
+
+  struct tm timeinfo;
+  unsigned long ntp_start_ms = millis();
+  while (!getLocalTime(&timeinfo))
+  {
+    vTaskDelay(100);
+    if (millis() - ntp_start_ms > 10000)
     {
-      lv_timer_handler(); /* let the GUI do its work */
-      xSemaphoreGive(LVGLMutex);
+      ESP_LOGE("getDailyNote", "Failed to obtain time");
+      res = false;
+      errMsg->concat(lang[curr_lang][21]); // "同步时间失败\n"
+      break;
     }
+  }
+
+  if (getLocalTime(&timeinfo))
+  {
+    int r = 0;
+    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+      r = hyc.syncDailyNote(nd);
+      xSemaphoreGive(NoteDataMutex);
+    }
+
+    if (r < 0)
+    {
+      if (nd->respCode == 1034)
+      {
+        errMsg->concat(lang[curr_lang][53]); // "错误1034：\n请使用米游社app查看体力后重试\n"
+      }
+      else
+      {
+        errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
+      }
+      res = false;
+    }
+    else if (r == 0)
+    {
+      errMsg->concat(lang[curr_lang][23]); //"未配置cookie\n"
+      res = false;
+    }
+  }
+
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+
+  return res;
+}
+
+void resinCalc(void *parameter)
+{
+  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+  {
+    HoyoverseClient::updateDailyNote(&nd);
+
+    xSemaphoreGive(NoteDataMutex);
   }
 }
 
@@ -758,5 +1262,82 @@ void onChangeVideo()
       prefs.putUInt("currFileId", fileNo);
     }
     xSemaphoreGive(MjpegReadMutex);
+  }
+}
+
+////////////////////////
+//
+//  Button Callbacks
+//
+////////////////////////
+bool inEditMode = false;
+void onSingleClick()
+{
+  if (isInLVGL)
+  {
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_RIGHT);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_NEXT);
+      lv_group_focus_next(ui_group);
+    }
+  }
+}
+
+void onDoubleClick()
+{
+  if (isInLVGL)
+  {
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_ENTER);
+      inEditMode = false;
+      lv_group_set_editing(ui_group, false);
+      return;
+    }
+    else
+    {
+      lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
+    }
+
+    if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+    {
+      inEditMode = true;
+      lv_group_set_editing(ui_group, true);
+      return;
+    }
+  }
+  else
+  {
+    xTaskCreatePinnedToCore(leaveVideoScreen, // 任务函数
+                            "leaveVideoScr",  // 任务名称
+                            3072,             // 任务堆栈大小
+                            NULL,             // 任务参数
+                            2,                // 任务优先级
+                            NULL,             // 任务句柄
+                            1);               // 执行任务核心
+  }
+}
+
+void onMultiClick()
+{
+  if (isInLVGL)
+  {
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_LEFT);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_PREV);
+      lv_group_focus_prev(ui_group);
+    }
+  }
+  else
+  {
+    onChangeVideo();
   }
 }

@@ -948,7 +948,7 @@ static void task_output(void* arg) {
 void TJpgD::multitask_begin() {
   param.sem = xQueueCreate(queue_max + 1, sizeof(queue_t*));
 
-  xTaskCreatePinnedToCore(task_output, "task_output", 1792, &param, 2, &param.task, 1);
+  xTaskCreatePinnedToCore(task_output, "task_output", 1792, &param, 2, &param.task, 0);
   
 }
 
@@ -1035,4 +1035,16 @@ TJpgD::JRESULT TJpgD::decomp_multitask(
     }
   } while ((y += my) < height);
   return rc;
+}
+
+TJpgD::JRESULT TJpgD::pause_multitask()
+{
+  vTaskSuspend(param.task);
+  return JDR_OK;
+}
+
+TJpgD::JRESULT TJpgD::resume_multitask()
+{
+  vTaskResume(param.task);
+  return JDR_OK;
 }

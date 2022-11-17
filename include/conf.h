@@ -3,14 +3,6 @@
 
 #define VIDEO_FPS 30
 
-// LCD screen Pinout
-#define LCD_BL 32
-#define LCD_DC 27
-#define LCD_RST 33
-#define LCD_CS 5
-#define LCD_CLK 18  // SCL
-#define LCD_MISO 19 // Unused
-#define LCD_MOSI 23 // SDA
 
 #define LCD_WIDTH 240
 #define LCD_HEIGHT 240
@@ -19,35 +11,11 @@
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-// SD Card Pinout
-#define DAT2 12
-#define DAT3 13
-#define CMD 15
-#define CLK 14
-#define DAT0 2
-#define DAT1 4
-
-// SD Card Bus
-// #define _CONFIG_SD_USE_SPI_
-// #define _CONFIG_SD_USE_SDMMC_1BIT_
-#define _CONFIG_SD_USE_SDMMC_4BIT_
-
-// SD Card Class Name
-#if defined(_CONFIG_SD_USE_SPI_)
-#define SD_CLASS SD
-#elif defined(_CONFIG_SD_USE_SDMMC_1BIT_)
-#define SD_CLASS SD_MMC
-#elif defined(_CONFIG_SD_USE_SDMMC_4BIT_)
-#define SD_CLASS SD_MMC
-#endif
-
 // Proximiter / Lightingmeter type
 #define _CONFIG_PROX_LIGHT_USE_APDS9930_
 // #define _CONFIG_PROX_LIGHT_USE_APDS9960_
 
 // Parameters for proximeter
-#define PROX_INT 35 // Proximeter interrupt pin
-
 #ifdef _CONFIG_PROX_LIGHT_USE_APDS9960_
 #define PROX_LIGHT_METER APDS9960
 #define PROX_THRS 120      // Proximeter interrupt threshold (Smaller value is further)
@@ -65,17 +33,10 @@
 #define LOW_POWER            // Accelerometer Power mode -> {LOW_POWER, HIGH_RESOLUTION}
 
 // MJPEG decoder settings
-#define MJPEG_BUFFER_SIZE (240 * 240 * 2 / 16) // Screen resolution 240*240, 2 byte color, compression ratio 1:16
-#define IMG_BUF_CHUNKS 15
-
-// Button Pin settings
-#define BUTTON_PIN 26
+#define MJPEG_BUFFER_SIZE (240 * 240 * 2 / 8) // Screen resolution 240*240, 2 byte color, compression ratio 1:16
 
 // LVGL Drive Letter
 #define DRIVE_LETTER 'S'
-
-// Audio Output Pin
-#define AUDIO_OUT 25
 
 // Time settings
 #define GMTOFFSET 28800
@@ -84,9 +45,15 @@
 // Updating
 #define UPDATE_FILE_PATH "/update.bin"
 
-// Play File List
+// JSON conf buffer size
+#define JSON_CONF_BUFFER_SIZE 1024
+
+/* Play File List */
 #define PLAY_FILE_CONF_PATH "/playFiles.json"
 #define PLAY_FILE_DEFAULT_CONF "{\"files\":[\"S:/Pyro.mjpeg\",\"S:/Hydro.mjpeg\",\"S:/Anemo.mjpeg\",\"S:/Electro.mjpeg\",\"S:/Dendro.mjpeg\",\"S:/Cryo.mjpeg\",\"S:/Geo.mjpeg\"]}"
-#define PLAY_FILE_CONF_BUFFER_SIZE 1024
+
+/* Hoyolab cookie */
+#define HOYOLAB_CONF_PATH "/Hoyolab.json"
+#define HOYOLAB_DEFAULT_CONF "{\"uid\":\"\", \"cookie\":\"\", \"device_guid\": \"\"}"
 
 #endif // _VISION_CONFIGURATIONS_H_
