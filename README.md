@@ -71,7 +71,8 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 ```
 {
     "uid": "100000000",
-    "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值"
+    "cookie": "PLACE YOUR COOKIE HERE 请在此处填写cookie值",
+    "device_guid": ""
 }
 ```
 - `device_guid` 是选填项。其值应为不含短横线的guid，共32位字符。若留空，神之眼将会自动生成该值。
