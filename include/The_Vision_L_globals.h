@@ -14,6 +14,7 @@ extern Notedata nd;
 extern Preferences prefs;
 
 /* Runtime info */
+extern bool info_isSquareLCD;
 extern bool info_hasProx;
 extern bool info_hasAccel;
 extern bool info_updatingResinData;

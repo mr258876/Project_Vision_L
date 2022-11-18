@@ -187,6 +187,14 @@ void setup()
   ESP_LOGI("getPinout", "HW_version:%d", info_hwType);
   getVisionPinout(&po, info_hwType);
 
+  if (po.LCD_panel)
+  {
+    info_isSquareLCD = false;
+  }
+  else{
+    info_isSquareLCD = true;
+  }
+  
   // I2C pins
   if (po.I2C_SDA && po.I2C_SCL)
   {

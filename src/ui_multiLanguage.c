@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22B171";
+const char *info_visionVersion = "L0.2.0-Indev22B181";
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L

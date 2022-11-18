@@ -12,6 +12,7 @@ Notedata nd;
 Preferences prefs;
 
 /* Runtime info */
+bool info_isSquareLCD = true;
 bool info_hasProx = false;
 bool info_hasAccel = false;
 bool info_updatingResinData = false;

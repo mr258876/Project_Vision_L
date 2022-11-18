@@ -62,8 +62,8 @@ void cb_timer_ClockTimer(lv_timer_t *timer)
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
     {
-        lv_img_set_angle(ui_ClockHour, timeinfo.tm_hour % 12 * 300 + timeinfo.tm_min * 5 + 2250);
-        lv_img_set_angle(ui_ClockMinute, timeinfo.tm_min * 60 + timeinfo.tm_sec + 450);
+        lv_img_set_angle(ui_ClockHour, timeinfo.tm_hour % 12 * 300 + timeinfo.tm_min * 5 + 1800 + (info_isSquareLCD?450:0));
+        lv_img_set_angle(ui_ClockMinute, timeinfo.tm_min * 60 + timeinfo.tm_sec + (info_isSquareLCD?450:0));
 
         int opaList[] = {0, 0, 0, 0};
 
