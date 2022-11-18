@@ -133,11 +133,27 @@ void getDailyNoteFromResinScreen(void *parameter);
 
 void lvglLoop(void *parameter);
 void screenAdjustLoop(void *parameter);
+void screenFlushLoop(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
 void onDoubleClick();
 void onMultiClick();
+
+////////////////////////
+//
+//  Structs
+//
+////////////////////////
+struct ScreenFlushMsg
+{
+  lv_disp_drv_t *disp;
+  lv_color_t *color_p;
+  lv_coord_t x1;
+  lv_coord_t x2;
+  lv_coord_t y1;
+  lv_coord_t y2;
+};
 
 ////////////////////////
 //
@@ -151,17 +167,9 @@ void onMultiClick();
  */
 void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-
-  if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
-  {
-    gfx.setAddrWindow(area->x1, area->y1, w, h);
-    gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
-    xSemaphoreGive(*LCDMutexptr);
-  }
-
-  lv_disp_flush_ready(disp);
+  ScreenFlushMsg sfm = {disp, color_p, area->x1, area->x2, area->y1, area->y2};
+  xQueueSend(screenFlushQueue, &sfm, portMAX_DELAY);
+  // lv_disp_flush_ready(disp);
 }
 
 /* Setup Function */
@@ -191,10 +199,11 @@ void setup()
   {
     info_isSquareLCD = false;
   }
-  else{
+  else
+  {
     info_isSquareLCD = true;
   }
-  
+
   // I2C pins
   if (po.I2C_SDA && po.I2C_SCL)
   {
@@ -273,8 +282,8 @@ void setup()
     ESP_LOGE("setup", "Video file buffer allocate failed!");
   }
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 60, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 60, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
   if (!disp_draw_buf || !disp_draw_buf_2)
   {
@@ -282,7 +291,7 @@ void setup()
   }
   else
   {
-    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 48);
+    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 60);
 
     /* Initialize the display */
     lv_disp_drv_init(&disp_drv);
@@ -296,6 +305,9 @@ void setup()
 
     lv_disp_drv_register(&disp_drv);
 
+    /* Create Queue for task on core 0 to flush screen */
+    screenFlushQueue = xQueueCreate(1, sizeof(ScreenFlushMsg));
+
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();
 
@@ -304,6 +316,7 @@ void setup()
 
     ui_init();
 
+    /* Create lvgl task */
     xTaskCreatePinnedToCore(lvglLoop,        // 任务函数
                             "lvglLoop",      // 任务名称
                             8192,            // 任务堆栈大小
@@ -312,9 +325,44 @@ void setup()
                             &lvglLoopHandle, // 任务句柄
                             1);              // 执行任务核心
 
+    /* Create screen flushing task */
+    xTaskCreatePinnedToCore(screenFlushLoop,        // 任务函数
+                            "screenFlushLoop",      // 任务名称
+                            2048,                   // 任务堆栈大小
+                            NULL,                   // 任务参数
+                            2,                      // 任务优先级
+                            &screenFlushLoopHandle, // 任务句柄
+                            0);                     // 执行任务核心
+
     LV_LOG_INFO("LVGL booted.");
   }
   // startSettingServer();
+  vTaskDelete(NULL);
+}
+
+// Loop task of flushing screen
+void screenFlushLoop(void *parameter)
+{
+  lv_coord_t w;
+  lv_coord_t h;
+  ScreenFlushMsg sfm;
+  while (1)
+  {
+    if (!xQueueReceive(screenFlushQueue, &sfm, portMAX_DELAY))
+      continue;
+
+    w = (sfm.x2 - sfm.x1 + 1);
+    h = (sfm.y2 - sfm.y1 + 1);
+
+    if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
+    {
+      gfx.setAddrWindow(sfm.x1, sfm.y1, w, h);
+      gfx.pushPixelsDMA((uint16_t *)&(sfm.color_p->full), w * h);
+      xSemaphoreGive(*LCDMutexptr);
+      lv_disp_flush_ready(sfm.disp);
+    }
+    taskYIELD();
+  }
   vTaskDelete(NULL);
 }
 
@@ -364,11 +412,12 @@ void switchToVideoScreen(void *delayTime)
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-    
-    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
+
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY); // 在结束SPI占用后再挂起LVGL任务
     {
-    vTaskSuspend(lvglLoopHandle);
-    isInLVGL = false;
+      vTaskSuspend(lvglLoopHandle);
+      vTaskSuspend(screenFlushLoopHandle);
+      isInLVGL = false;
     }
     xSemaphoreGive(*LCDMutexptr);
 
@@ -573,11 +622,10 @@ bool checkSDFiles(String *errMsg)
     prefs.putString("deviceGuid", info_deviceGuid);
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  else  // 未手动指定guid但已生成则使用已有guid
+  else // 未手动指定guid但已生成则使用已有guid
   {
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  
 
   doc.clear();
 
@@ -839,6 +887,7 @@ void leaveVideoScreen(void *parameter)
   }
 
   vTaskResume(lvglLoopHandle);
+  vTaskResume(screenFlushLoopHandle);
   isInLVGL = true;
 
   vTaskDelete(NULL);
@@ -854,6 +903,7 @@ void loadVideoScreen(void *parameter)
     lv_async_call(delScr, ui_MenuScreen);                                 // 异步释放资源
     lv_task_handler();                                                    // 调用任务处理器使LVGL完成操作
     vTaskSuspend(lvglLoopHandle);                                         // 挂起LVGL
+    vTaskSuspend(screenFlushLoopHandle);                                  // 挂起LVGL屏幕刷新
     isInLVGL = false;                                                     // LVGL标志位设为false
 
     xSemaphoreGive(LVGLMutex);
@@ -1215,8 +1265,15 @@ bool getDailyNote(Notedata *nd, String *errMsg)
       xSemaphoreGive(NoteDataMutex);
     }
 
-    if (r < 0)
+    switch (r)
     {
+    case 1:
+      break;
+    case 0:
+      errMsg->concat(lang[curr_lang][23]); //"未配置cookie\n"
+      res = false;
+      break;
+    case HOYO_CLI_RESP_ERR:
       if (nd->respCode == 1034)
       {
         errMsg->concat(lang[curr_lang][53]); // "错误1034：\n请使用米游社app查看体力后重试\n"
@@ -1224,13 +1281,15 @@ bool getDailyNote(Notedata *nd, String *errMsg)
       else
       {
         errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
+        errMsg->concat(lang[curr_lang][56]); // "错误代码："
+        errMsg->concat(nd->respCode);
       }
       res = false;
-    }
-    else if (r == 0)
-    {
-      errMsg->concat(lang[curr_lang][23]); //"未配置cookie\n"
+      break;
+    default:
+      errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
       res = false;
+      break;
     }
   }
 

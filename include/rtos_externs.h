@@ -12,6 +12,9 @@ extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
 
+// FreeRTOS队列
+extern QueueHandle_t screenFlushQueue;
+
 // SPI 互斥锁
 extern SemaphoreHandle_t SDMutex;
 extern SemaphoreHandle_t LCDMutex;
@@ -20,6 +23,7 @@ extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI b
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
 extern TaskHandle_t lvglLoopHandle;
+extern TaskHandle_t screenFlushLoopHandle;
 extern TaskHandle_t wifiConfigHandle;
 extern TaskHandle_t APILoopHandle;
 

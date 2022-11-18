@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22B181";
+const char *info_visionVersion = "L0.2.0-Indev22B182";
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L
@@ -63,6 +63,7 @@ const char *zh_Hans[] = {
     "错误1034：\n请使用米游社app查看体力后重试\n",                          // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
     LV_SYMBOL_WARNING " 错误：",                                            // 54 Error
     "未同步时间\n",                                                         // 55 Time not synchronized
+    "错误代码：",                                                           // 56 Error code:
 };
 
 const char *en_US[] = {
@@ -122,6 +123,7 @@ const char *en_US[] = {
     "Error 1034:\nPlease use Hoyolab app\nto check resin,\nand then try again.\n", // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
     LV_SYMBOL_WARNING " Error:",                                                   // 54 Error
     "Time not synchronized\n",                                                     // 55 Time not synchronized
+    "Error code:",                                                                 // 56 Error code:
 };
 
 const char **lang[] = {
