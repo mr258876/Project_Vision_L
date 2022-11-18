@@ -11,6 +11,9 @@ SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
 
+/* Queue */
+QueueHandle_t screenFlushQueue = NULL;
+
 /* SPI */
 SemaphoreHandle_t SDMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t LCDMutex = xSemaphoreCreateMutex();
@@ -19,6 +22,7 @@ SemaphoreHandle_t *LCDMutexptr = nullptr;
 /* tsk handle */
 TaskHandle_t playVideoHandle;
 TaskHandle_t lvglLoopHandle;
+TaskHandle_t screenFlushLoopHandle;
 TaskHandle_t APILoopHandle;
 TaskHandle_t wifiConfigHandle;
 
