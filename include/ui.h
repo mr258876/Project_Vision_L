@@ -91,6 +91,7 @@ extern lv_obj_t * ui_Horoscope3;
 extern lv_obj_t * ui_Horoscope4;
 extern lv_obj_t * ui_ClockDial;
 extern lv_obj_t * ui_ClockHour;
+extern lv_obj_t * ui_ClockSecond;
 extern lv_obj_t * ui_ClockMinute;
 extern lv_obj_t * ui_ClockIconMorning;
 extern lv_obj_t * ui_ClockIconNoon;
@@ -100,11 +101,15 @@ extern lv_obj_t * ui_ClockIconNight;
 extern lv_group_t * ui_group;
 
 extern lv_timer_t *ui_timer_ResinDispTimer;
-extern lv_timer_t *ui_timer_ClockTimer;
+extern lv_timer_t *ui_timer_ClockTimerSecond;
+extern lv_timer_t *ui_timer_ClockTimerMinute;
+extern lv_timer_t *ui_timer_ClockTimerHour;
 extern lv_timer_t *ui_timer_ScrDelTimer;
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
-void cb_timer_ClockTimer(lv_timer_t *timer);
+void cb_timer_ClockTimerSecond(lv_timer_t *timer);
+void cb_timer_ClockTimerMinute(lv_timer_t *timer);
+void cb_timer_ClockTimerHour(lv_timer_t *timer);
 void cb_timer_ScrDelTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
@@ -146,6 +151,7 @@ LV_IMG_DECLARE(ui_img_Horoscope05);    // assets\ui_img_Horoscope05.png
 LV_IMG_DECLARE(ui_img_Horoscope06);    // assets\ui_img_Horoscope06.png
 LV_IMG_DECLARE(ui_img_clock_mask);    // assets\Clock_Mask.png
 LV_IMG_DECLARE(ui_img_clock_minutehand);    // assets\ui_Clock_MinuteHand.png
+LV_IMG_DECLARE(ui_img_clock_secondhand);    // assets\ui_Clock_SecondHand.png
 LV_IMG_DECLARE(ui_img_clock_hourhand);    // assets\ui_Clock_HourHand.png
 LV_IMG_DECLARE(ui_img_clockicon_morning);    // assets\ui_ClockIcon_Morning.png
 LV_IMG_DECLARE(ui_img_clockicon_noon);    // assets\ui_ClockIcon_Noon.png

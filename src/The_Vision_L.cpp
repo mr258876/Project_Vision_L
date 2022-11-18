@@ -306,7 +306,7 @@ void setup()
     lv_disp_drv_register(&disp_drv);
 
     /* Create Queue for task on core 0 to flush screen */
-    screenFlushQueue = xQueueCreate(1, sizeof(ScreenFlushMsg));
+    screenFlushQueue = xQueueCreate(2, sizeof(ScreenFlushMsg));
 
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();

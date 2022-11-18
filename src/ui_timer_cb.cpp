@@ -57,13 +57,30 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
     }
 }
 
-void cb_timer_ClockTimer(lv_timer_t *timer)
-{
+void cb_timer_ClockTimerSecond(lv_timer_t *timer)
+{   
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo))
+    {
+        lv_img_set_angle(ui_ClockSecond, timeinfo.tm_sec * 60 + (info_isSquareLCD?450:0));
+    }
+}
+
+void cb_timer_ClockTimerMinute(lv_timer_t *timer)
+{   
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo))
+    {
+        lv_img_set_angle(ui_ClockMinute, timeinfo.tm_min * 60 + timeinfo.tm_sec + (info_isSquareLCD?450:0));
+    }
+}
+
+void cb_timer_ClockTimerHour(lv_timer_t *timer)
+{   
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
     {
         lv_img_set_angle(ui_ClockHour, timeinfo.tm_hour % 12 * 300 + timeinfo.tm_min * 5 + 1800 + (info_isSquareLCD?450:0));
-        lv_img_set_angle(ui_ClockMinute, timeinfo.tm_min * 60 + timeinfo.tm_sec + (info_isSquareLCD?450:0));
 
         int opaList[] = {0, 0, 0, 0};
 

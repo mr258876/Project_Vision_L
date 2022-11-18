@@ -92,6 +92,7 @@ lv_obj_t *ui_Horoscope3;
 lv_obj_t *ui_Horoscope4;
 lv_obj_t *ui_ClockDial;
 lv_obj_t *ui_ClockHour;
+lv_obj_t *ui_ClockSecond;
 lv_obj_t *ui_ClockMinute;
 lv_obj_t *ui_ClockIconMorning;
 lv_obj_t *ui_ClockIconNoon;
@@ -101,7 +102,9 @@ lv_obj_t *ui_ClockIconNight;
 lv_group_t *ui_group;
 
 lv_timer_t *ui_timer_ResinDispTimer;
-lv_timer_t *ui_timer_ClockTimer;
+lv_timer_t *ui_timer_ClockTimerSecond;
+lv_timer_t *ui_timer_ClockTimerMinute;
+lv_timer_t *ui_timer_ClockTimerHour;
 lv_timer_t *ui_timer_ScrDelTimer;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
@@ -1281,6 +1284,17 @@ void ui_ClockScreen_screen_init(void)
     lv_obj_clear_flag(ui_ClockHour, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_img_set_pivot(ui_ClockHour, 15, -9);
 
+    ui_ClockSecond = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockSecond, &ui_img_clock_secondhand);
+    lv_obj_set_width(ui_ClockSecond, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_ClockSecond, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_ClockSecond, 1);
+    lv_obj_set_y(ui_ClockSecond, -63);
+    lv_obj_set_align(ui_ClockSecond, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockSecond, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_ClockSecond, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_pivot(ui_ClockSecond, 6, 116);
+
     ui_ClockMinute = lv_img_create(ui_ClockScreen);
     lv_img_set_src(ui_ClockMinute, &ui_img_clock_minutehand);
     lv_obj_set_width(ui_ClockMinute, LV_SIZE_CONTENT);  /// 1
@@ -1342,8 +1356,12 @@ void ui_ClockScreen_screen_init(void)
     lv_group_add_obj(ui_group, ui_ClockScreen);
 
     // 启动timer
-    ui_timer_ClockTimer = lv_timer_create(cb_timer_ClockTimer, 1000, NULL);
-    lv_timer_ready(ui_timer_ClockTimer);
+    ui_timer_ClockTimerSecond = lv_timer_create(cb_timer_ClockTimerSecond, 200, NULL);
+    ui_timer_ClockTimerMinute = lv_timer_create(cb_timer_ClockTimerMinute, 2000, NULL);
+    ui_timer_ClockTimerHour = lv_timer_create(cb_timer_ClockTimerHour, 120000, NULL);
+    lv_timer_ready(ui_timer_ClockTimerSecond);
+    lv_timer_ready(ui_timer_ClockTimerMinute);
+    lv_timer_ready(ui_timer_ClockTimerHour);
 }
 
 void ui_init(void)

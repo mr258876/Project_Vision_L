@@ -55,7 +55,9 @@ void cb_leaveClockScreen_async(void *parameter)
 void cb_leaveClockScreen(lv_event_t *e)
 {
   lv_anim_del_all();                              // 删除时钟背景动画
-  lv_timer_del(ui_timer_ClockTimer);              // 删除树脂显示刷新定时器
+  lv_timer_del(ui_timer_ClockTimerSecond);              // 删除树脂显示刷新定时器
+  lv_timer_del(ui_timer_ClockTimerMinute);              // 删除树脂显示刷新定时器
+  lv_timer_del(ui_timer_ClockTimerHour);              // 删除树脂显示刷新定时器
   lv_async_call(cb_leaveClockScreen_async, NULL); // 异步调用屏幕切换函数
 }
 
