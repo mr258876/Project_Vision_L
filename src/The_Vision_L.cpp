@@ -134,6 +134,7 @@ void getDailyNoteFromResinScreen(void *parameter);
 void lvglLoop(void *parameter);
 void screenAdjustLoop(void *parameter);
 void screenFlushLoop(void *parameter);
+void screenFlushLoop(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
@@ -412,12 +413,11 @@ void switchToVideoScreen(void *delayTime)
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-
-    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY); // 在结束SPI占用后再挂起LVGL任务
+    
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
     {
-      vTaskSuspend(lvglLoopHandle);
-      vTaskSuspend(screenFlushLoopHandle);
-      isInLVGL = false;
+    vTaskSuspend(lvglLoopHandle);
+    isInLVGL = false;
     }
     xSemaphoreGive(*LCDMutexptr);
 
@@ -622,10 +622,11 @@ bool checkSDFiles(String *errMsg)
     prefs.putString("deviceGuid", info_deviceGuid);
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  else // 未手动指定guid但已生成则使用已有guid
+  else  // 未手动指定guid但已生成则使用已有guid
   {
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
+  
 
   doc.clear();
 
@@ -887,7 +888,6 @@ void leaveVideoScreen(void *parameter)
   }
 
   vTaskResume(lvglLoopHandle);
-  vTaskResume(screenFlushLoopHandle);
   isInLVGL = true;
 
   vTaskDelete(NULL);
@@ -903,7 +903,6 @@ void loadVideoScreen(void *parameter)
     lv_async_call(delScr, ui_MenuScreen);                                 // 异步释放资源
     lv_task_handler();                                                    // 调用任务处理器使LVGL完成操作
     vTaskSuspend(lvglLoopHandle);                                         // 挂起LVGL
-    vTaskSuspend(screenFlushLoopHandle);                                  // 挂起LVGL屏幕刷新
     isInLVGL = false;                                                     // LVGL标志位设为false
 
     xSemaphoreGive(LVGLMutex);
@@ -1265,15 +1264,8 @@ bool getDailyNote(Notedata *nd, String *errMsg)
       xSemaphoreGive(NoteDataMutex);
     }
 
-    switch (r)
+    if (r < 0)
     {
-    case 1:
-      break;
-    case 0:
-      errMsg->concat(lang[curr_lang][23]); //"未配置cookie\n"
-      res = false;
-      break;
-    case HOYO_CLI_RESP_ERR:
       if (nd->respCode == 1034)
       {
         errMsg->concat(lang[curr_lang][53]); // "错误1034：\n请使用米游社app查看体力后重试\n"
@@ -1281,15 +1273,13 @@ bool getDailyNote(Notedata *nd, String *errMsg)
       else
       {
         errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
-        errMsg->concat(lang[curr_lang][56]); // "错误代码："
-        errMsg->concat(nd->respCode);
       }
       res = false;
-      break;
-    default:
-      errMsg->concat(lang[curr_lang][22]); // "网络响应异常\n"
+    }
+    else if (r == 0)
+    {
+      errMsg->concat(lang[curr_lang][23]); //"未配置cookie\n"
       res = false;
-      break;
     }
   }
 
