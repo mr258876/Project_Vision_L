@@ -27,5 +27,3 @@ TaskHandle_t APILoopHandle;
 TaskHandle_t wifiConfigHandle;
 
 esp_timer_handle_t resinCalcTimer;
-esp_timer_handle_t resinSyncTimer;
-esp_timer_handle_t resinDisplayTimer;

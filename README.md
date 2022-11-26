@@ -27,7 +27,11 @@ OneButton       2.0.3
 ```
 APDS-9930       https://github.com/Depau/APDS9930
 LinkedList      https://github.com/ivanseidel/LinkedList
+```
+- 部分代码参考了以下项目 / Some code refer to following projects
+```
 RGB565_video    https://github.com/moononournation/RGB565_video
+esp32_audio     https://github.com/atomic14/esp32_audio
 ```
 
 ## 中文

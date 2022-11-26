@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22B182";
+const char *info_visionVersion = "L0.2.0-Indev22B261";
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L
@@ -64,6 +64,7 @@ const char *zh_Hans[] = {
     LV_SYMBOL_WARNING " 错误：",                                            // 54 Error
     "未同步时间\n",                                                         // 55 Time not synchronized
     "错误代码：",                                                           // 56 Error code:
+    "SPIFFS分区初始化失败\n",                                                 // 57 SPIFFS partition init failed
 };
 
 const char *en_US[] = {
@@ -124,6 +125,7 @@ const char *en_US[] = {
     LV_SYMBOL_WARNING " Error:",                                                   // 54 Error
     "Time not synchronized\n",                                                     // 55 Time not synchronized
     "Error code:",                                                                 // 56 Error code:
+    "SPIFFS partition init failed\n",                                                // 57 SPIFFS partition init failed
 };
 
 const char **lang[] = {

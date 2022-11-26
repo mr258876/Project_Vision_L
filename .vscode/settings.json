@@ -29,6 +29,7 @@
         "istream": "cpp",
         "ostream": "cpp",
         "sstream": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "ff.h": "c"
     }
 }

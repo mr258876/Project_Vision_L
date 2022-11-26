@@ -29,7 +29,5 @@ extern TaskHandle_t APILoopHandle;
 
 // ESP Timer 计时器
 extern esp_timer_handle_t resinCalcTimer;
-extern esp_timer_handle_t resinSyncTimer;
-extern esp_timer_handle_t resinDisplayTimer;
 
 #endif

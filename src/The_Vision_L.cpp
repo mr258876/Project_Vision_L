@@ -6,6 +6,7 @@
 #include <FS.h>
 #include <SD.h>
 #include <SD_MMC.h>
+#include <SPIFFS.h>
 
 #include <Update.h>
 
@@ -41,6 +42,9 @@
 #include "Hoyoverse.h"
 #include "APIServer.h"
 
+#include "DACOutput.h"
+#include "WAVFileReader.h"
+
 // Freertos
 #include "rtc_wdt.h"
 
@@ -53,7 +57,8 @@ typedef enum
 {
   VISION_HW_OK = 0,
   VISION_HW_SENSOR_ERR,
-  VISION_HW_SD_ERR
+  VISION_HW_SD_ERR,
+  VISION_HW_SPIFFS_ERR
 } vision_hw_result_t;
 
 typedef enum
@@ -67,6 +72,21 @@ typedef enum
 
 ////////////////////////
 //
+//  Structs
+//
+////////////////////////
+struct ScreenFlushMsg
+{
+  lv_disp_drv_t *disp;
+  lv_color_t *color_p;
+  lv_coord_t x1;
+  lv_coord_t x2;
+  lv_coord_t y1;
+  lv_coord_t y2;
+};
+
+////////////////////////
+//
 //  Variables
 //
 ////////////////////////
@@ -77,7 +97,6 @@ static OneButton *pwrButton;
 static LGFX_Device gfx;
 
 /* SD Card*/
-SPIClass SDSPI;
 fs::FS *sdfs;
 
 /* LVGL Stuff */
@@ -108,6 +127,10 @@ OneButton *proxButton = NULL;
 #define LOW_POWER
 KXTJ3 acc(0x0E);
 int rotation = 0;
+
+/* Audio */
+SampleSource *wav;
+DACOutput *aOut;
 
 ////////////////////////
 //
@@ -140,21 +163,6 @@ void onChangeVideo();
 void onSingleClick();
 void onDoubleClick();
 void onMultiClick();
-
-////////////////////////
-//
-//  Structs
-//
-////////////////////////
-struct ScreenFlushMsg
-{
-  lv_disp_drv_t *disp;
-  lv_color_t *color_p;
-  lv_coord_t x1;
-  lv_coord_t x2;
-  lv_coord_t y1;
-  lv_coord_t y2;
-};
 
 ////////////////////////
 //
@@ -217,7 +225,8 @@ void setup()
   // Audio Output
   if (po.AUDIO_OUT)
   {
-    pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
+    aOut = new DACOutput();
+    aOut->init(po.AUDIO_OUT);
   }
 
   // SPI Mutex
@@ -228,6 +237,16 @@ void setup()
   else
   {
     LCDMutexptr = &LCDMutex;
+  }
+
+  // Internal flash init
+  if (SPIFFS.begin(true, "/fflash"))
+  {
+    ESP_LOGI("setup", "SPIFFS partition mounted!");
+  }
+  else
+  {
+    ESP_LOGE("setup", "SPIFFS partition mount failed!");
   }
 
   // SD card Pull-Ups
@@ -247,9 +266,9 @@ void setup()
   gfx.setSwapBytes(false);
   gfx.fillScreen(TFT_BLACK);
 
-  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
-  ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
-  ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
+  ledcAttachPin(po.LCD_BL, 1);            // assign TFT_BL pin to channel 2
+  ledcSetup(1, 48000, 8);                 // 48 kHz PWM, 8-bit resolution
+  ledcWrite(1, setting_screenBrightness); // brightness 0 - 255
 
   // SD card init
   if (po.SD_use_sdmmc)
@@ -268,7 +287,7 @@ void setup()
   else
   {
     SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    SD.begin(po.SD_DAT3, SPI, 20000000);
+    SD.begin(po.SD_DAT3, SPI, 20000000, "/sdcard");
     sdfs = &SD;
   }
 
@@ -360,8 +379,8 @@ void screenFlushLoop(void *parameter)
       gfx.setAddrWindow(sfm.x1, sfm.y1, w, h);
       gfx.pushPixelsDMA((uint16_t *)&(sfm.color_p->full), w * h);
       xSemaphoreGive(*LCDMutexptr);
-      lv_disp_flush_ready(sfm.disp);
     }
+    lv_disp_flush_ready(sfm.disp);
     taskYIELD();
   }
   vTaskDelete(NULL);
@@ -371,10 +390,15 @@ void screenFlushLoop(void *parameter)
 void loadSettings()
 {
   info_hwType = prefs.getUInt("hwType", 0);
+  info_deviceGuid = prefs.getString("deviceGuid", "");
+
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
   curr_lang = prefs.getUInt("language", 1);
-  info_deviceGuid = prefs.getString("deviceGuid", "");
+  setting_screenDirection = prefs.getUInt("screenDirection", 0);
+  setting_screenBrightness = prefs.getUInt("screenBrightness", LCD_BRIGHTNESS);
+  setting_soundMuted = prefs.getBool("soundMuted", false);
+  setting_soundVolume = prefs.getUInt("soundVolume", 75);
 }
 
 void mjpegInit()
@@ -413,11 +437,11 @@ void switchToVideoScreen(void *delayTime)
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-    
-    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
+
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY); // 在结束SPI占用后再挂起LVGL任务
     {
-    vTaskSuspend(lvglLoopHandle);
-    isInLVGL = false;
+      vTaskSuspend(lvglLoopHandle);
+      isInLVGL = false;
     }
     xSemaphoreGive(*LCDMutexptr);
 
@@ -506,6 +530,13 @@ vision_hw_result_t checkHardware(String *errMsg)
     ESP_LOGE("checkHardware", "No SD Card!");
   }
   xSemaphoreGive(SDMutex);
+
+  if (!SPIFFS.totalBytes())
+  {
+    hwErrDetected = VISION_HW_SPIFFS_ERR;
+    errMsg->concat(lang[curr_lang][57]); // "SPIFFS分区初始化失败\n"
+    ESP_LOGE("checkHardware", "SPIFFS Fail!");
+  }
 
   return hwErrDetected;
 }
@@ -622,11 +653,10 @@ bool checkSDFiles(String *errMsg)
     prefs.putString("deviceGuid", info_deviceGuid);
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  else  // 未手动指定guid但已生成则使用已有guid
+  else // 未手动指定guid但已生成则使用已有guid
   {
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  
 
   doc.clear();
 
@@ -650,7 +680,7 @@ void cb_switchToVideoScreen()
                           NULL,             // 任务参数
                           1,                // 任务优先级
                           NULL,             // 任务句柄
-                          1);               // 执行任务核心
+                          0);               // 执行任务核心
 
   // 每30s计算一次树脂数据
   esp_timer_create_args_t resinCalc_timer_args = {
@@ -674,7 +704,7 @@ void cb_switchToVideoScreen()
                           (void *)&switchScreenDelay, // 任务参数
                           1,                          // 任务优先级
                           NULL,                       // 任务句柄
-                          0);                         // 执行任务核心
+                          1);                         // 执行任务核心
 }
 
 void hardwareSetup(void *parameter)
@@ -704,7 +734,7 @@ void hardwareSetup(void *parameter)
   }
 
   // 若检查到错误则停止启动
-  if (hwErr == VISION_HW_SD_ERR || fileErr || updateStatus)
+  if (hwErr == VISION_HW_SD_ERR || hwErr == VISION_HW_SPIFFS_ERR || fileErr || updateStatus)
   {
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -907,6 +937,9 @@ void loadVideoScreen(void *parameter)
 
     xSemaphoreGive(LVGLMutex);
   }
+
+  wav = new WAVFileReader("/Open.wav");
+  aOut->start(wav);
 
   // 恢复解码器工作
   vTaskResume(playVideoHandle);

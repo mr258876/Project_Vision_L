@@ -23,3 +23,7 @@ extern String info_deviceGuid;  // Device guid, notice there's no dash lines!
 /* Setting vars */
 extern bool setting_useAccel;
 extern bool setting_autoBright;
+extern uint8_t setting_screenDirection;
+extern uint8_t setting_screenBrightness;
+extern bool setting_soundMuted;
+extern uint8_t setting_soundVolume;

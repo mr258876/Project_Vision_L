@@ -21,3 +21,7 @@ String info_deviceGuid = "";
 /* Setting vars */
 bool setting_useAccel = true;
 bool setting_autoBright = true;
+uint8_t setting_screenDirection = 0;
+uint8_t setting_screenBrightness = 127;
+bool setting_soundMuted = false;
+uint8_t setting_soundVolume = 75;
