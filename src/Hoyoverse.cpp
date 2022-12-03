@@ -1,3 +1,22 @@
+/*
+
+FileName: Hoyoverse.cpp
+Author: mr258876
+Note: Hoyolab API client for ESP32
+
+Copyright (c) 2022, mr258876
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+*/
+
 #include "Hoyoverse.h"
 #include "Hoyoverse_const.h"
 
@@ -12,22 +31,75 @@ HoyoverseClient::~HoyoverseClient()
 {
 }
 
+/*
+    @brief  Initialize HoyoverseClient
+    @param[0]  cookie: cookie to login Hoyolab
+    @param[1]  uid: game character id
+*/
 void HoyoverseClient::begin(const char *cookie, const char *uid)
 {
     _uid = String(uid);
     _cookie = String(cookie);
 }
 
+/*
+    @brief  Set cookie for Hoyolab.
+    @param  cookie: cookie to set
+*/
+void HoyoverseClient::setCookie(const char *cookie)
+{
+    _cookie = String(cookie);
+}
+
+/*
+    @brief  Get Hoyolab cookie.
+    @return Cookie in String
+*/
+String HoyoverseClient::getCookie()
+{
+    return _cookie;
+}
+
+/*
+    @brief  Set character UID.
+    @param  uid: UID to set
+*/
+void HoyoverseClient::setUid(const char *uid)
+{
+    _uid = String(uid);
+}
+
+/*
+    @brief  Get character UID.
+    @return Uid in String
+*/
+String HoyoverseClient::getUid()
+{
+    return _uid;
+}
+
+/*
+    @brief  Set GUID for API requests. It should be fine if left this blank.
+    @param  guid: GUID to set
+*/
 void HoyoverseClient::setDeviceGuid(const char *guid)
 {
     _device_guid = String(guid);
 }
 
+/*
+    @brief  Get current GUID.
+    @return guid in String
+*/
 String HoyoverseClient::getDeviceGuid()
 {
     return _device_guid;
 }
 
+/*
+    @brief  Get forum type.
+    @return 0 for 米游社, 1 for Hoyolab
+*/
 uint8_t HoyoverseClient::getForumType(const char *uid)
 {
     switch (uid[0])
@@ -40,6 +112,10 @@ uint8_t HoyoverseClient::getForumType(const char *uid)
     }
 }
 
+/*
+    @brief  Get server for one uid.
+    @return server name in const char*
+*/
 const char *HoyoverseClient::getServer(const char *uid)
 {
     switch (uid[0])
@@ -61,6 +137,12 @@ const char *HoyoverseClient::getServer(const char *uid)
     return "cn_gf01";
 }
 
+/*
+    @brief  Get dynamic salt for request.
+    @param[0] body: request body (HTTP POST only)
+    @param[1] param: request parameters
+    @return Dynamic salt in String
+*/
 String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
 {
     MD5Builder md5;
@@ -105,6 +187,11 @@ String HoyoverseClient::getDynamicSalt(const char *body, const char *param)
     return result;
 }
 
+/*
+    @brief  Get resin data from Hoyolab.
+    @param[0] nd: Pointer to NoteData object to save resin data
+    @return operation result in HoyoverseClient_result_t
+*/
 HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 {
     if (_uid.length() < 1 || _cookie.length() < 1)
@@ -164,6 +251,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
         esp_http_client_set_header(client, "x-rpc-device_id", _device_guid.c_str());
     }
 
+    /* Execute query */
     esp_err_t http_err;
     if ((http_err = esp_http_client_open(client, 0)) != ESP_OK)
     {
@@ -263,6 +351,10 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     return HOYO_CLI_OK;
 }
 
+/*
+    @brief  Calculate resin data locally.
+    @param[0] nd: Pointer to NoteData object which contains resin data
+*/
 void HoyoverseClient::updateDailyNote(Notedata *nd)
 {
     time_t t = time(NULL);
@@ -363,6 +455,10 @@ void HoyoverseClient::updateDailyNote(Notedata *nd)
     nd->_last_calc_time = t;
 }
 
+/*
+    @brief  Generate a GUID.
+    @return GUID in String
+*/
 String HoyoverseClient::generateGuid()
 {
     String guid = "";
@@ -373,6 +469,10 @@ String HoyoverseClient::generateGuid()
     return guid;
 }
 
+/*
+    @brief  Generate one part of GUID.
+    @return 4 byte random HEX in String
+*/
 String HoyoverseClient::genGuid4Byte()
 {
     return String(random(65536, 131071), HEX).substring(1);

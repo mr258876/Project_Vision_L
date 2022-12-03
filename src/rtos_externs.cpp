@@ -10,9 +10,7 @@ SemaphoreHandle_t LVGLMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
-
-/* Queue */
-QueueHandle_t screenFlushQueue = NULL;
+SemaphoreHandle_t WiFiConnectMutex = xSemaphoreCreateMutex();
 
 /* SPI */
 SemaphoreHandle_t SDMutex = xSemaphoreCreateMutex();
@@ -27,3 +25,4 @@ TaskHandle_t APILoopHandle;
 TaskHandle_t wifiConfigHandle;
 
 esp_timer_handle_t resinCalcTimer;
+esp_timer_handle_t resinSyncTimer;

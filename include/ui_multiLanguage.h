@@ -5,6 +5,6 @@ extern int curr_lang;
 extern const char **lang[];
 
 /* Version */
-extern const char* info_visionVersion;
+extern char info_appVersion[32];
 
 #endif

@@ -30,6 +30,8 @@
         "ostream": "cpp",
         "sstream": "cpp",
         "random": "cpp",
-        "ff.h": "c"
+        "ff.h": "c",
+        "esp_ota_ops.h": "c",
+        "string.h": "c"
     }
 }

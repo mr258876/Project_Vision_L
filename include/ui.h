@@ -32,10 +32,16 @@ extern lv_obj_t * ui_SettingSideButton2;
 extern lv_obj_t * ui_SettingSideButton2Label;
 extern lv_obj_t * ui_SettingSideButton3;
 extern lv_obj_t * ui_SettingSideButton3Label;
-extern lv_obj_t * ui_SettingInfoPanel1;
 extern lv_obj_t * ui_SettingPanel1Label1;
+extern lv_obj_t * ui_SettingPanel1Button1;
+extern lv_obj_t * ui_SettingPanel1Button1Label1;
+extern lv_obj_t * ui_SettingPanel1Button1Button;
+extern lv_obj_t * ui_SettingPanel1Button1ButtonLabel;
 extern lv_obj_t * ui_SettingPanel1Label2;
-extern lv_obj_t * ui_SettingPanel1QR1;
+extern lv_obj_t * ui_SettingPanel1Label3;
+extern lv_obj_t * ui_SettingPanel1Label4;
+extern lv_obj_t * ui_SettingPanel1Label5;
+extern lv_obj_t * ui_SettingPanel1Label6;
 extern lv_obj_t * ui_SettingInfoPanel2;
 extern lv_obj_t * ui_SettingPanel2Label1;
 extern lv_obj_t * ui_SettingPanel2SW1;
@@ -53,6 +59,14 @@ extern lv_obj_t * ui_SettingInfoPanelAboutLabel2;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel3;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel4;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel5;
+
+extern void (*cb_ui_InfoScreen_back)();
+extern lv_obj_t * ui_InfoScreen;
+extern lv_obj_t * ui_InfoTitlePanel;
+extern lv_obj_t * ui_InfoTitleLabel;
+extern lv_obj_t * ui_InfoTitleBackButton;
+extern lv_obj_t * ui_InfoTitleBackButtonImg;
+extern lv_obj_t * ui_InfoPanel;
 
 extern lv_obj_t * ui_VideoScreen;
 
@@ -98,15 +112,19 @@ extern lv_obj_t * ui_ClockIconNoon;
 extern lv_obj_t * ui_ClockIconDusk;
 extern lv_obj_t * ui_ClockIconNight;
 
+extern lv_obj_t * mbox;
+
 extern lv_group_t * ui_group;
 
 extern lv_timer_t *ui_timer_ResinDispTimer;
+extern lv_timer_t *ui_timer_SettingDispTimer;
 extern lv_timer_t *ui_timer_ClockTimerSecond;
 extern lv_timer_t *ui_timer_ClockTimerMinute;
 extern lv_timer_t *ui_timer_ClockTimerHour;
 extern lv_timer_t *ui_timer_ScrDelTimer;
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
+void cb_timer_SettingDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimerSecond(lv_timer_t *timer);
 void cb_timer_ClockTimerMinute(lv_timer_t *timer);
 void cb_timer_ClockTimerHour(lv_timer_t *timer);
@@ -116,7 +134,6 @@ void cb_hardwareSetup(lv_event_t * e);
 void cb_startWifiReConfigure(lv_event_t * e);
 void cb_stopWifiReConfigure(lv_event_t * e);
 
-void cb_dispSettings(lv_event_t * e);
 void cb_getDailyNoteFromResinScreen(lv_event_t * e);
 
 void cb_leaveResinScreen(lv_event_t * e);
@@ -127,6 +144,8 @@ void cb_loadClockScreen(lv_event_t * e);
 void cb_loadSettingScreen(lv_event_t * e);
 
 void cb_loadVideoScreen(lv_event_t * e);
+
+void cb_loadWifiReconfigInfo(lv_event_t * e);
 
 void cb_setAutoBright(bool val);
 void cb_setUseAccel(bool val);
@@ -170,6 +189,7 @@ void ui_SettingScreen_screen_init();
 void ui_VideoScreen_screen_init();
 void ui_MenuScreen_screen_init();
 void ui_ResinScreen_screen_init();
+void ui_InfoScreen_screen_init();
 void ui_ClockScreen_screen_init();
 
 #ifdef __cplusplus

@@ -31,7 +31,7 @@ WAVFileReader::WAVFileReader(const char *file_name)
 {
     if (!SPIFFS.exists(file_name))
     {
-        Serial.println("****** Failed to open file! Have you uploaed the file system?");
+        ESP_LOGE("WAVFileReader", "Failed to open file! Have you uploaed the file system?");
         return;
     }
     m_file = SPIFFS.open(file_name, "r");
@@ -41,15 +41,16 @@ WAVFileReader::WAVFileReader(const char *file_name)
     // sanity check the bit depth
     if (wav_header.bit_depth != 16)
     {
-        Serial.printf("ERROR: bit depth %d is not supported\n", wav_header.bit_depth);
+        ESP_LOGE("WAVFileReader", "ERROR: bit depth %d is not supported\n", wav_header.bit_depth);
     }
 
-    Serial.printf("fmt_chunk_size=%d, audio_format=%d, num_channels=%d, sample_rate=%d, sample_alignment=%d, bit_depth=%d, data_bytes=%d\n",
-                  wav_header.fmt_chunk_size, wav_header.audio_format, wav_header.num_channels, wav_header.sample_rate, wav_header.sample_alignment, wav_header.bit_depth, wav_header.data_bytes);
+    ESP_LOGI("WAVFileReader", "fmt_chunk_size=%d, audio_format=%d, num_channels=%d, sample_rate=%d, sample_alignment=%d, bit_depth=%d, data_bytes=%d\n",
+             wav_header.fmt_chunk_size, wav_header.audio_format, wav_header.num_channels, wav_header.sample_rate, wav_header.sample_alignment, wav_header.bit_depth, wav_header.data_bytes);
 
     m_num_channels = wav_header.num_channels;
     m_sample_rate = wav_header.sample_rate;
     m_circulation = false;
+    isValid = true;
 }
 
 WAVFileReader::~WAVFileReader()
@@ -57,6 +58,12 @@ WAVFileReader::~WAVFileReader()
     m_file.close();
 }
 
+/*
+    @brief  Generate audio frames for DACOutput.
+    @param[0] frames: Pointer to Frame_t list to save the frames
+    @param[1] number_frames: how many frames to read
+    @return actual read frame in int
+*/
 int WAVFileReader::getFrames(Frame_t *frames, int number_frames)
 {
     // fill the buffer with data from the file wrapping around if necessary
@@ -84,16 +91,16 @@ int WAVFileReader::getFrames(Frame_t *frames, int number_frames)
             // otherwise read in the right channel sample
             m_file.read((uint8_t *)(&right), sizeof(int16_t));
         }
-        // we need unsigned bytes for the DAC
+        // we need unsigned bytes for the DAC, since we dont have negative voltage output
         int32_t sum = (((int32_t)left) + ((int32_t)right)) + 65536;
-        int_fast8_t val = (64-(sum / 2048.0));
+        int_fast8_t val = (64 - (sum / 2048.0)); // 2 channels * 1024
         if (val < 1)
         {
             val = 0;
         }
-        frames[i].data = 0xffffffffffffffff >> val;    // 2 channels * 1024
-        // frames[i].left = left + 32768;
-        // frames[i].right = right + 32768;
+        frames[i].data = 0xffffffffffffffff >> val; // generates a 6-bit output
+                                                    // position of bits in frames[i] here does not mean anything
+                                                    // take reference to the 1-bit music player DACs
     }
     return number_frames;
 }

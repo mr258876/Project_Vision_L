@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <WiFi.h>
 #include "ui.h"
 #include "ui_multiLanguage.h"
 #include "The_Vision_L_globals.h"
@@ -61,6 +62,72 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
 
         xSemaphoreGive(NoteDataMutex);
     }
+}
+
+void cb_timer_SettingDispTimer(lv_timer_t *timer)
+{
+    // 网络状态
+    lv_label_set_text(ui_SettingPanel1Label4, info_macAddress);
+    switch (WiFi.status())
+    {
+    case WL_IDLE_STATUS:
+        lv_label_set_text(ui_SettingPanel1Label2, lang[curr_lang][61]);
+        lv_label_set_text(ui_SettingPanel1Label6, "N/A");
+        break;
+    case WL_CONNECTED:
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][60], WiFi.SSID());
+        lv_label_set_text(ui_SettingPanel1Label6, WiFi.localIP().toString().c_str());
+        break;
+    case WL_CONNECTION_LOST:
+    case WL_CONNECT_FAILED:
+    case WL_DISCONNECTED:
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][63], WiFi.SSID());
+        lv_label_set_text(ui_SettingPanel1Label6, "N/A");
+        break;
+    case WL_NO_SSID_AVAIL:
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][62], WiFi.SSID());
+        lv_label_set_text(ui_SettingPanel1Label6, "N/A");
+        break;
+    default:
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][59], WiFi.SSID());
+        lv_label_set_text(ui_SettingPanel1Label6, "N/A");
+        break;
+    }
+    
+    // 距离传感器使能
+    if (info_hasProx)
+    {
+        if (setting_autoBright)
+        {
+            lv_obj_add_state(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED);
+        }
+        else
+        {
+            lv_obj_clear_state(ui_SettingPanel2SW1Switch1, LV_STATE_CHECKED);
+        }
+    }
+    else
+    {
+        lv_obj_add_state(ui_SettingPanel2SW1Switch1, LV_STATE_DISABLED);
+    }
+    // 重力传感器使能
+    if (info_hasAccel)
+    {
+        if (setting_useAccel)
+        {
+            lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED);
+        }
+        else
+        {
+            lv_obj_clear_state(ui_SettingPanel2SW2Switch1, LV_STATE_CHECKED);
+        }
+    }
+    else
+    {
+        lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED);
+    }
+
+    lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
 }
 
 void cb_timer_ClockTimerSecond(lv_timer_t *timer)

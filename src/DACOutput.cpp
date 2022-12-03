@@ -71,7 +71,7 @@ void DACOutput::init(int pin_out)
     // i2s config for writing both channels of I2S
     i2s_config_t i2sConfig = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = 44100,
+        .sample_rate = 44100,   // we'll set this later
         .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_PCM_SHORT),
@@ -101,9 +101,12 @@ void DACOutput::init(int pin_out)
 
 void DACOutput::start(SampleSource *sample_generator)
 {
-    m_sample_generator = sample_generator;
-    ESP_ERROR_CHECK(i2s_set_sample_rates(I2S_NUM_0, m_sample_generator->sampleRate()));
-    vTaskResume(m_i2sWriterTaskHandle);
+    if (sample_generator->valid())
+    {
+        m_sample_generator = sample_generator;
+        ESP_ERROR_CHECK(i2s_set_sample_rates(I2S_NUM_0, m_sample_generator->sampleRate()));
+        vTaskResume(m_i2sWriterTaskHandle);
+    }
 }
 
 void DACOutput::pause()
