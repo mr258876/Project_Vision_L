@@ -109,6 +109,7 @@ if (ask == true) {
 }
 ```
 - 注意：图片格式需为JPG/JPEG，尺寸240\*240且小于12KB，视频格式需为MJPEG，尺寸240\*240且每帧小于12KB。
+- 您可以在[mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos)找到元素视频文件。
 
 ## 刷入固件
 ### 刷入预编译固件
@@ -193,6 +194,7 @@ Features planned for next major release:
 }
 ```
 - Note: The format of pictures should be JPG/JPEG, with size 240px\*240px, file size less than 12KB; videos should be MJPEG, size 240px\*240px, less than 12 KB for each frame.
+- You could find the element videos at [mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos).
 
 ## Flashing Firmware
 ### Flashing recompiled firmware
