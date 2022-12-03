@@ -36,7 +36,8 @@
 #define MJPEG_BUFFER_SIZE (240 * 240 * 2 / 8) // Screen resolution 240*240, 2 byte color, compression ratio 1:16
 
 // LVGL Drive Letter
-#define DRIVE_LETTER 'S'
+#define SD_DRIVE_LETTER 'S'
+#define FLASH_DRIVE_LETTER 'F'
 
 // Time settings
 #define GMTOFFSET 28800

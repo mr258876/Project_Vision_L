@@ -47,8 +47,12 @@ public:
     HoyoverseClient_result_t syncDailyNote(Notedata *data); // Sync resin data from server
     static void updateDailyNote(Notedata *data);            // Calculate resin locally
 
-    void setDeviceGuid(const char *guid);
+    String getCookie();
+    String getUid();
+    void setCookie(const char *guid);
+    void setUid(const char *guid);
     String getDeviceGuid();
+    void setDeviceGuid(const char *guid);
     static String generateGuid();
 
 private:

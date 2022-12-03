@@ -4,7 +4,7 @@
 int curr_lang = 0;
 
 /* Version */
-const char *info_visionVersion = "L0.2.0-Indev22B171";
+char info_appVersion[32];
 
 const char *zh_Hans[] = {
     "The Vision L",                                                         // 0 The Vision L
@@ -49,7 +49,7 @@ const char *zh_Hans[] = {
     "关于",                                                                 // 39 About
     "Project Vision L",                                                     // 40 Project Vision L
     "@mr258876",                                                            // 41 @mr258876
-    "如果您喜欢本项目，\n请在github上\nstar本项目！",                       // 42 If you like this project, please star on github!
+    "请在github上\nstar本项目！",                                           // 42 If you like this project, please star on github!
     "%d分钟前更新",                                                         // 43 Updated %d min ago
     LV_SYMBOL_REFRESH "正在更新...",                                        // 44 Updating...
     "数据未初始化",                                                         // 45 Data uninitialized
@@ -59,10 +59,20 @@ const char *zh_Hans[] = {
     "已就绪",                                                               // 49 Ready
     "未解锁",                                                               // 50 Not unlocked
     "语言",                                                                 // 51 Language
-    "ENG\n中文",                                                            // 52 Language List
+    "EN\n中文",                                                             // 52 Language List
     "错误1034：\n请使用米游社app查看体力后重试\n",                          // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
-    LV_SYMBOL_WARNING " 错误：",                                            // 54 Error
+    LV_SYMBOL_WARNING " 错误",                                              // 54 Error
     "未同步时间\n",                                                         // 55 Time not synchronized
+    "错误代码：",                                                           // 56 Error code:
+    "SPIFFS分区初始化失败\n",                                               // 57 SPIFFS partition init failed
+    "配网模式",                                                             // 58 Pairing mode
+    "Wifi已关闭",                                                           // 59 Wifi disabled
+    "已连接至%s",                                                           // 60 Connected to %s
+    "正在尝试连接...",                                                      // 61 Trying to connect...
+    "无可用无线网络",                                                       // 62 No Wifi avaliable
+    "已断开连接",                                                           // 63 Wifi connect failed
+    "IP地址：",                                                             // 64 IP address
+    "MAC地址：",                                                            // 65 MAC address
 };
 
 const char *en_US[] = {
@@ -99,16 +109,16 @@ const char *en_US[] = {
     LV_SYMBOL_LIST,                                                                // 30 Regular
     "i",                                                                           // 31 About
     "Network config",                                                              // 32 Network configurations
-    "Configure network\nthrough Wechat:",                                          // 33 Configure network through Wechat
-    "http://iot.espressif.cn/configWXDeviceWiFi.html",                             // 34 Network configure QR code URL
-    "神之眼的部分功能\n依赖网络。\n\n使用微信\n扫描右侧\nQR码配\n置网络。",        // 35 Some functions of the Vision depend on network. Scan the QR code through Wechat to configure.
+    "Configure network\nthrough ESP-TOUCH App.",                                   // 33 Configure network through Wechat
+    "https://www.espressif.com.cn/en/products/software/esp-touch/resources",       // 34 Network configure QR code URL
+    "Please configure network\nthrough ESP-TOUCH App.",                            // 35 Some functions of the Vision depend on network. Scan the QR code through Wechat to configure.
     "Regular settings",                                                            // 36 Regular settings
     "Auto brightness",                                                             // 37 Auto brightness
     "Auto rotate",                                                                 // 38 Auto rotate
     "About",                                                                       // 39 About
     "Project Vision L",                                                            // 40 Project Vision L
     "@mr258876",                                                                   // 41 @mr258876
-    "If you like this\nproject, please\nstar on github!",                          // 42 If you like this project, please star on github!
+    "Please star this\nproject on github!",                                        // 42 If you like this project, please star on github!
     "Updated %d min ago",                                                          // 43 Updated %d min ago
     LV_SYMBOL_REFRESH "Updating...",                                               // 44 Updating...
     "Data uninitialized",                                                          // 45 Data uninitialized
@@ -118,10 +128,20 @@ const char *en_US[] = {
     "Ready",                                                                       // 49 Ready
     "Not obtained",                                                                // 50 Not obtained
     "Language",                                                                    // 51 Language
-    "ENG\n中文",                                                                   // 52 Language List
+    "EN\n中文",                                                                    // 52 Language List
     "Error 1034:\nPlease use Hoyolab app\nto check resin,\nand then try again.\n", // 53 Please use Hoyolab app to check your resin and then try again (ERR 1034)
-    LV_SYMBOL_WARNING " Error:",                                                   // 54 Error
+    LV_SYMBOL_WARNING " Error",                                                    // 54 Error
     "Time not synchronized\n",                                                     // 55 Time not synchronized
+    "Error code:",                                                                 // 56 Error code:
+    "SPIFFS partition init failed\n",                                              // 57 SPIFFS partition init failed
+    "Pairing mode",                                                                // 58 Pairing mode
+    "Wifi disabled",                                                               // 59 Wifi disabled
+    "Connected to %s",                                                             // 60 Connected to %s
+    "Connecting...",                                                               // 61 Connecting...
+    "No Wifi avaliable",                                                           // 62 No Wifi avaliable
+    "Wifi disconnected",                                                           // 63 Wifi disconnected
+    "IP address:",                                                                 // 64 IP address:
+    "MAC address:",                                                                // 65 MAC address:
 };
 
 const char **lang[] = {

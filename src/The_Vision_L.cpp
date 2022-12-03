@@ -6,6 +6,7 @@
 #include <FS.h>
 #include <SD.h>
 #include <SD_MMC.h>
+#include <SPIFFS.h>
 
 #include <Update.h>
 
@@ -41,6 +42,9 @@
 #include "Hoyoverse.h"
 #include "APIServer.h"
 
+#include "DACOutput.h"
+#include "WAVFileReader.h"
+
 // Freertos
 #include "rtc_wdt.h"
 
@@ -53,7 +57,8 @@ typedef enum
 {
   VISION_HW_OK = 0,
   VISION_HW_SENSOR_ERR,
-  VISION_HW_SD_ERR
+  VISION_HW_SD_ERR,
+  VISION_HW_SPIFFS_ERR
 } vision_hw_result_t;
 
 typedef enum
@@ -67,6 +72,21 @@ typedef enum
 
 ////////////////////////
 //
+//  Structs
+//
+////////////////////////
+struct ScreenFlushMsg
+{
+  lv_disp_drv_t *disp;
+  lv_color_t *color_p;
+  lv_coord_t x1;
+  lv_coord_t x2;
+  lv_coord_t y1;
+  lv_coord_t y2;
+};
+
+////////////////////////
+//
 //  Variables
 //
 ////////////////////////
@@ -77,7 +97,6 @@ static OneButton *pwrButton;
 static LGFX_Device gfx;
 
 /* SD Card*/
-SPIClass SDSPI;
 fs::FS *sdfs;
 
 /* LVGL Stuff */
@@ -109,6 +128,10 @@ OneButton *proxButton = NULL;
 KXTJ3 acc(0x0E);
 int rotation = 0;
 
+/* Audio */
+SampleSource *wav;
+DACOutput *aOut;
+
 ////////////////////////
 //
 //  Function Declartions
@@ -119,9 +142,12 @@ bool checkSDFiles(String *errMsg);
 vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
 void wifiConfigure(void *parameter);
+void stopWifiConfigure(void *parameter);
 bool getDailyNote(Notedata *nd, String *errMsg);
 void resinCalc(void *parameter);
+void resinSync(void *parameter);
 bool connectWiFi();
+bool disConnectWiFi();
 
 void cb_switchToVideoScreen();
 void mjpegInit();
@@ -133,6 +159,8 @@ void getDailyNoteFromResinScreen(void *parameter);
 
 void lvglLoop(void *parameter);
 void screenAdjustLoop(void *parameter);
+void screenFlushLoop(void *parameter);
+void screenFlushLoop(void *parameter);
 
 void onChangeVideo();
 void onSingleClick();
@@ -151,8 +179,8 @@ void onMultiClick();
  */
 void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
+  lv_coord_t w = (area->x2 - area->x1 + 1);
+  lv_coord_t h = (area->y2 - area->y1 + 1);
 
   if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
   {
@@ -160,7 +188,6 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
     gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
     xSemaphoreGive(*LCDMutexptr);
   }
-
   lv_disp_flush_ready(disp);
 }
 
@@ -187,6 +214,15 @@ void setup()
   ESP_LOGI("getPinout", "HW_version:%d", info_hwType);
   getVisionPinout(&po, info_hwType);
 
+  if (po.LCD_panel)
+  {
+    info_isSquareLCD = false;
+  }
+  else
+  {
+    info_isSquareLCD = true;
+  }
+
   // I2C pins
   if (po.I2C_SDA && po.I2C_SCL)
   {
@@ -199,7 +235,8 @@ void setup()
   // Audio Output
   if (po.AUDIO_OUT)
   {
-    pinMode(po.AUDIO_OUT, INPUT_PULLDOWN);
+    aOut = new DACOutput();
+    aOut->init(po.AUDIO_OUT);
   }
 
   // SPI Mutex
@@ -210,6 +247,16 @@ void setup()
   else
   {
     LCDMutexptr = &LCDMutex;
+  }
+
+  // Internal flash init
+  if (SPIFFS.begin(true, "/fflash"))
+  {
+    ESP_LOGI("setup", "SPIFFS partition mounted!");
+  }
+  else
+  {
+    ESP_LOGE("setup", "SPIFFS partition mount failed!");
   }
 
   // SD card Pull-Ups
@@ -229,9 +276,9 @@ void setup()
   gfx.setSwapBytes(false);
   gfx.fillScreen(TFT_BLACK);
 
-  ledcAttachPin(po.LCD_BL, 1);  // assign TFT_BL pin to channel 1
-  ledcSetup(1, 12000, 8);       // 12 kHz PWM, 8-bit resolution
-  ledcWrite(1, LCD_BRIGHTNESS); // brightness 0 - 255
+  ledcAttachPin(po.LCD_BL, 1);            // assign TFT_BL pin to channel 2
+  ledcSetup(1, 48000, 8);                 // 48 kHz PWM, 8-bit resolution
+  ledcWrite(1, setting_screenBrightness); // brightness 0 - 255
 
   // SD card init
   if (po.SD_use_sdmmc)
@@ -250,7 +297,7 @@ void setup()
   else
   {
     SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    SD.begin(po.SD_DAT3, SPI, 20000000);
+    SD.begin(po.SD_DAT3, SPI, 20000000, "/sdcard");
     sdfs = &SD;
   }
 
@@ -265,8 +312,8 @@ void setup()
     ESP_LOGE("setup", "Video file buffer allocate failed!");
   }
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 48, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 30, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 30, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
   if (!disp_draw_buf || !disp_draw_buf_2)
   {
@@ -274,7 +321,7 @@ void setup()
   }
   else
   {
-    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 48);
+    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 30);
 
     /* Initialize the display */
     lv_disp_drv_init(&disp_drv);
@@ -296,6 +343,7 @@ void setup()
 
     ui_init();
 
+    /* Create lvgl task */
     xTaskCreatePinnedToCore(lvglLoop,        // 任务函数
                             "lvglLoop",      // 任务名称
                             8192,            // 任务堆栈大小
@@ -306,18 +354,50 @@ void setup()
 
     LV_LOG_INFO("LVGL booted.");
   }
-  // startSettingServer();
-  vTaskDelete(NULL);
+
+  // connectWiFi();
+  // startAPIServer();
+
+  vTaskDelete(NULL);   // comment to show avaliable heap
 }
 
 // Load Settings From NVS
 void loadSettings()
 {
   info_hwType = prefs.getUInt("hwType", 0);
+  info_deviceGuid = prefs.getString("deviceGuid", "");
+
+  curr_lang = prefs.getUInt("language", 1);
+
+  // get device name
+  uint8_t sta_mac[8];
+  WiFi.macAddress(sta_mac);
+  setting_deviceName = prefs.getString("deviceName", String("Vision_") + String(sta_mac[4], HEX) + String(sta_mac[5], HEX));
+
+  // get mac address
+  String mac = String(sta_mac[0], HEX);
+  for (size_t i = 1; i < 6; i++)
+  {
+    if ((sta_mac[i]) < 16)
+      mac.concat(0);
+    mac.concat(String(sta_mac[i], HEX));
+  }
+  mac.toUpperCase();
+  strcpy(info_macAddress, mac.c_str());
+
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
-  curr_lang = prefs.getUInt("language", 1);
-  info_deviceGuid = prefs.getString("deviceGuid", "");
+
+  setting_screenDirection = prefs.getUInt("screenDirection", 0);
+  setting_screenBrightness = prefs.getUInt("screenBrightness", LCD_BRIGHTNESS);
+
+  setting_soundMuted = prefs.getBool("soundMuted", false);
+  setting_soundVolume = prefs.getUInt("soundVolume", 75);
+  setting_resinSyncPeriod = prefs.getULong("resinSyncPeriod", 900000000);
+
+  // get app version
+  const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
+  strcpy(info_appVersion, running_app_info->version);
 }
 
 void mjpegInit()
@@ -348,7 +428,7 @@ void switchToVideoScreen(void *delayTime)
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     // 删除样式解决内存泄露
-    removeStyles(lv_scr_act());
+    cleanObj(lv_scr_act());
 
     ui_VideoScreen_screen_init();
 
@@ -356,11 +436,11 @@ void switchToVideoScreen(void *delayTime)
     lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
 
     lv_task_handler();
-    
-    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);  // 在结束SPI占用后再挂起LVGL任务
+
+    xSemaphoreTake(*LCDMutexptr, portMAX_DELAY); // 在结束SPI占用后再挂起LVGL任务
     {
-    vTaskSuspend(lvglLoopHandle);
-    isInLVGL = false;
+      vTaskSuspend(lvglLoopHandle);
+      isInLVGL = false;
     }
     xSemaphoreGive(*LCDMutexptr);
 
@@ -449,6 +529,13 @@ vision_hw_result_t checkHardware(String *errMsg)
     ESP_LOGE("checkHardware", "No SD Card!");
   }
   xSemaphoreGive(SDMutex);
+
+  if (!SPIFFS.totalBytes())
+  {
+    hwErrDetected = VISION_HW_SPIFFS_ERR;
+    errMsg->concat(lang[curr_lang][57]); // "SPIFFS分区初始化失败\n"
+    ESP_LOGE("checkHardware", "SPIFFS Fail!");
+  }
 
   return hwErrDetected;
 }
@@ -547,10 +634,15 @@ bool checkSDFiles(String *errMsg)
 
   const char *uid = doc["uid"];
   const char *cookie = doc["cookie"];
-  const char *guid = doc["device_guid"];
+  const char *guid = nullptr;
+  if (doc.containsKey("device_guid")) // For backward compacity
+  {
+    guid = doc["device_guid"];
+  }
+
   hyc.begin(cookie, uid);
 
-  if (strlen(guid) == 32) // 手动指定guid
+  if (guid && strlen(guid) == 32) // 手动指定guid
   {
     if (!info_deviceGuid.equals(guid))
     {
@@ -565,11 +657,10 @@ bool checkSDFiles(String *errMsg)
     prefs.putString("deviceGuid", info_deviceGuid);
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  else  // 未手动指定guid但已生成则使用已有guid
+  else // 未手动指定guid但已生成则使用已有guid
   {
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
-  
 
   doc.clear();
 
@@ -593,7 +684,7 @@ void cb_switchToVideoScreen()
                           NULL,             // 任务参数
                           1,                // 任务优先级
                           NULL,             // 任务句柄
-                          1);               // 执行任务核心
+                          0);               // 执行任务核心
 
   // 每30s计算一次树脂数据
   esp_timer_create_args_t resinCalc_timer_args = {
@@ -603,11 +694,11 @@ void cb_switchToVideoScreen()
   ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
 
   // 每15分钟同步一次树脂数据
-  // esp_timer_create_args_t resinSync_timer_args = {
-  //     .callback = &resinSync,
-  //     .name = "resinSync"};
-  // ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
-  // ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, 15000000));
+  esp_timer_create_args_t resinSync_timer_args = {
+      .callback = &resinSync,
+      .name = "resinSync"};
+  ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, setting_resinSyncPeriod));
 
   switchScreenDelay = 2500;
 
@@ -617,7 +708,7 @@ void cb_switchToVideoScreen()
                           (void *)&switchScreenDelay, // 任务参数
                           1,                          // 任务优先级
                           NULL,                       // 任务句柄
-                          0);                         // 执行任务核心
+                          1);                         // 执行任务核心
 }
 
 void hardwareSetup(void *parameter)
@@ -647,12 +738,12 @@ void hardwareSetup(void *parameter)
   }
 
   // 若检查到错误则停止启动
-  if (hwErr == VISION_HW_SD_ERR || fileErr || updateStatus)
+  if (hwErr == VISION_HW_SD_ERR || hwErr == VISION_HW_SPIFFS_ERR || fileErr || updateStatus)
   {
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][8], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 发现如下问题,启动已终止:"
+      mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][8], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 发现如下问题,启动已终止:"
       lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
       lv_obj_center(mbox);
       xSemaphoreGive(LVGLMutex);
@@ -725,10 +816,9 @@ void hardwareSetup(void *parameter)
 
     if (!getDailyNote(&nd, &errMsg))
     {
-      lv_obj_t *mbox;
       if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
       {
-        lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
+        mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
         lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_center(mbox);
         xSemaphoreGive(LVGLMutex);
@@ -736,7 +826,7 @@ void hardwareSetup(void *parameter)
         vTaskDelay(5000);
 
         xSemaphoreTake(LVGLMutex, portMAX_DELAY);
-        // removeStyles(mbox);
+        // cleanObj(mbox);
         lv_obj_del(mbox);
         xSemaphoreGive(LVGLMutex);
       }
@@ -755,18 +845,16 @@ void hardwareSetup(void *parameter)
 
 void wifiConfigure(void *parameter)
 {
-  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
+  info_processUsingWifi += 1;
 
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.beginSmartConfig(SC_TYPE_ESPTOUCH_AIRKISS);
-
-  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); // disable brownout detector
 
   ESP_LOGI("wifiConfigure", "Waiting for Smartconfig...");
 
   while (!WiFi.smartConfigDone() || WiFi.status() != WL_CONNECTED)
   {
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(250));
   }
 
   ESP_LOGI("wifiConfigure", "Smartconfig success!");
@@ -779,10 +867,24 @@ void wifiConfigure(void *parameter)
   esp_restart();
 }
 
+void stopWifiConfigure(void *parameter)
+{
+  vTaskDelete(wifiConfigHandle);
+  WiFi.stopSmartConfig();
+  if (connectWiFi())
+    info_processUsingWifi -= 1;
+  disConnectWiFi();
+  vTaskDelete(NULL);
+}
+
 bool connectWiFi()
 {
+  xSemaphoreTake(WiFiConnectMutex, portMAX_DELAY);
+
   if (WiFi.status() == WL_CONNECTED)
   {
+    info_processUsingWifi += 1;
+    xSemaphoreGive(WiFiConnectMutex);
     return true;
   }
 
@@ -792,6 +894,7 @@ bool connectWiFi()
   if (wifiCount < 1)
   {
     WiFi.mode(WIFI_OFF);
+    xSemaphoreGive(WiFiConnectMutex);
     return false;
   }
 
@@ -804,9 +907,28 @@ bool connectWiFi()
     {
       WiFi.disconnect(true);
       WiFi.mode(WIFI_OFF);
+      xSemaphoreGive(WiFiConnectMutex);
       return false;
     }
   }
+
+  info_processUsingWifi += 1;
+  xSemaphoreGive(WiFiConnectMutex);
+  return true;
+}
+
+bool disConnectWiFi()
+{
+  xSemaphoreTake(WiFiConnectMutex, portMAX_DELAY);
+
+  info_processUsingWifi -= 1;
+  if (info_processUsingWifi < 1)
+  {
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+  }
+
+  xSemaphoreGive(WiFiConnectMutex);
   return true;
 }
 
@@ -824,7 +946,7 @@ void leaveVideoScreen(void *parameter)
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     lv_group_remove_all_objs(ui_group);
-    removeStyles(lv_scr_act());
+    cleanObj(lv_scr_act());
     ui_MenuScreen_screen_init();
     lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
     xSemaphoreGive(LVGLMutex);
@@ -850,6 +972,9 @@ void loadVideoScreen(void *parameter)
 
     xSemaphoreGive(LVGLMutex);
   }
+
+  wav = new WAVFileReader("/Open.wav");
+  aOut->start(wav);
 
   // 恢复解码器工作
   vTaskResume(playVideoHandle);
@@ -879,7 +1004,7 @@ void getDailyNoteFromResinScreen(void *parameter)
   {
     if (!updateRes)
     {
-      lv_obj_t *mbox = lv_msgbox_create(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
+      mbox = lv_msgbox_create(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
       lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
       lv_obj_center(mbox);
       lv_obj_move_foreground(mbox);
@@ -888,7 +1013,7 @@ void getDailyNoteFromResinScreen(void *parameter)
       vTaskDelay(5000);
 
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
-      // removeStyles(mbox);
+      // cleanObj(mbox);
       lv_obj_del(mbox);
     }
 
@@ -961,7 +1086,7 @@ vision_update_result_t updateFromSD(String *errMsg)
   ESP_LOGE("updateFromSD", "Update failed!");
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    lv_obj_t *mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件"
+    mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件"
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(mbox);
     xSemaphoreGive(LVGLMutex);
@@ -1021,9 +1146,13 @@ void cb_startWifiReConfigure(lv_event_t *e)
 
 void cb_stopWifiReConfigure(lv_event_t *e)
 {
-  vTaskDelete(wifiConfigHandle);
-  WiFi.stopSmartConfig();
-  WiFi.mode(WIFI_OFF);
+  xTaskCreatePinnedToCore(stopWifiConfigure,   // 任务函数
+                          "stopWifiConfigure", // 任务名称
+                          4096,                // 任务堆栈大小
+                          NULL,                // 任务参数
+                          1,                   // 任务优先级
+                          NULL,                // 任务句柄
+                          1);                  // 执行任务核心
 }
 
 ////////////////////
@@ -1034,6 +1163,7 @@ void cb_stopWifiReConfigure(lv_event_t *e)
 void loop()
 {
   ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
+  ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
   vTaskDelay(pdMS_TO_TICKS(5000));
 }
 
@@ -1046,6 +1176,7 @@ void lvglLoop(void *parameter)
       lv_timer_handler(); /* let the GUI do its work */
       xSemaphoreGive(LVGLMutex);
     }
+    vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
 
@@ -1200,6 +1331,7 @@ bool getDailyNote(Notedata *nd, String *errMsg)
 
   if (getLocalTime(&timeinfo))
   {
+    info_timeSynced = true;
     int r = 0;
     if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
     {
@@ -1226,8 +1358,7 @@ bool getDailyNote(Notedata *nd, String *errMsg)
     }
   }
 
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  disConnectWiFi();
 
   return res;
 }
@@ -1237,7 +1368,15 @@ void resinCalc(void *parameter)
   if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
   {
     HoyoverseClient::updateDailyNote(&nd);
+    xSemaphoreGive(NoteDataMutex);
+  }
+}
 
+void resinSync(void *parameter)
+{
+  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+  {
+    hyc.syncDailyNote(&nd);
     xSemaphoreGive(NoteDataMutex);
   }
 }
@@ -1275,14 +1414,18 @@ void onSingleClick()
 {
   if (isInLVGL)
   {
-    if (inEditMode)
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_group_send_data(ui_group, LV_KEY_RIGHT);
-    }
-    else
-    {
-      lv_group_send_data(ui_group, LV_KEY_NEXT);
-      lv_group_focus_next(ui_group);
+      if (inEditMode)
+      {
+        lv_group_send_data(ui_group, LV_KEY_RIGHT);
+      }
+      else
+      {
+        lv_group_send_data(ui_group, LV_KEY_NEXT);
+        lv_group_focus_next(ui_group);
+      }
+      xSemaphoreGive(LVGLMutex);
     }
   }
 }
@@ -1291,23 +1434,29 @@ void onDoubleClick()
 {
   if (isInLVGL)
   {
-    if (inEditMode)
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_group_send_data(ui_group, LV_KEY_ENTER);
-      inEditMode = false;
-      lv_group_set_editing(ui_group, false);
-      return;
-    }
-    else
-    {
-      lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
-    }
+      if (inEditMode)
+      {
+        lv_group_send_data(ui_group, LV_KEY_ENTER);
+        inEditMode = false;
+        lv_group_set_editing(ui_group, false);
+        xSemaphoreGive(LVGLMutex);
+        return;
+      }
+      else
+      {
+        lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
+      }
 
-    if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
-    {
-      inEditMode = true;
-      lv_group_set_editing(ui_group, true);
-      return;
+      if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+      {
+        inEditMode = true;
+        lv_group_set_editing(ui_group, true);
+        xSemaphoreGive(LVGLMutex);
+        return;
+      }
+      xSemaphoreGive(LVGLMutex);
     }
   }
   else
@@ -1326,14 +1475,18 @@ void onMultiClick()
 {
   if (isInLVGL)
   {
-    if (inEditMode)
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_group_send_data(ui_group, LV_KEY_LEFT);
-    }
-    else
-    {
-      lv_group_send_data(ui_group, LV_KEY_PREV);
-      lv_group_focus_prev(ui_group);
+      if (inEditMode)
+      {
+        lv_group_send_data(ui_group, LV_KEY_LEFT);
+      }
+      else
+      {
+        lv_group_send_data(ui_group, LV_KEY_PREV);
+        lv_group_focus_prev(ui_group);
+      }
+      xSemaphoreGive(LVGLMutex);
     }
   }
   else

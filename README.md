@@ -7,27 +7,31 @@ Do Virtual Gods Hand Out Electronic Visions?
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
-- [L0.1.1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.1.1)
+- [L0.2.0](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0)
 ### 测试版 / Beta Release
-- [L0.2.0-Beta2](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta2)
+- None
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22B181](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B181)
+- None
 
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
 ```
-Adafruit BusIO  1.13.2
+Adafruit BusIO  1.14.1
 ArduinoJson     6.19.4
 KXTJ3-1057      0.0.1
 LovyanGFX       0.4.18
-LVGL            8.3.2
+LVGL            8.3.3
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
 ```
 APDS-9930       https://github.com/Depau/APDS9930
 LinkedList      https://github.com/ivanseidel/LinkedList
+```
+- 部分代码参考了以下项目 / Some code refer to following projects
+```
 RGB565_video    https://github.com/moononournation/RGB565_video
+esp32_audio     https://github.com/atomic14/esp32_audio
 ```
 
 ## 中文
@@ -42,10 +46,16 @@ RGB565_video    https://github.com/moononournation/RGB565_video
 ## 开发进度
 
 - 显示图片/视频✅
-- 设置菜单✅/管理界面🔲
+- 设置菜单✅
 - 多语言支持✅
 - 从米游社API获取树脂✅
-- 自动更新🔲
+
+下个大版本中计划的功能：
+- 自动更新🚧
+- 蓝牙🚧
+- 恢复模式(应对ROM不足)🚧
+- 综合信息界面(数字时钟/天气/树脂数据)🚧
+- 管理界面(远程控制/文件管理)🚧
 
 ## 使用方法
 ### L0.1版本
@@ -139,11 +149,17 @@ These following hardwares are also supported:
 
 ## Development Process
 
-- Picture/Video display✅
-- Setting menu✅/Management webpage🔲
-- Multi-language support✅
-- Resin data syncing✅
-- Auto update🔲
+- Picture/Video display ✅
+- Setting menu ✅
+- Multi-language support ✅
+- Resin data syncing ✅
+
+Features planned for next major release:
+- Automatic update🚧
+- Bluetooth 🚧
+- Recovery mode (to solve ROM shortage) 🚧
+- Integrated information interface (includes digital clock & weather & resin data) 🚧
+- Management interface (remote control & file management) 🚧
 
 ## How to Use
 ### For version L0.1
@@ -203,5 +219,5 @@ These following hardwares are also supported:
 - Screen will get frozen when updating firmware through SD card on devices with SD card and LCD screen sharing same SPI bus
 
 ### FAQ
-#### Why do I get "Error 1034" when I getting resin data?
+#### Why do I get "Error 1034" when getting resin data?
 - Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.

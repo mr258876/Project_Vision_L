@@ -11,6 +11,7 @@ extern SemaphoreHandle_t LVGLMutex;
 extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
+extern SemaphoreHandle_t WiFiConnectMutex;
 
 // SPI 互斥锁
 extern SemaphoreHandle_t SDMutex;
@@ -20,12 +21,12 @@ extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI b
 // FreeRTOS任务句柄
 extern TaskHandle_t playVideoHandle;
 extern TaskHandle_t lvglLoopHandle;
+extern TaskHandle_t screenFlushLoopHandle;
 extern TaskHandle_t wifiConfigHandle;
 extern TaskHandle_t APILoopHandle;
 
 // ESP Timer 计时器
 extern esp_timer_handle_t resinCalcTimer;
 extern esp_timer_handle_t resinSyncTimer;
-extern esp_timer_handle_t resinDisplayTimer;
 
 #endif

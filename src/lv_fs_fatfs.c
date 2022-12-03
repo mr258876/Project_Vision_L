@@ -38,6 +38,13 @@ static void *fs_dir_open(lv_fs_drv_t *drv, const char *path);
 static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *rddir_p, char *fn);
 static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p);
 
+static void *spiffs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
+static lv_fs_res_t spiffs_close(lv_fs_drv_t *drv, void *file_p);
+static lv_fs_res_t spiffs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
+static lv_fs_res_t spiffs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw);
+static lv_fs_res_t spiffs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence);
+static lv_fs_res_t spiffs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
+
 /**********************
  *  STATIC VARIABLES
  **********************/
@@ -47,6 +54,7 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p);
  **********************/
 /* Create a type to store the required data about your file.*/
 typedef FIL file_t;
+typedef FILE *spiffs_file_t;
 
 /*Similarly to `file_t` create a type for directory reading too */
 typedef FF_DIR dir_t;
@@ -75,7 +83,7 @@ void lv_fs_fatfs_init(void)
     lv_fs_drv_init(&fs_drv);
 
     /*Set up fields...*/
-    fs_drv.letter = DRIVE_LETTER;
+    fs_drv.letter = SD_DRIVE_LETTER;
     fs_drv.open_cb = fs_open;
     fs_drv.close_cb = fs_close;
     fs_drv.read_cb = fs_read;
@@ -88,6 +96,21 @@ void lv_fs_fatfs_init(void)
     fs_drv.dir_read_cb = fs_dir_read;
 
     lv_fs_drv_register(&fs_drv);
+
+    /* SPIFFS flash drive */
+    static lv_fs_drv_t spiffs_drv;
+    lv_fs_drv_init(&spiffs_drv);
+
+    /*Set up fields...*/
+    spiffs_drv.letter = FLASH_DRIVE_LETTER;
+    spiffs_drv.open_cb = spiffs_open;
+    spiffs_drv.close_cb = spiffs_close;
+    spiffs_drv.read_cb = spiffs_read;
+    spiffs_drv.write_cb = spiffs_write;
+    spiffs_drv.seek_cb = spiffs_seek;
+    spiffs_drv.tell_cb = spiffs_tell;
+
+    lv_fs_drv_register(&spiffs_drv);
 }
 
 /**********************
@@ -119,6 +142,23 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
     else if (mode == (LV_FS_MODE_WR | LV_FS_MODE_RD))
         flags = FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
 
+    /* Get fatfs path including drive no. */
+    char complete_path[strlen(path) + 2];
+    complete_path[1] = ':';
+    complete_path[2] = '\0';
+    switch (drv->letter)
+    {
+    case 'S':
+        complete_path[0] = '0';
+        break;
+    // case 'F':
+    //     complete_path[0] = '1';
+    //     break;
+    default:
+        return NULL;
+    }
+    strcat(complete_path, path);
+
     FIL *f = lv_mem_alloc(sizeof(FIL));
     if (f == NULL)
     {
@@ -126,15 +166,15 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
         return NULL;
     }
 
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_open(f, path, flags);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     if (res == FR_OK)
     {
-        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
         f_lseek(f, 0);
-        xSemaphoreGive(SDMutex);
+        if (drv->letter == 'S') xSemaphoreGive(SDMutex);
         return f;
     }
     else
@@ -153,9 +193,9 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
  */
 static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     f_close(file_p);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     lv_mem_free(file_p);
     return LV_FS_RES_OK;
@@ -172,9 +212,9 @@ static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p)
  */
 static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_read(file_p, buf, btr, (UINT *)br);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     if (res == FR_OK)
         return LV_FS_RES_OK;
@@ -193,9 +233,9 @@ static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t b
  */
 static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_write(file_p, buf, btw, (UINT *)bw);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     if (res == FR_OK)
         return LV_FS_RES_OK;
@@ -213,7 +253,7 @@ static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uin
  */
 static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     switch (whence)
     {
     case LV_FS_SEEK_SET:
@@ -228,7 +268,7 @@ static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_w
     default:
         break;
     }
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     return LV_FS_RES_OK;
 }
@@ -242,9 +282,9 @@ static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_w
  */
 static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     *pos_p = f_tell(((FIL *)file_p));
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     return LV_FS_RES_OK;
 }
@@ -261,9 +301,26 @@ static void *fs_dir_open(lv_fs_drv_t *drv, const char *path)
     if (d == NULL)
         return NULL;
 
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    /* Get fatfs path including drive no. */
+    char complete_path[strlen(path) + 2];
+    complete_path[1] = ':';
+    complete_path[2] = '\0';
+    switch (drv->letter)
+    {
+    case 'S':
+        complete_path[0] = '0';
+        break;
+    // case 'F':
+    //     complete_path[0] = '1';
+    //     break;
+    default:
+        return NULL;
+    }
+    strcat(complete_path, path);
+
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     FRESULT res = f_opendir(d, path);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
     if (res != FR_OK)
     {
         lv_mem_free(d);
@@ -286,7 +343,7 @@ static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *dir_p, char *fn)
     FILINFO fno;
     fn[0] = '\0';
 
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     do
     {
         res = f_readdir(dir_p, &fno);
@@ -302,7 +359,7 @@ static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *dir_p, char *fn)
             strcpy(fn, fno.fname);
 
     } while (strcmp(fn, "/.") == 0 || strcmp(fn, "/..") == 0);
-    xSemaphoreGive(SDMutex);
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     return LV_FS_RES_OK;
 }
@@ -315,14 +372,76 @@ static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *dir_p, char *fn)
  */
 static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *dir_p)
 {
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     f_closedir(dir_p);
-    xSemaphoreGive(SDMutex);
-    
+    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
+
     lv_mem_free(dir_p);
     return LV_FS_RES_OK;
 }
 
+static void *spiffs_open(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
+{
+    (void)drv; /*Unused*/
+
+    const char *flags = "";
+
+    if (mode == LV_FS_MODE_WR)
+        flags = "w";
+    else if (mode == LV_FS_MODE_RD)
+        flags = "r";
+    else if (mode == (LV_FS_MODE_WR | LV_FS_MODE_RD))
+        flags = "rb+";
+
+    /*Make the path relative to the current directory (the projects root folder)*/
+
+    char complete_path[strlen(path) + 7];
+    sprintf(complete_path, "/spiffs%s", path);
+
+    spiffs_file_t f = fopen(complete_path, flags);
+    if (f == NULL)
+        return NULL;
+
+    /*Be sure we are the beginning of the file*/
+    fseek(f, 0, SEEK_SET);
+
+    return f;
+}
+
+static lv_fs_res_t spiffs_read(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
+{
+    spiffs_file_t fp = file_p; /*Just avoid the confusing casings*/
+    *br = fread(buf, 1, btr, fp);
+    return LV_FS_RES_OK;
+}
+
+static lv_fs_res_t spiffs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw)
+{
+    spiffs_file_t fp = file_p; /*Just avoid the confusing casings*/
+    *bw = fwrite(buf, 1, btw, fp);
+    return LV_FS_RES_OK;
+}
+
+static lv_fs_res_t spiffs_close(struct _lv_fs_drv_t *drv, void *file_p)
+{
+    spiffs_file_t fp = file_p; /*Just avoid the confusing casings*/
+    fclose(fp);
+    return LV_FS_RES_OK;
+}
+
+static lv_fs_res_t spiffs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence)
+{
+    spiffs_file_t fp = file_p; /*Just avoid the confusing casings*/
+    fseek(fp, pos, whence);
+    return LV_FS_RES_OK;
+}
+
+static lv_fs_res_t spiffs_tell(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
+{
+    spiffs_file_t fp = file_p; /*Just avoid the confusing casings*/
+    *pos_p = ftell(fp);
+    return LV_FS_RES_OK;
+}
 
 #else /*Enable this file at the top*/
 

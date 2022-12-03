@@ -28,6 +28,10 @@
         "unordered_map": "cpp",
         "istream": "cpp",
         "ostream": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "random": "cpp",
+        "ff.h": "c",
+        "esp_ota_ops.h": "c",
+        "string.h": "c"
     }
 }
