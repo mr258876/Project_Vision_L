@@ -7,11 +7,11 @@ Do Virtual Gods Hand Out Electronic Visions?
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
-- [L0.1.1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.1.1)
+- [L0.2.0](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0)
 ### 测试版 / Beta Release
-- [L0.2.0-Beta2](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Beta2)
+- None
 ### 开发版 / Indev Release
-- [L0.2.0-Indev22B181](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22B181)
+- None
 
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
@@ -46,10 +46,16 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 ## 开发进度
 
 - 显示图片/视频✅
-- 设置菜单✅/管理界面🔲
+- 设置菜单✅
 - 多语言支持✅
 - 从米游社API获取树脂✅
-- 自动更新🔲
+
+下个大版本中计划的功能：
+- 自动更新🚧
+- 蓝牙🚧
+- 恢复模式(应对ROM不足)🚧
+- 综合信息界面(数字时钟/天气/树脂数据)🚧
+- 管理界面(远程控制/文件管理)🚧
 
 ## 使用方法
 ### L0.1版本
@@ -143,11 +149,17 @@ These following hardwares are also supported:
 
 ## Development Process
 
-- Picture/Video display✅
-- Setting menu✅/Management webpage🔲
-- Multi-language support✅
-- Resin data syncing✅
-- Auto update🔲
+- Picture/Video display ✅
+- Setting menu ✅
+- Multi-language support ✅
+- Resin data syncing ✅
+
+Features planned for next major release:
+- Automatic update🚧
+- Bluetooth 🚧
+- Recovery mode (to solve ROM shortage) 🚧
+- Integrated information interface (includes digital clock & weather & resin data) 🚧
+- Management interface (remote control & file management) 🚧
 
 ## How to Use
 ### For version L0.1
