@@ -358,7 +358,7 @@ void setup()
   // connectWiFi();
   // startAPIServer();
 
-  // vTaskDelete(NULL);   // Uncommet to show avaliable heap
+  vTaskDelete(NULL);   // comment to show avaliable heap
 }
 
 // Load Settings From NVS
@@ -1441,6 +1441,7 @@ void onDoubleClick()
         lv_group_send_data(ui_group, LV_KEY_ENTER);
         inEditMode = false;
         lv_group_set_editing(ui_group, false);
+        xSemaphoreGive(LVGLMutex);
         return;
       }
       else
@@ -1452,6 +1453,7 @@ void onDoubleClick()
       {
         inEditMode = true;
         lv_group_set_editing(ui_group, true);
+        xSemaphoreGive(LVGLMutex);
         return;
       }
       xSemaphoreGive(LVGLMutex);

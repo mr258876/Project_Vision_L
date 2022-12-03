@@ -415,17 +415,10 @@ void ui_event_SettingPanel2DP1Dropdown1(lv_event_t *e)
     if (event_code == LV_EVENT_CLICKED)
     {
         lv_dropdown_open(ui_SettingPanel2DP1Dropdown1);
-        lv_obj_invalidate(ui_SettingScreen);
-        lv_obj_invalidate(lv_dropdown_get_list(ui_SettingPanel2DP1Dropdown1));
-        lv_obj_invalidate(lv_layer_top());
     }
     else if (event_code == LV_EVENT_VALUE_CHANGED)
     {
         cb_setLanguage(lv_dropdown_get_selected(ui_SettingPanel2DP1Dropdown1));
-
-        lv_obj_invalidate(ui_SettingScreen);
-        lv_obj_invalidate(lv_dropdown_get_list(ui_SettingPanel2DP1Dropdown1));
-        lv_obj_invalidate(lv_layer_top());
     }
 }
 
@@ -672,9 +665,9 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_border_side(ui_SettingInfoPanel1, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SettingPanel1Label1 = lv_label_create(ui_SettingInfoPanel1);
-    lv_obj_set_width(ui_SettingPanel1Label1, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_SettingPanel1Label1, LV_SIZE_CONTENT);    /// 1
-    lv_label_set_text(ui_SettingPanel1Label1, lang[curr_lang][32]);    // "网络配置"
+    lv_obj_set_width(ui_SettingPanel1Label1, LV_SIZE_CONTENT);      /// 1
+    lv_obj_set_height(ui_SettingPanel1Label1, LV_SIZE_CONTENT);     /// 1
+    lv_label_set_text(ui_SettingPanel1Label1, lang[curr_lang][32]); // "网络配置"
     lv_obj_set_style_text_color(ui_SettingPanel1Label1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SettingPanel1Label1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_SettingPanel1Label1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -886,6 +879,7 @@ void ui_SettingScreen_screen_init(void)
 
     ui_SettingPanel2DP1Dropdown1 = lv_dropdown_create(ui_SettingPanel2DP1);
     lv_dropdown_set_options(ui_SettingPanel2DP1Dropdown1, lang[curr_lang][52]); // Language List
+    lv_dropdown_set_dir(ui_SettingPanel2DP1Dropdown1, LV_DIR_BOTTOM);
     lv_dropdown_set_symbol(ui_SettingPanel2DP1Dropdown1, LV_SYMBOL_UP);
     lv_obj_set_width(ui_SettingPanel2DP1Dropdown1, 90);
     lv_obj_set_height(ui_SettingPanel2DP1Dropdown1, 30);
@@ -916,8 +910,8 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_bg_color(DropdownList, lv_color_hex(0x495366), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(DropdownList, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(DropdownList, lv_color_hex(0x606979), LV_PART_MAIN | LV_STATE_CHECKED);
-    lv_obj_set_style_bg_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(DropdownList, lv_color_hex(0x606979), LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_bg_opa(DropdownList, 255, LV_PART_MAIN | LV_STATE_FOCUSED);
 
     ui_SettingInfoPanelAbout = lv_obj_create(ui_SettingScreen);
     lv_obj_set_width(ui_SettingInfoPanelAbout, 180);
