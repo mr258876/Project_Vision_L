@@ -73,6 +73,8 @@ const char *zh_Hans[] = {
     "已断开连接",                                                           // 63 Wifi connect failed
     "IP地址：",                                                             // 64 IP address
     "MAC地址：",                                                            // 65 MAC address
+    "硬件版本：%d",                                                         // 66 HW version:
+    "请检查SD卡，\n然后重试。",                                             // 67 Please check SD card, and retry.
 };
 
 const char *en_US[] = {
@@ -142,6 +144,8 @@ const char *en_US[] = {
     "Wifi disconnected",                                                           // 63 Wifi disconnected
     "IP address:",                                                                 // 64 IP address:
     "MAC address:",                                                                // 65 MAC address:
+    "HW version: %d",                                                              // 66 HW version
+    "Please\ncheck\nSD card,\nand retry.",                                         // 67 Please check SD card, and retry.
 };
 
 const char **lang[] = {

@@ -9,6 +9,8 @@
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
 
+#include "lvgl.h"
+
 void startAPIServer();
 void endAPIServer();
 

@@ -8,6 +8,9 @@
 #include <SD_MMC.h>
 #include <SPIFFS.h>
 
+#include <ff.h>
+#include <diskio.h>
+
 #include <Update.h>
 
 #include <lvgl.h>
@@ -110,7 +113,6 @@ unsigned long startup_time;
 bool isInLVGL = true;
 
 /* Things of files */
-static LinkedList<String> filePaths;
 uint8_t fileCount = 0;
 uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 
@@ -250,6 +252,7 @@ void setup()
   }
 
   // Internal flash init
+  // 内部flash不使用fatfs
   if (SPIFFS.begin(true, "/fflash"))
   {
     ESP_LOGI("setup", "SPIFFS partition mounted!");
@@ -355,10 +358,10 @@ void setup()
     LV_LOG_INFO("LVGL booted.");
   }
 
-  // connectWiFi();
-  // startAPIServer();
+  connectWiFi();
+  startAPIServer();
 
-  vTaskDelete(NULL);   // comment to show avaliable heap
+  vTaskDelete(NULL); // comment to show avaliable heap
 }
 
 // Load Settings From NVS
@@ -1124,13 +1127,28 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 
 void cb_loadVideoScreen(lv_event_t *e)
 {
-  xTaskCreatePinnedToCore(loadVideoScreen,   // 任务函数
-                          "loadVideoScreen", // 任务名称
-                          3072,              // 任务堆栈大小
-                          NULL,              // 任务参数
-                          2,                 // 任务优先级
-                          NULL,              // 任务句柄
-                          1);                // 执行任务核心
+  DSTATUS status;
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    status = disk_status(0);  // 只有一个fatfs驱动器
+    xSemaphoreGive(SDMutex);
+  }
+
+  if (status == STA_NOINIT)
+  {
+    // SD卡状态异常进入错误信息页面
+    cb_loadSDErrorInfo(e);
+  }
+  else
+  {
+    xTaskCreatePinnedToCore(loadVideoScreen,   // 任务函数
+                            "loadVideoScreen", // 任务名称
+                            3072,              // 任务堆栈大小
+                            NULL,              // 任务参数
+                            2,                 // 任务优先级
+                            NULL,              // 任务句柄
+                            1);                // 执行任务核心
+  }
 }
 
 void cb_startWifiReConfigure(lv_event_t *e)

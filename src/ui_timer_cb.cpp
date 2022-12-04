@@ -126,8 +126,11 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
     {
         lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED);
     }
-
+    // 语言选择菜单
     lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
+
+    // 硬件版本
+    lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:" 
 }
 
 void cb_timer_ClockTimerSecond(lv_timer_t *timer)

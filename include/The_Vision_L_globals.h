@@ -1,6 +1,7 @@
 #include "Hoyoverse.h"
 #include <Preferences.h>
 #include "Hardware.h"
+#include "LinkedList.h"
 
 /* Hardware Pinout */
 extern uint8_t info_hwType;
@@ -13,11 +14,13 @@ extern Notedata nd;
 /* NVS */
 extern Preferences prefs;
 
+/* Playlist */
+extern LinkedList<String> filePaths;
+
 /* Runtime info */
 extern int info_processUsingWifi;
 extern bool info_isConnectingWifi;
 
-extern int info_hwVersion;
 extern bool info_isSquareLCD;
 extern bool info_hasProx;
 extern bool info_hasAccel;

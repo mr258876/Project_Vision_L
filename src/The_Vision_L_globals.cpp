@@ -11,6 +11,9 @@ Notedata nd;
 /* NVS */
 Preferences prefs;
 
+/* Playlist */
+LinkedList<String> filePaths;
+
 /* Runtime info */
 int info_processUsingWifi = 0;
 

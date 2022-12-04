@@ -148,6 +148,8 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
 {
   ui_InfoScreen_screen_init();
 
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][58]); // "配网模式"
+
   lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
   lv_obj_set_width(ui_InfoPanelLabel1, LV_SIZE_CONTENT);  /// 1
   lv_obj_set_height(ui_InfoPanelLabel1, LV_SIZE_CONTENT); /// 1
@@ -178,6 +180,73 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
   refreshScr(ui_InfoScreen);
 
   cb_startWifiReConfigure(NULL);
+}
+
+void cb_leaveSDErrorInfo()
+{
+  cb_ui_InfoScreen_back = NULL;
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+  lv_group_focus_freeze(ui_group, false);
+  lv_group_focus_obj(ui_MenuButton1);
+  refreshScr(ui_MenuScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
+
+  cb_stopWifiReConfigure(NULL);
+}
+
+void cb_loadSDErrorInfo(lv_event_t *e)
+{
+  ui_InfoScreen_screen_init();
+
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][54]); // "错误"
+
+  lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel1, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel1, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel1, 15);
+  lv_obj_set_y(ui_InfoPanelLabel1, 10);
+  lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][12]); // "未检测到SD卡\n"
+  lv_obj_set_style_text_color(ui_InfoPanelLabel1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel2 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel2, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel2, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel2, 25);
+  lv_obj_set_y(ui_InfoPanelLabel2, 0);
+  lv_obj_set_align(ui_InfoPanelLabel2, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel2, LV_SYMBOL_SD_CARD);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel2, &ui_font_FontAwesomeIcon48, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel3 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel3, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel3, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel3, 100);
+  lv_obj_set_y(ui_InfoPanelLabel3, 0);
+  lv_obj_set_align(ui_InfoPanelLabel3, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel3, lang[curr_lang][67]); // "请检查SD卡，\n然后重试。"
+  lv_obj_set_style_text_font(ui_InfoPanelLabel3, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel4 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel4, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel4, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel4, 50);
+  lv_obj_set_y(ui_InfoPanelLabel4, 10);
+  lv_obj_set_align(ui_InfoPanelLabel4, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel4, LV_SYMBOL_CLOSE);
+  lv_obj_set_style_text_color(ui_InfoPanelLabel4, lv_color_hex(0xE20000), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel4, &ui_font_FontAwesomeIcon24, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  cb_ui_InfoScreen_back = cb_leaveSDErrorInfo;
+
+  lv_scr_load_anim(ui_InfoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+
+  lv_group_focus_obj(ui_InfoTitleBackButton);
+  lv_group_focus_freeze(ui_group, true);
+  refreshScr(ui_InfoScreen);
 }
 
 void cb_setAutoBright(bool val)

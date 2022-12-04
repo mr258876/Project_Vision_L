@@ -59,6 +59,7 @@ extern lv_obj_t * ui_SettingInfoPanelAboutLabel2;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel3;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel4;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel5;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel6;
 
 extern void (*cb_ui_InfoScreen_back)();
 extern lv_obj_t * ui_InfoScreen;
@@ -146,6 +147,7 @@ void cb_loadSettingScreen(lv_event_t * e);
 void cb_loadVideoScreen(lv_event_t * e);
 
 void cb_loadWifiReconfigInfo(lv_event_t * e);
+void cb_loadSDErrorInfo(lv_event_t * e);
 
 void cb_setAutoBright(bool val);
 void cb_setUseAccel(bool val);
@@ -180,6 +182,8 @@ LV_IMG_DECLARE(ui_img_clockicon_night);    // assets\ui_ClockIcon_Night.png
 
 LV_FONT_DECLARE(ui_font_HanyiWenhei16ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei24ZhHans);
+LV_FONT_DECLARE(ui_font_FontAwesomeIcon24);
+LV_FONT_DECLARE(ui_font_FontAwesomeIcon48);
 
 
 void ui_init(void);
