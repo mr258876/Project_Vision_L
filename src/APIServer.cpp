@@ -14,13 +14,17 @@ httpd_handle_t s;
 //
 //////////////////////////////
 
-esp_err_t root_handler(httpd_req_t *req);
-esp_err_t info_handler(httpd_req_t *req);
+static esp_err_t root_handler(httpd_req_t *req);
+static esp_err_t info_handler(httpd_req_t *req);
 
-esp_err_t playlist_get_handler(httpd_req_t *req);
-esp_err_t playlist_post_handler(httpd_req_t *req);
+static esp_err_t playlist_get_handler(httpd_req_t *req);
+static esp_err_t playlist_post_handler(httpd_req_t *req);
 
-esp_err_t listdir_handler(httpd_req_t *req);
+static esp_err_t file_listdir_handler(httpd_req_t *req);
+static esp_err_t file_get_handler(httpd_req_t *req);
+static esp_err_t file_post_handler(httpd_req_t *req);
+static esp_err_t file_delete_handler(httpd_req_t *req);
+static esp_err_t file_makedir_handler(httpd_req_t *req);
 
 //////////////////////////////
 //
@@ -57,10 +61,38 @@ httpd_uri_t uri_playlist_post = {
     .user_ctx = NULL};
 
 /* GET /file/listdir 的 URI 处理结构 */
-httpd_uri_t uri_listdir = {
+httpd_uri_t uri_file_listdir = {
     .uri = "/api/v1/file/listdir",
     .method = HTTP_GET,
-    .handler = listdir_handler,
+    .handler = file_listdir_handler,
+    .user_ctx = NULL};
+
+/* GET /file/file 的 URI 处理结构 */
+httpd_uri_t uri_file_get = {
+    .uri = "/api/v1/file",
+    .method = HTTP_GET,
+    .handler = file_get_handler,
+    .user_ctx = NULL};
+
+/* POST /file/file 的 URI 处理结构 */
+httpd_uri_t uri_file_post = {
+    .uri = "/api/v1/file",
+    .method = HTTP_POST,
+    .handler = file_post_handler,
+    .user_ctx = NULL};
+
+/* DELETE /file/file 的 URI 处理结构 */
+httpd_uri_t uri_file_delete = {
+    .uri = "/api/v1/file",
+    .method = HTTP_DELETE,
+    .handler = file_delete_handler,
+    .user_ctx = NULL};
+
+/* POST /file/listdir 的 URI 处理结构 */
+httpd_uri_t uri_file_makedir = {
+    .uri = "/api/v1/file/makedir",
+    .method = HTTP_POST,
+    .handler = file_makedir_handler,
     .user_ctx = NULL};
 
 //////////////////////////////
@@ -69,7 +101,134 @@ httpd_uri_t uri_listdir = {
 //
 //////////////////////////////
 
-unsigned char h2int(char c)
+SemaphoreHandle_t *get_FS_mutex(char drv_letter)
+{
+    switch (drv_letter)
+    {
+    case 's':
+        return &SDMutex;
+    case 'f':
+        return &FlashMutex;
+    default:
+        return nullptr;
+    }
+}
+
+int remove_files(const char *path)
+{
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+        return -1;
+
+    struct stat file_stat;
+    int res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        res = stat(path, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (res == -1)
+        return -1;
+
+    if (S_ISDIR(file_stat.st_mode))
+    {
+        // Is directory
+        DIR *dir;
+        dirent *f_dirent;
+        xSemaphoreTake(*FSMutex, portMAX_DELAY);
+        {
+            dir = opendir(path);
+        }
+        xSemaphoreGive(*FSMutex);
+        while (1)
+        {
+            xSemaphoreTake(*FSMutex, portMAX_DELAY);
+            {
+                f_dirent = readdir(dir);
+            }
+            xSemaphoreGive(*FSMutex);
+
+            if (f_dirent)
+            {
+                char p[strlen(path) + strlen(f_dirent->d_name) + 2];
+                sprintf(p, "%s/%s", path, f_dirent->d_name);
+                if (f_dirent->d_type == DT_DIR)
+                {
+                    res = remove_files(p);
+                    if (res == -1)
+                        return -1;
+                }
+                else
+                {
+                    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+                    {
+                        res = remove(p);
+                    }
+                    xSemaphoreGive(*FSMutex);
+                    if (res == -1)
+                        return -1;
+                }
+            }
+            else
+                break;
+        }
+        xSemaphoreTake(*FSMutex, portMAX_DELAY);
+        {
+            res = rmdir(path);
+        }
+        xSemaphoreGive(*FSMutex);
+    }
+    else
+    {
+        // Regular file
+        xSemaphoreTake(*FSMutex, portMAX_DELAY);
+        {
+            res = remove(path);
+        }
+        xSemaphoreGive(*FSMutex);
+    }
+
+    return res;
+}
+
+#define IS_FILE_EXT(filename, ext) \
+    (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
+
+/* 设置header中的content-type */
+static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename)
+{
+    if (IS_FILE_EXT(filename, ".pdf"))
+    {
+        return httpd_resp_set_type(req, "application/pdf");
+    }
+    else if (IS_FILE_EXT(filename, ".json"))
+    {
+        return httpd_resp_set_type(req, "application/json");
+    }
+    else if (IS_FILE_EXT(filename, ".html"))
+    {
+        return httpd_resp_set_type(req, "text/html");
+    }
+    else if (IS_FILE_EXT(filename, ".jpeg"))
+    {
+        return httpd_resp_set_type(req, "image/jpeg");
+    }
+    else if (IS_FILE_EXT(filename, ".ico"))
+    {
+        return httpd_resp_set_type(req, "image/x-icon");
+    }
+    else if (IS_FILE_EXT(filename, ".wav"))
+    {
+        return httpd_resp_set_type(req, "audio/wav");
+    }
+    /* This is a limited set only */
+    /* For any other type always set as binary data */
+    return httpd_resp_set_type(req, "application/octet-stream");
+}
+
+/* url字符转16进制 */
+static unsigned char h2int(char c)
 {
     if (c >= '0' && c <= '9')
     {
@@ -86,7 +245,8 @@ unsigned char h2int(char c)
     return (0);
 }
 
-String urldecode(String str)
+/* url解码 */
+static String urldecode(String str)
 {
 
     String encodedString = "";
@@ -116,6 +276,12 @@ String urldecode(String str)
         }
     }
 
+    // 移除最后一个斜杠 <- 似乎打开目录的时候有些bug
+    if (encodedString.endsWith("/"))
+    {
+        encodedString.remove(encodedString.length() - 1);
+    }
+
     return encodedString;
 }
 
@@ -126,7 +292,7 @@ String urldecode(String str)
 //////////////////////////////
 
 /* 根目录跳转 */
-esp_err_t root_handler(httpd_req_t *req)
+static esp_err_t root_handler(httpd_req_t *req)
 {
     httpd_resp_set_status(req, "302	Found");
     httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
@@ -136,7 +302,7 @@ esp_err_t root_handler(httpd_req_t *req)
 }
 
 /* 获取神之眼基本信息 */
-esp_err_t info_handler(httpd_req_t *req)
+static esp_err_t info_handler(httpd_req_t *req)
 {
     // 获取app版本
     const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
@@ -157,7 +323,7 @@ esp_err_t info_handler(httpd_req_t *req)
 }
 
 /* 获取播放列表 */
-esp_err_t playlist_get_handler(httpd_req_t *req)
+static esp_err_t playlist_get_handler(httpd_req_t *req)
 {
     String json = "";
     StaticJsonDocument<1024> doc;
@@ -183,7 +349,7 @@ esp_err_t playlist_get_handler(httpd_req_t *req)
 }
 
 /* 设置播放列表 */
-esp_err_t playlist_post_handler(httpd_req_t *req)
+static esp_err_t playlist_post_handler(httpd_req_t *req)
 {
     char post_ctx[1024];
     char response[256];
@@ -213,19 +379,19 @@ esp_err_t playlist_post_handler(httpd_req_t *req)
     error = deserializeJson(doc, post_ctx, DeserializationOption::Filter(filter));
     if (error)
     {
-        sprintf(response, "{\"response\":\"%s\",code:-1}", error.c_str());
-        httpd_resp_set_status(req, HTTPD_200);
+        sprintf(response, "{\"response\":\"%s\",\"code\":-1}", error.c_str());
+        httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
         httpd_resp_send(req, response, HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        return ESP_FAIL;
     }
 
     if (!doc.containsKey("files") || !doc["files"].is<JsonArray>() || doc["files"].isNull() || !doc["files"][0].is<const char *>())
     {
-        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid JSON\",code:-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        httpd_resp_send(req, "{\"response\":\"Invalid JSON\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
 
     JsonArray files = doc["files"];
@@ -248,15 +414,16 @@ esp_err_t playlist_post_handler(httpd_req_t *req)
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     if (error_count)
-        httpd_resp_send(req, "{\"response\":\"success with error\",code:1}", HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, "{\"response\":\"success with error\",\"code\":1}", HTTPD_RESP_USE_STRLEN);
     else
-        httpd_resp_send(req, "{\"response\":\"success\",code:0}", HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
 
     return ESP_OK;
 }
 
 /* 获取目录下文件列表 */
-esp_err_t listdir_handler(httpd_req_t *req)
+/* @param path: 文件夹路径，通过url传参 */
+static esp_err_t file_listdir_handler(httpd_req_t *req)
 {
     char str[512];
     char path[512];
@@ -264,54 +431,79 @@ esp_err_t listdir_handler(httpd_req_t *req)
     /* 获取url中参数 */
     if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\", code:-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
     /* 提取路径 */
     if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\", code:-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
 
     /* 尝试打开文件夹(检测路径是否存在) */
-    lv_fs_dir_t dir;
-    if (lv_fs_dir_open(&dir, urldecode(path).c_str())) // <-- LV_FS_RES_OK = 0
+    strcpy(path, urldecode(path).c_str());
+    DIR *dir;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
     {
-        httpd_resp_set_status(req, HTTPD_200);
+        dir = opendir(path);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (!dir)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Unable to open path\", code:-3}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        httpd_resp_send(req, "{\"response\":\"Unable to open path\",\"code\":-3}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
 
     DynamicJsonDocument doc(4096);
     JsonArray files = doc.createNestedArray("files");
+    dirent *f_dirent;
     /* 将文件名添加至列表 */
     while (1)
     {
         strcpy(str, "");
-        if (lv_fs_dir_read(&dir, str)) // <-- LV_FS_RES_OK = 0
+        xSemaphoreTake(*FSMutex, portMAX_DELAY);
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Error occured during reading fn\", code:-10}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            f_dirent = readdir(dir);
         }
-        
-        if (str[0] == '\0')
+        xSemaphoreGive(*FSMutex);
+        if (!f_dirent)
         {
             break;
         }
-        else
+
+        if (f_dirent->d_type == DT_REG)
         {
-            files.add(str);
+            files.add(f_dirent->d_name);
+        }
+        else if (f_dirent->d_type == DT_DIR)
+        {
+            // Is directiory
+            String fn = String("/") + f_dirent->d_name;
+            files.add(fn);
         }
     }
-    lv_fs_dir_close(&dir);
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        closedir(dir);
+    }
+    xSemaphoreGive(*FSMutex);
 
     String json = "";
     serializeJson(doc, json);
@@ -320,6 +512,447 @@ esp_err_t listdir_handler(httpd_req_t *req)
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 下载文件 */
+/* @param path: 文件路径，通过url传参 */
+static esp_err_t file_get_handler(httpd_req_t *req)
+{
+    char str[512];
+    char path[512];
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 尝试打开文件(检测路径是否存在) */
+    strcpy(path, urldecode(path).c_str());
+    struct stat file_stat;
+    int stat_res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        stat_res = stat(path, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (stat_res == -1)
+    {
+        ESP_LOGE("file_get_handler", "Open file fail!\"code\":%d", errno);
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File not exist\",\"code\":-6}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    FILE *fd = nullptr;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        fd = fopen(path, "r");
+    }
+    xSemaphoreGive(*FSMutex);
+
+    if (!fd)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Unable to open file\",\"code\":-3}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 设置header中的Content-type */
+    set_content_type_from_file(req, path);
+
+    /* 设置header中的Content-disposition */
+    /* 用于设置下载时的文件名 */
+    String fn = String(path);
+    int index = fn.lastIndexOf("/");
+    if (index < 0)
+    {
+        index = fn.lastIndexOf(":");
+    }
+    fn = "inline; filename=\"" + fn.substring(index + 1) + "\"";
+    httpd_resp_set_hdr(req, "Content-Disposition", fn.c_str()); // <- make sure the value is still valid until send function
+
+    /* Retrieve the pointer to scratch buffer for temporary storage */
+    char *chunk = (char *)malloc(FILE_SCRATCH_BUFSIZE);
+    size_t chunksize = FILE_SCRATCH_BUFSIZE;
+    if (!chunk)
+    {
+        ESP_LOGI("file_get_handler", "Create scratch buffer failed. Falling back to smaller size.");
+        chunk = (char *)malloc(FILE_SCRATCH_FALLBACK_BUFSIZE);
+        chunksize = FILE_SCRATCH_FALLBACK_BUFSIZE;
+    }
+    if (!chunk)
+    {
+        ESP_LOGE("file_get_handler", "No enough memory to create scratch buffer!");
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No enough ram\",\"code\":-20}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    size_t bytesread;
+    do
+    {
+        xSemaphoreTake(*FSMutex, portMAX_DELAY);
+        {
+            /* Read file in chunks into the scratch buffer */
+            bytesread = fread(chunk, 1, chunksize, fd);
+        }
+        xSemaphoreGive(*FSMutex);
+
+        if (bytesread > 0)
+        {
+            /* Send the buffer contents as HTTP response chunk */
+            if (httpd_resp_send_chunk(req, chunk, bytesread) != ESP_OK)
+            {
+                xSemaphoreTake(*FSMutex, portMAX_DELAY);
+                {
+                    fclose(fd);
+                }
+                xSemaphoreGive(*FSMutex);
+                ESP_LOGE("file_get_handler", "File sending failed!");
+                /* Abort sending file */
+                httpd_resp_sendstr_chunk(req, NULL);
+                /* Respond with 500 Internal Server Error */
+                httpd_resp_set_status(req, HTTPD_500);
+                httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+                httpd_resp_send(req, "{\"response\":\"Failed on sending file\",\"code\":-11}", HTTPD_RESP_USE_STRLEN);
+                return ESP_FAIL;
+            }
+        }
+
+        /* Keep looping till the whole file is sent */
+    } while (bytesread > 0);
+
+    /* To finish the transfer */
+    httpd_resp_send_chunk(req, NULL, 0);
+    free(chunk);
+
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        fclose(fd);
+    }
+    xSemaphoreGive(*FSMutex);
+
+    return ESP_OK;
+}
+
+/* 上传文件 */
+/* @param path: 文件路径，通过url传参 */
+static esp_err_t file_post_handler(httpd_req_t *req)
+{
+    char str[512];
+    char path[512];
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    strcpy(path, urldecode(path).c_str());
+    if (path[strlen(path) - 1] == '/')
+    {
+        ESP_LOGE("file_post_handler", "Invalid filename : %s", path);
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+    {
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    FILE *fd = nullptr;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        fd = fopen(path, "wb");
+    }
+    xSemaphoreGive(*FSMutex);
+
+    if (!fd)
+    {
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Unable to open (create) file\",\"code\":-8}", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    /* Retrieve the pointer to scratch buffer for temporary storage */
+    char *chunk = (char *)malloc(FILE_SCRATCH_BUFSIZE);
+    size_t chunksize = FILE_SCRATCH_BUFSIZE;
+    if (!chunk)
+    {
+        ESP_LOGI("file_get_handler", "Create scratch buffer failed. Falling back to smaller size.");
+        chunk = (char *)malloc(FILE_SCRATCH_FALLBACK_BUFSIZE);
+        chunksize = FILE_SCRATCH_FALLBACK_BUFSIZE;
+    }
+    if (!chunk)
+    {
+        ESP_LOGE("file_get_handler", "No enough memory to create scratch buffer!");
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No enough ram\",\"code\":-20}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    size_t remaining = req->content_len;
+    size_t received;
+    size_t written;
+    while (remaining > 0)
+    {
+        /* Receive the file part by part into a buffer */
+        if ((received = httpd_req_recv(req, chunk, min(remaining, chunksize))) <= 0)
+        {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT)
+            {
+                /* Retry if timeout occurred */
+                continue;
+            }
+
+            /* In case of unrecoverable error,
+             * close and delete the unfinished file*/
+            xSemaphoreTake(*FSMutex, portMAX_DELAY);
+            {
+                fclose(fd);
+                remove(path);
+            }
+            xSemaphoreGive(*FSMutex);
+
+            ESP_LOGE("file_post_handler", "File reception failed!");
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Failed on receiving file\",\"code\":-9}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* Write buffer content to file on storage */
+        if (received)
+        {
+            xSemaphoreTake(*FSMutex, portMAX_DELAY);
+            {
+                written = fwrite(chunk, 1, received, fd);
+            }
+            xSemaphoreGive(*FSMutex);
+
+            if (received != written)
+            {
+                /* Couldn't write everything to file!
+                 * Storage may be full? */
+                xSemaphoreTake(*FSMutex, portMAX_DELAY);
+                {
+                    fclose(fd);
+                    remove(path);
+                }
+                xSemaphoreGive(*FSMutex);
+
+                ESP_LOGE("file_post_handler", "File write failed!");
+                /* Respond with 500 Internal Server Error */
+                httpd_resp_set_status(req, HTTPD_500);
+                httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+                httpd_resp_send(req, "{\"response\":\"Failed on writing file\",\"code\":-10}", HTTPD_RESP_USE_STRLEN);
+                return ESP_FAIL;
+            }
+        }
+
+        /* Keep track of remaining size of
+         * the file left to be uploaded */
+        remaining -= received;
+    }
+
+    /* Close file upon upload completion */
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        fclose(fd);
+    }
+    xSemaphoreGive(*FSMutex);
+
+    /* Redirect onto root to see the updated file list */
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 删除文件 */
+/* @param path: 文件路径，通过url传参 */
+static esp_err_t file_delete_handler(httpd_req_t *req)
+{
+    char str[512];
+    char path[512];
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 检测文件状态 */
+    strcpy(path, urldecode(path).c_str());
+    struct stat file_stat;
+    int stat_res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        stat_res = stat(path, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (stat_res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File not exist\",\"code\":-6}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    int res = remove_files(path);
+
+    if (res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Error occured deleting files\",\"code\":-4}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 新建文件夹 */
+/* @param path: 文件路径，通过url传参 */
+static esp_err_t file_makedir_handler(httpd_req_t *req)
+{
+    char str[512];
+    char path[512];
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
+    if (!FSMutex)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* 尝试打开文件(检测路径是否存在) */
+    strcpy(path, urldecode(path).c_str());
+    struct stat file_stat;
+    int res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        res = stat(path, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (res == 0)
+    {
+        ESP_LOGE("file_makedir_handler", "File (dir) already exists!");
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File already exist\",\"code\":-7}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        res = mkdir(path, 0777);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (res == 0)
+    {
+        ESP_LOGE("file_makedir_handler", "Unable to create folder!");
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Error create folder!\",\"code\":-8}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -352,7 +985,11 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_playlist_get);
         httpd_register_uri_handler(server, &uri_playlist_post);
 
-        httpd_register_uri_handler(server, &uri_listdir);
+        httpd_register_uri_handler(server, &uri_file_listdir);
+        httpd_register_uri_handler(server, &uri_file_get);
+        httpd_register_uri_handler(server, &uri_file_post);
+        httpd_register_uri_handler(server, &uri_file_delete);
+        httpd_register_uri_handler(server, &uri_file_makedir);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;

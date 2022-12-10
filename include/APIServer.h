@@ -9,7 +9,14 @@
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
 
+#include <sys/types.h>
+#include <dirent.h>
+
 #include "lvgl.h"
+
+/*  file send/receive buffer size */
+#define FILE_SCRATCH_BUFSIZE 4096
+#define FILE_SCRATCH_FALLBACK_BUFSIZE 1024
 
 void startAPIServer();
 void endAPIServer();

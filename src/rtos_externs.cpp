@@ -14,6 +14,7 @@ SemaphoreHandle_t WiFiConnectMutex = xSemaphoreCreateMutex();
 
 /* SPI */
 SemaphoreHandle_t SDMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t FlashMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t LCDMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t *LCDMutexptr = nullptr;
 

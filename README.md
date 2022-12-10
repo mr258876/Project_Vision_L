@@ -138,6 +138,8 @@ if (ask == true) {
 ### 常见问题解答
 #### 为什么获取体力时会出现“错误1034”？
 - 受米游社风控策略影响，部分情况米游社api会直接返回错误1034。目前的解决办法为在手机上使用米游社app查询体力并签到，随后神之眼上的树脂功能将恢复正常。
+#### 如何通过API控制神之眼？
+- 关于管理API的更多内容，请参阅[API参考手册](apiReference.md).
 
 ## English
 
@@ -223,3 +225,5 @@ Features planned for next major release:
 ### FAQ
 #### Why do I get "Error 1034" when getting resin data?
 - Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.
+#### How to control the Vision through APIs?
+- Please reference to [API Refernece Manual](apiReference.md) for more details about the management APIs.

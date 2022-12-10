@@ -15,6 +15,7 @@ extern SemaphoreHandle_t WiFiConnectMutex;
 
 // SPI 互斥锁
 extern SemaphoreHandle_t SDMutex;
+extern SemaphoreHandle_t FlashMutex;
 extern SemaphoreHandle_t LCDMutex;
 extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI bus
 
