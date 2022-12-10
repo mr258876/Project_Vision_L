@@ -1,6 +1,3 @@
-#ifndef _UI_H_
-#define _UI_H_
-
 #include "ui.h"
 #include "ui_helpers.h"
 #include "ui_multiLanguage.h"
@@ -1547,5 +1544,3 @@ void ui_init(void)
     ui_group = lv_group_create();
     lv_group_set_default(ui_group);
 }
-
-#endif

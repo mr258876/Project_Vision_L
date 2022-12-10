@@ -1,5 +1,5 @@
-#ifndef _THE_VISION_L_UI_H
-#define _THE_VISION_L_UI_H
+#ifndef _UI_H_
+#define _UI_H_
 
 #ifdef __cplusplus
 extern "C" {

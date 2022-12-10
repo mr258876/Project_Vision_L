@@ -343,23 +343,35 @@ static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *dir_p, char *fn)
     FILINFO fno;
     fn[0] = '\0';
 
-    if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
     do
     {
+        if (drv->letter == 'S') xSemaphoreTake(SDMutex, portMAX_DELAY);
         res = f_readdir(dir_p, &fno);
+        if (drv->letter == 'S') xSemaphoreGive(SDMutex);
         if (res != FR_OK)
             return LV_FS_RES_UNKNOWN;
 
-        if (fno.fattrib & AM_DIR)
+        if (fno.fname[0] == 0)  // <- No more file
+        {
+            break;
+        }
+        else if (fno.fname[0] == '.')    // <- Hidden files
+        {
+            continue;
+        }
+        else if (fno.fattrib & AM_DIR)  // <- Directories
         {
             fn[0] = '/';
             strcpy(&fn[1], fno.fname);
+            break;
         }
         else
+        {
             strcpy(fn, fno.fname);
+            break;
+        }
 
     } while (strcmp(fn, "/.") == 0 || strcmp(fn, "/..") == 0);
-    if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
     return LV_FS_RES_OK;
 }

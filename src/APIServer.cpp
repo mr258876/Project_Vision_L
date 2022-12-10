@@ -20,6 +20,8 @@ esp_err_t info_handler(httpd_req_t *req);
 esp_err_t playlist_get_handler(httpd_req_t *req);
 esp_err_t playlist_post_handler(httpd_req_t *req);
 
+esp_err_t listdir_handler(httpd_req_t *req);
+
 //////////////////////////////
 //
 //  URI结构体
@@ -35,24 +37,87 @@ httpd_uri_t uri_root = {
 
 /* GET /info 的 URI 处理结构 */
 httpd_uri_t uri_info = {
-    .uri = "/info",
+    .uri = "/api/v1/info",
     .method = HTTP_GET,
     .handler = info_handler,
     .user_ctx = NULL};
 
 /* GET /playlist 的 URI 处理结构 */
 httpd_uri_t uri_playlist_get = {
-    .uri = "/playlist",
+    .uri = "/api/v1/playlist",
     .method = HTTP_GET,
     .handler = playlist_get_handler,
     .user_ctx = NULL};
 
 /* POST /playlist 的 URI 处理结构 */
 httpd_uri_t uri_playlist_post = {
-    .uri = "/playlist",
+    .uri = "/api/v1/playlist",
     .method = HTTP_POST,
     .handler = playlist_post_handler,
     .user_ctx = NULL};
+
+/* GET /file/listdir 的 URI 处理结构 */
+httpd_uri_t uri_listdir = {
+    .uri = "/api/v1/file/listdir",
+    .method = HTTP_GET,
+    .handler = listdir_handler,
+    .user_ctx = NULL};
+
+//////////////////////////////
+//
+//  helper 函数
+//
+//////////////////////////////
+
+unsigned char h2int(char c)
+{
+    if (c >= '0' && c <= '9')
+    {
+        return ((unsigned char)c - '0');
+    }
+    if (c >= 'a' && c <= 'f')
+    {
+        return ((unsigned char)c - 'a' + 10);
+    }
+    if (c >= 'A' && c <= 'F')
+    {
+        return ((unsigned char)c - 'A' + 10);
+    }
+    return (0);
+}
+
+String urldecode(String str)
+{
+
+    String encodedString = "";
+    char c;
+    char code0;
+    char code1;
+    for (int i = 0; i < str.length(); i++)
+    {
+        c = str.charAt(i);
+        if (c == '+')
+        {
+            encodedString += ' ';
+        }
+        else if (c == '%')
+        {
+            i++;
+            code0 = str.charAt(i);
+            i++;
+            code1 = str.charAt(i);
+            c = (h2int(code0) << 4) | h2int(code1);
+            encodedString += c;
+        }
+        else
+        {
+
+            encodedString += c;
+        }
+    }
+
+    return encodedString;
+}
 
 //////////////////////////////
 //
@@ -91,17 +156,6 @@ esp_err_t info_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-/* 获取目录下文件列表 */
-esp_err_t filelist_handler(httpd_req_t *req)
-{
-    StaticJsonDocument<1024> doc;
-
-    httpd_resp_set_status(req, HTTPD_200);
-    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-    httpd_resp_send(req, "{}", HTTPD_RESP_USE_STRLEN);
-    return ESP_OK;
-}
-
 /* 获取播放列表 */
 esp_err_t playlist_get_handler(httpd_req_t *req)
 {
@@ -131,13 +185,13 @@ esp_err_t playlist_get_handler(httpd_req_t *req)
 /* 设置播放列表 */
 esp_err_t playlist_post_handler(httpd_req_t *req)
 {
-    char post_cxt[1024];
+    char post_ctx[1024];
     char response[256];
 
     /* 如果内容长度大于缓冲区则截断 */
-    size_t recv_size = min(req->content_len, sizeof(post_cxt));
+    size_t recv_size = min(req->content_len, sizeof(post_ctx));
 
-    int ret = httpd_req_recv(req, post_cxt, recv_size);
+    int ret = httpd_req_recv(req, post_ctx, recv_size);
     if (ret <= 0)
     { /* 返回 0 表示连接已关闭 */
         /* 检查是否超时 */
@@ -156,17 +210,17 @@ esp_err_t playlist_post_handler(httpd_req_t *req)
     StaticJsonDocument<0> filter;
     DeserializationError error;
 
-    error = deserializeJson(doc, post_cxt, DeserializationOption::Filter(filter));
+    error = deserializeJson(doc, post_ctx, DeserializationOption::Filter(filter));
     if (error)
     {
-        sprintf(response, "{\"response\":\"%s\",code:-1}", error);
+        sprintf(response, "{\"response\":\"%s\",code:-1}", error.c_str());
         httpd_resp_set_status(req, HTTPD_200);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
         httpd_resp_send(req, response, HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }
 
-    if (!doc.containsKey("files") || !doc["files"].is<JsonArray>() || doc["files"].isNull() || !doc["files"][0].is<const char*>())
+    if (!doc.containsKey("files") || !doc["files"].is<JsonArray>() || doc["files"].isNull() || !doc["files"][0].is<const char *>())
     {
         httpd_resp_set_status(req, HTTPD_200);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
@@ -201,6 +255,74 @@ esp_err_t playlist_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取目录下文件列表 */
+esp_err_t listdir_handler(httpd_req_t *req)
+{
+    char str[512];
+    char path[512];
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid query\", code:-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid path\", code:-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    /* 尝试打开文件夹(检测路径是否存在) */
+    lv_fs_dir_t dir;
+    if (lv_fs_dir_open(&dir, urldecode(path).c_str())) // <-- LV_FS_RES_OK = 0
+    {
+        httpd_resp_set_status(req, HTTPD_200);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Unable to open path\", code:-3}", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    DynamicJsonDocument doc(4096);
+    JsonArray files = doc.createNestedArray("files");
+    /* 将文件名添加至列表 */
+    while (1)
+    {
+        strcpy(str, "");
+        if (lv_fs_dir_read(&dir, str)) // <-- LV_FS_RES_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Error occured during reading fn\", code:-10}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+        
+        if (str[0] == '\0')
+        {
+            break;
+        }
+        else
+        {
+            files.add(str);
+        }
+    }
+    lv_fs_dir_close(&dir);
+
+    String json = "";
+    serializeJson(doc, json);
+    doc.clear();
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 //////////////////////////////
 //
 //  全局函数实现
@@ -229,6 +351,8 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_playlist_get);
         httpd_register_uri_handler(server, &uri_playlist_post);
+
+        httpd_register_uri_handler(server, &uri_listdir);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;
