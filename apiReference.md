@@ -65,10 +65,12 @@ This function will update the playlist.
 New playlist in JSON, included in request body.
 
 #### Return
+新的播放列表或者下列错误中的一个。
+
+The new playlist or error among table below.
+
 | Description | Code |
 | --- | --- |
-| Success | 0 |
-| Some files missing | 1 |
 | JSON deseralization error | -1 |
 | Invalid JSON              | -2 |
 
@@ -87,8 +89,11 @@ BODY:
 
 RESPONSE:
 {
-    "response": "success",
-    "code": 0
+    "files":[
+        "S:/Pyro.mjpeg",
+        "S:/Hydro.mjpeg",
+        "S:/Anemo.mjpeg"
+    ]
 }
 ~~~
 
@@ -266,5 +271,135 @@ RESPONSE:
 {
     "response": "success",
     "code": 0
+}
+~~~
+
+## 米游社配置 / Hoyolab Configurations
+### GET /api/v1/hoyolab/conf
+#### Brief
+该函数用于获取当前米游社配置。
+
+This function is to get current Hoyolab configurations.
+
+#### Return
+JSON封装的米游社配置，包含角色uid，登陆cookie及设备guid。
+
+Hoyolab configuration packed in JSON, including character uid, cookie for login, and device guid.
+
+#### Example
+~~~
+GET /api/v1/hoyolab/conf
+
+RESPONSE:
+{
+    "uid":"012345678",
+    "cookie":"HOYOLAB_COOKIE",
+    "device_guid":"0123456789abcdef0123456789abcdef"
+}
+~~~
+
+### POST /api/v1/hoyolab/conf
+#### Brief
+该函数用于设置米游社配置。
+
+This function is to set Hoyolab configurations.
+
+#### Param
+JSON封装的米游社配置，包含角色uid，登陆cookie及设备guid。
+
+**注意：三个配置值均是必填项，API将直接从JSON中读取值并覆盖，不会进行校验**
+
+Hoyolab configuration packed in JSON, including character uid, cookie for login, and device guid.
+
+**Note: All the three values are required, the API does not do any validations, just simply overwrite.**
+
+#### Return
+| Description | Code |
+| --- | --- |
+| success | 0 |
+| Error when deserializing json | -1 |
+| Invalid JSON | -2 |
+
+#### Example
+~~~
+POST /api/v1/hoyolab/conf
+BODY:
+{
+    "uid":"012345678",
+    "cookie":"HOYOLAB_COOKIE",
+    "device_guid":"0123456789abcdef0123456789abcdef"
+}
+
+RESPONSE:
+{
+    "response":"success",
+    "code":0
+}
+~~~
+
+## 设备设置 / Device Settings
+### GET /api/v1/setting/auto_bright
+#### Brief
+该函数用于获取或设置自动亮度开关。
+
+This function is to get or set value of auto brightness.
+
+#### Param
+value: 要设置的值，"true"或"false"中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of "true" or "false". DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/auto_bright?value=false
+
+RESPONSE:
+{
+    "setting_autoBright":false
+}
+~~~
+
+### GET /api/v1/setting/auto_rotate
+#### Brief
+该函数用于获取或设置自动旋转开关。
+
+This function is to get or set value of auto rotation.
+
+#### Param
+value: 要设置的值，"true"或"false"中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of "true" or "false". DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/auto_rotate?value=false
+
+RESPONSE:
+{
+    "setting_useAccel":false
 }
 ~~~

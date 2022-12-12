@@ -5,6 +5,7 @@
 #include "The_Vision_L_globals.h"
 #include "rtos_externs.h"
 
+/* 树脂显示刷新 */
 void cb_timer_ResinDispTimer(lv_timer_t *timer)
 {
     if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
@@ -64,6 +65,7 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
     }
 }
 
+/* 设置值刷新 */
 void cb_timer_SettingDispTimer(lv_timer_t *timer)
 {
     // 网络状态
@@ -133,6 +135,7 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
     lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:" 
 }
 
+/* 主题时钟秒针刷新 */
 void cb_timer_ClockTimerSecond(lv_timer_t *timer)
 {
     struct tm timeinfo;
@@ -142,6 +145,7 @@ void cb_timer_ClockTimerSecond(lv_timer_t *timer)
     }
 }
 
+/* 主题时钟分针刷新 */
 void cb_timer_ClockTimerMinute(lv_timer_t *timer)
 {
     struct tm timeinfo;
@@ -151,6 +155,7 @@ void cb_timer_ClockTimerMinute(lv_timer_t *timer)
     }
 }
 
+/* 主题时钟时针/四角图标刷新 */
 void cb_timer_ClockTimerHour(lv_timer_t *timer)
 {
     struct tm timeinfo;

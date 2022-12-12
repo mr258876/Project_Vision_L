@@ -26,6 +26,14 @@ static esp_err_t file_post_handler(httpd_req_t *req);
 static esp_err_t file_delete_handler(httpd_req_t *req);
 static esp_err_t file_makedir_handler(httpd_req_t *req);
 
+static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req);
+static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req);
+
+static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req);
+static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req);
+static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
+static esp_err_t setting_volume_get_handler(httpd_req_t *req);
+
 //////////////////////////////
 //
 //  URI结构体
@@ -88,11 +96,53 @@ httpd_uri_t uri_file_delete = {
     .handler = file_delete_handler,
     .user_ctx = NULL};
 
-/* POST /file/listdir 的 URI 处理结构 */
+/* POST /file/makedir 的 URI 处理结构 */
 httpd_uri_t uri_file_makedir = {
     .uri = "/api/v1/file/makedir",
     .method = HTTP_POST,
     .handler = file_makedir_handler,
+    .user_ctx = NULL};
+
+/* GET /hoyolab/conf 的 URI 处理结构 */
+httpd_uri_t uri_hoyolab_conf_get = {
+    .uri = "/api/v1/hoyolab/conf",
+    .method = HTTP_GET,
+    .handler = hoyolab_conf_get_handler,
+    .user_ctx = NULL};
+
+/* POST /hoyolab/conf 的 URI 处理结构 */
+httpd_uri_t uri_hoyolab_conf_post = {
+    .uri = "/api/v1/hoyolab/conf",
+    .method = HTTP_POST,
+    .handler = hoyolab_conf_post_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/auto_bright 的 URI 处理结构 */
+httpd_uri_t uri_setting_auto_bright_get = {
+    .uri = "/api/v1/setting/auto_bright",
+    .method = HTTP_GET,
+    .handler = setting_auto_bright_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/auto_rotate 的 URI 处理结构 */
+httpd_uri_t uri_setting_auto_rotate_get = {
+    .uri = "/api/v1/setting/auto_rotate",
+    .method = HTTP_GET,
+    .handler = setting_auto_rotate_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/brightness 的 URI 处理结构 */
+httpd_uri_t uri_setting_brightness_get = {
+    .uri = "/api/v1/setting/brightness",
+    .method = HTTP_GET,
+    .handler = setting_brightness_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/volume 的 URI 处理结构 */
+httpd_uri_t uri_setting_volume_get = {
+    .uri = "/api/v1/setting/volume",
+    .method = HTTP_GET,
+    .handler = setting_volume_get_handler,
     .user_ctx = NULL};
 
 //////////////////////////////
@@ -352,7 +402,6 @@ static esp_err_t playlist_get_handler(httpd_req_t *req)
 static esp_err_t playlist_post_handler(httpd_req_t *req)
 {
     char post_ctx[1024];
-    char response[256];
 
     /* 如果内容长度大于缓冲区则截断 */
     size_t recv_size = min(req->content_len, sizeof(post_ctx));
@@ -373,20 +422,20 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
     }
 
     StaticJsonDocument<1024> doc;
-    StaticJsonDocument<0> filter;
     DeserializationError error;
 
-    error = deserializeJson(doc, post_ctx, DeserializationOption::Filter(filter));
+    error = deserializeJson(doc, (const char *)post_ctx, recv_size);
     if (error)
     {
-        sprintf(response, "{\"response\":\"%s\",\"code\":-1}", error.c_str());
         httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, response, HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
         return ESP_FAIL;
     }
 
-    if (!doc.containsKey("files") || !doc["files"].is<JsonArray>() || doc["files"].isNull() || !doc["files"][0].is<const char *>())
+    JsonArray files = doc["files"];
+
+    if (files.isNull() || files[0].isNull())
     {
         httpd_resp_set_status(req, HTTPD_500);
         httpd_resp_set_type(req, HTTPD_TYPE_JSON);
@@ -394,7 +443,6 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    JsonArray files = doc["files"];
     int error_count = 0;
 
     filePaths.clear();
@@ -411,13 +459,26 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
         lv_fs_close(&_input);
     }
 
+    // 返回新的播放列表
+    String json = "";
+    files.clear();
+
+    if (filePaths.size() > 0)
+    {
+        ListNode<String> *fp = filePaths.getRoot();
+        do
+        {
+            files.add(fp->data);
+            fp = fp->next;
+        } while (fp);
+    }
+
+    serializeJson(doc, json);
+    doc.clear();
+
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-    if (error_count)
-        httpd_resp_send(req, "{\"response\":\"success with error\",\"code\":1}", HTTPD_RESP_USE_STRLEN);
-    else
-        httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
-
+    httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -629,6 +690,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
             /* Send the buffer contents as HTTP response chunk */
             if (httpd_resp_send_chunk(req, chunk, bytesread) != ESP_OK)
             {
+                free(chunk);
                 xSemaphoreTake(*FSMutex, portMAX_DELAY);
                 {
                     fclose(fd);
@@ -754,6 +816,8 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
             /* In case of unrecoverable error,
              * close and delete the unfinished file*/
+            free(chunk);
+
             xSemaphoreTake(*FSMutex, portMAX_DELAY);
             {
                 fclose(fd);
@@ -782,6 +846,8 @@ static esp_err_t file_post_handler(httpd_req_t *req)
             {
                 /* Couldn't write everything to file!
                  * Storage may be full? */
+                free(chunk);
+
                 xSemaphoreTake(*FSMutex, portMAX_DELAY);
                 {
                     fclose(fd);
@@ -802,6 +868,8 @@ static esp_err_t file_post_handler(httpd_req_t *req)
          * the file left to be uploaded */
         remaining -= received;
     }
+    /* Free the buffer */
+    free(chunk);
 
     /* Close file upon upload completion */
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
@@ -956,6 +1024,201 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取米游社配置 */
+static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req)
+{
+    String json = "";
+    StaticJsonDocument<1024> doc;
+    doc["uid"] = hyc.getUid();
+    doc["cookie"] = hyc.getCookie();
+    doc["device_guid"] = hyc.getDeviceGuid();
+
+    serializeJson(doc, json);
+    doc.clear();
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 更新米游社配置 */
+static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
+{
+    char post_ctx[1024];
+
+    /* 如果内容长度大于缓冲区则截断 */
+    size_t recv_size = min(req->content_len, sizeof(post_ctx));
+
+    int ret = httpd_req_recv(req, post_ctx, recv_size);
+    if (ret <= 0)
+    { /* 返回 0 表示连接已关闭 */
+        /* 检查是否超时 */
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+        {
+            /* 如果是超时，可以调用 httpd_req_recv() 重试
+             * 简单起见，这里我们直接
+             * 响应 HTTP 408（请求超时）错误给客户端 */
+            httpd_resp_send_408(req);
+        }
+        /* 如果发生了错误，返回 ESP_FAIL 确保底层套接字被关闭 */
+        return ESP_FAIL;
+    }
+
+    StaticJsonDocument<1024> doc;
+    DeserializationError error;
+
+    error = deserializeJson(doc, post_ctx, recv_size);
+    if (error)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    const char *uid = doc["uid"];
+    const char *cookie = doc["cookie"];
+    const char *guid = doc["device_guid"];
+
+    if (!uid || !cookie || !guid)
+    {
+        httpd_resp_set_status(req, HTTPD_500);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Invalid JSON\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    prefs.putString("hoyolabUID", uid);
+    prefs.putString("hoyolabCookie", cookie);
+    prefs.putString("deviceGuid", guid);
+    hyc.setUid(uid);
+    hyc.setCookie(cookie);
+    hyc.setDeviceGuid(guid);
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+
+    return ESP_OK;
+}
+
+/* 获取/设置自动亮度开关 */
+/* @param value: 要设置的值，通过url传参 */
+static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
+{
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* 检查输入值 */
+        if (strcmp(value, "true") == 0)
+        {
+            setting_autoBright = true;
+            prefs.putBool("useAutoBright", true);
+        }
+        else if (strcmp(value, "false") == 0)
+        {
+            setting_autoBright = false;
+            prefs.putBool("useAutoBright", false);
+        }
+        else
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+    }
+
+    if (setting_autoBright)
+    {
+        sprintf(str, "{\"setting_autoBright\":%s}", "true");
+    }
+    else
+    {
+        sprintf(str, "{\"setting_autoBright\":%s}", "false");
+    }
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 获取/设置自动旋转开关 */
+/* @param value: 要设置的值，通过url传参 */
+static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
+{
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* 检查输入值 */
+        if (strcmp(value, "true") == 0)
+        {
+            setting_useAccel = true;
+            prefs.putBool("useAccelMeter", true);
+        }
+        else if (strcmp(value, "false") == 0)
+        {
+            setting_useAccel = false;
+            prefs.putBool("useAccelMeter", false);
+        }
+        else
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+    }
+
+    if (setting_useAccel)
+    {
+        sprintf(str, "{\"setting_useAccel\":%s}", "true");
+    }
+    else
+    {
+        sprintf(str, "{\"setting_useAccel\":%s}", "false");
+    }
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
+{
+    return ESP_OK;
+}
+
+static esp_err_t setting_volume_get_handler(httpd_req_t *req)
+{
+    return ESP_OK;
+}
+
 //////////////////////////////
 //
 //  全局函数实现
@@ -971,6 +1234,8 @@ void startAPIServer()
     }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 16;
+    config.stack_size = 6144;
 
     /* 置空 esp_http_server 的实例句柄 */
     httpd_handle_t server = NULL;
@@ -990,6 +1255,14 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_file_post);
         httpd_register_uri_handler(server, &uri_file_delete);
         httpd_register_uri_handler(server, &uri_file_makedir);
+
+        httpd_register_uri_handler(server, &uri_hoyolab_conf_get);
+        httpd_register_uri_handler(server, &uri_hoyolab_conf_post);
+
+        httpd_register_uri_handler(server, &uri_setting_auto_bright_get);
+        httpd_register_uri_handler(server, &uri_setting_auto_rotate_get);
+        // httpd_register_uri_handler(server, &uri_setting_brightness_get);
+        // httpd_register_uri_handler(server, &uri_setting_volume_get);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;

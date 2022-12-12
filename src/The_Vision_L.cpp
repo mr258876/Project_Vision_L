@@ -175,9 +175,7 @@ void onMultiClick();
 //
 ////////////////////////
 /**
- *
  * @brief Custom scren update function for LVGL
- *
  */
 void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
@@ -388,6 +386,7 @@ void loadSettings()
   mac.toUpperCase();
   strcpy(info_macAddress, mac.c_str());
 
+  // get setting values
   setting_autoBright = prefs.getBool("useAutoBright", true);
   setting_useAccel = prefs.getBool("useAccelMeter", true);
 
@@ -401,6 +400,22 @@ void loadSettings()
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
   strcpy(info_appVersion, running_app_info->version);
+
+  // get Hoyolab conf
+  String hoyolab_uid = prefs.getString("hoyolabUID", "");
+  String hoyolab_cookie = prefs.getString("hoyolabCookie", "");
+  hyc.begin(hoyolab_cookie.c_str(), hoyolab_uid.c_str());
+  if (info_deviceGuid.length() == 32)
+  {
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
+  else
+  {
+    // gengrate a new guid if not exist
+    info_deviceGuid = HoyoverseClient::generateGuid();
+    prefs.putString("deviceGuid", info_deviceGuid);
+    hyc.setDeviceGuid(info_deviceGuid.c_str());
+  }
 }
 
 void mjpegInit()
@@ -609,15 +624,13 @@ bool checkSDFiles(String *errMsg)
 
   xSemaphoreTake(SDMutex, portMAX_DELAY);
   {
-    // 读取米游社配置
+    // 导入米游社配置
     f = sdfs->open(HOYOLAB_CONF_PATH);
     if (!f || f.isDirectory())
     {
       f.close();
-      f = sdfs->open(HOYOLAB_CONF_PATH, FILE_WRITE, true);
-      f.print(HOYOLAB_DEFAULT_CONF);
-      f.close();
-      f = sdfs->open(HOYOLAB_CONF_PATH);
+      xSemaphoreGive(SDMutex);
+      return false; // 米游社配置文件不存在，跳过导入配置过程
     }
 
     error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
@@ -643,6 +656,9 @@ bool checkSDFiles(String *errMsg)
     guid = doc["device_guid"];
   }
 
+  // not making any check for in case to remove uid and cookie
+  prefs.putString("hoyolabUID", uid);
+  prefs.putString("hoyolabCookie", cookie);
   hyc.begin(cookie, uid);
 
   if (guid && strlen(guid) == 32) // 手动指定guid
@@ -664,6 +680,12 @@ bool checkSDFiles(String *errMsg)
   {
     hyc.setDeviceGuid(info_deviceGuid.c_str());
   }
+
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    sdfs->remove(HOYOLAB_CONF_PATH); // delete the file after conf imported
+  }
+  xSemaphoreGive(SDMutex);
 
   doc.clear();
 
@@ -1130,7 +1152,7 @@ void cb_loadVideoScreen(lv_event_t *e)
   DSTATUS status;
   xSemaphoreTake(SDMutex, portMAX_DELAY);
   {
-    status = disk_status(0);  // 只有一个fatfs驱动器
+    status = disk_status(0); // 只有一个fatfs驱动器
     xSemaphoreGive(SDMutex);
   }
 
