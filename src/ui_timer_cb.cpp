@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include "ui.h"
 #include "ui_multiLanguage.h"
 #include "The_Vision_L_globals.h"
@@ -65,37 +64,67 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
     }
 }
 
-/* 设置值刷新 */
+/* 设置菜单值刷新 */
 void cb_timer_SettingDispTimer(lv_timer_t *timer)
 {
+    // API服务器相关
+    if (info_setAPIstarted)
+        lv_obj_add_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
+    else
+        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
+
+    switch (info_APIstatus)
+    {
+    case 0:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][73]); // "实用程序未启用。"
+        break;
+    case 1:
+        lv_obj_add_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_qrcode_update(ui_SettingPanel0QR1, info_APIaddress, strlen(info_APIaddress)); // "http://127.127.127.127"
+        break;
+    case 2:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][71]); // "实用程序正在启动..."
+        break;
+    default:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][72]); // "错误：\n未连接到无线网络，\n实用程序无法启动。"
+        break;
+    }
+
     // 网络状态
     lv_label_set_text(ui_SettingPanel1Label4, info_macAddress);
-    switch (WiFi.status())
+    switch (info_wifiStatus)
     {
-    case WL_IDLE_STATUS:
+    case 0: // WL_IDLE_STATUS
         lv_label_set_text(ui_SettingPanel1Label2, lang[curr_lang][61]);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
-    case WL_CONNECTED:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][60], WiFi.SSID());
-        lv_label_set_text(ui_SettingPanel1Label6, WiFi.localIP().toString().c_str());
+    case 3: // WL_CONNECTED
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][60], info_SSID);
+        lv_label_set_text(ui_SettingPanel1Label6, info_ipv4Address);
         break;
-    case WL_CONNECTION_LOST:
-    case WL_CONNECT_FAILED:
-    case WL_DISCONNECTED:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][63], WiFi.SSID());
+    case 5: // WL_CONNECTION_LOST
+    case 4: // WL_CONNECT_FAILED
+    case 6: // WL_DISCONNECTED
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][63], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
-    case WL_NO_SSID_AVAIL:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][62], WiFi.SSID());
+    case 1: // WL_NO_SSID_AVAIL
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][62], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
     default:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][59], WiFi.SSID());
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][59], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
     }
-    
+
     // 距离传感器使能
     if (info_hasProx)
     {
@@ -132,7 +161,7 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
     lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
 
     // 硬件版本
-    lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:" 
+    lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:"
 }
 
 /* 主题时钟秒针刷新 */

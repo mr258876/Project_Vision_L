@@ -39,8 +39,7 @@
 #include <kxtj3-1057.h>
 #undef getName
 
-#include <WiFi.h>
-#include <esp_now.h>
+#include <Networking.h>
 
 #include "Hoyoverse.h"
 #include "APIServer.h"
@@ -143,13 +142,11 @@ void loadSettings();
 bool checkSDFiles(String *errMsg);
 vision_update_result_t updateFromSD(String *errMsg);
 vision_hw_result_t checkHardware(String *errMsg);
-void wifiConfigure(void *parameter);
-void stopWifiConfigure(void *parameter);
 bool getDailyNote(Notedata *nd, String *errMsg);
 void resinCalc(void *parameter);
 void resinSync(void *parameter);
-bool connectWiFi();
-bool disConnectWiFi();
+
+void setAPIserver_async(void *parameter);
 
 void cb_switchToVideoScreen();
 void mjpegInit();
@@ -302,6 +299,9 @@ void setup()
     sdfs = &SD;
   }
 
+  // WiFi init
+  WiFi.onEvent(wifiEvent_handler); // 注册事件处理程序
+
   // LVGL init
   lv_init();
 
@@ -355,9 +355,6 @@ void setup()
 
     LV_LOG_INFO("LVGL booted.");
   }
-
-  connectWiFi();
-  startAPIServer();
 
   vTaskDelete(NULL); // comment to show avaliable heap
 }
@@ -868,95 +865,6 @@ void hardwareSetup(void *parameter)
   vTaskDelete(NULL);
 }
 
-void wifiConfigure(void *parameter)
-{
-  info_processUsingWifi += 1;
-
-  WiFi.mode(WIFI_STA);
-  WiFi.beginSmartConfig(SC_TYPE_ESPTOUCH_AIRKISS);
-
-  ESP_LOGI("wifiConfigure", "Waiting for Smartconfig...");
-
-  while (!WiFi.smartConfigDone() || WiFi.status() != WL_CONNECTED)
-  {
-    vTaskDelay(pdMS_TO_TICKS(250));
-  }
-
-  ESP_LOGI("wifiConfigure", "Smartconfig success!");
-
-  prefs.putString("wifiSSID1", WiFi.SSID());
-  prefs.putString("wifiPSWD1", WiFi.psk());
-  prefs.putUInt("wifiConfigured", 1);
-  WiFi.stopSmartConfig();
-
-  esp_restart();
-}
-
-void stopWifiConfigure(void *parameter)
-{
-  vTaskDelete(wifiConfigHandle);
-  WiFi.stopSmartConfig();
-  if (connectWiFi())
-    info_processUsingWifi -= 1;
-  disConnectWiFi();
-  vTaskDelete(NULL);
-}
-
-bool connectWiFi()
-{
-  xSemaphoreTake(WiFiConnectMutex, portMAX_DELAY);
-
-  if (WiFi.status() == WL_CONNECTED)
-  {
-    info_processUsingWifi += 1;
-    xSemaphoreGive(WiFiConnectMutex);
-    return true;
-  }
-
-  WiFi.mode(WIFI_STA);
-  int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
-  // WiFi.scanDelete();
-  if (wifiCount < 1)
-  {
-    WiFi.mode(WIFI_OFF);
-    xSemaphoreGive(WiFiConnectMutex);
-    return false;
-  }
-
-  WiFi.begin();
-  unsigned long startConnect_ms = millis();
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    vTaskDelay(500);
-    if (millis() - startConnect_ms > 10000)
-    {
-      WiFi.disconnect(true);
-      WiFi.mode(WIFI_OFF);
-      xSemaphoreGive(WiFiConnectMutex);
-      return false;
-    }
-  }
-
-  info_processUsingWifi += 1;
-  xSemaphoreGive(WiFiConnectMutex);
-  return true;
-}
-
-bool disConnectWiFi()
-{
-  xSemaphoreTake(WiFiConnectMutex, portMAX_DELAY);
-
-  info_processUsingWifi -= 1;
-  if (info_processUsingWifi < 1)
-  {
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-  }
-
-  xSemaphoreGive(WiFiConnectMutex);
-  return true;
-}
-
 void leaveVideoScreen(void *parameter)
 {
   // 暂停解码
@@ -997,9 +905,6 @@ void loadVideoScreen(void *parameter)
 
     xSemaphoreGive(LVGLMutex);
   }
-
-  wav = new WAVFileReader("/Open.wav");
-  aOut->start(wav);
 
   // 恢复解码器工作
   vTaskResume(playVideoHandle);
@@ -1181,7 +1086,7 @@ void cb_startWifiReConfigure(lv_event_t *e)
                           NULL,              // 任务参数
                           1,                 // 任务优先级
                           &wifiConfigHandle, // 任务句柄
-                          1);                // 执行任务核心
+                          0);                // 执行任务核心
 }
 
 void cb_stopWifiReConfigure(lv_event_t *e)
@@ -1192,7 +1097,51 @@ void cb_stopWifiReConfigure(lv_event_t *e)
                           NULL,                // 任务参数
                           1,                   // 任务优先级
                           NULL,                // 任务句柄
-                          1);                  // 执行任务核心
+                          0);                  // 执行任务核心
+}
+
+void cb_setAPIserver(bool status)
+{
+  info_setAPIstarted = status;
+  xTaskCreatePinnedToCore(setAPIserver_async,   // 任务函数
+                          "setAPIserver_async", // 任务名称
+                          4096,                 // 任务堆栈大小
+                          NULL,                 // 任务参数
+                          1,                    // 任务优先级
+                          NULL,                 // 任务句柄
+                          0);                   // 执行任务核心
+}
+
+void setAPIserver_async(void *parameter)
+{
+  if (info_setAPIstarted)
+  {
+    if (info_APIstatus == 1)
+      vTaskDelete(NULL);
+
+    info_APIstatus = 2;
+    if (connectWiFi())
+    {
+      startAPIServer();
+      info_APIstatus = 1;
+      sprintf(info_APIaddress, "http://%s", info_ipv4Address);
+    }
+    else
+    {
+      info_APIstatus = -1;
+    }
+  }
+  else
+  {
+    if (info_APIstatus == 0)
+      vTaskDelete(NULL);
+
+    endAPIServer();
+    info_APIstatus = 0;
+    disConnectWiFi();
+  }
+
+  vTaskDelete(NULL);
 }
 
 ////////////////////
@@ -1204,7 +1153,7 @@ void loop()
 {
   ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
   ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
-  vTaskDelay(pdMS_TO_TICKS(5000));
+  vTaskDelay(pdMS_TO_TICKS(2500));
 }
 
 void lvglLoop(void *parameter)

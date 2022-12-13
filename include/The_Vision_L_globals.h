@@ -20,6 +20,13 @@ extern LinkedList<String> filePaths;
 /* Runtime info */
 extern int info_processUsingWifi;
 extern bool info_isConnectingWifi;
+extern int info_wifiStatus;
+extern char info_ipv4Address[16];
+extern char info_SSID[32];
+
+extern bool info_setAPIstarted;
+extern int info_APIstatus;
+extern char info_APIaddress[23];
 
 extern bool info_isSquareLCD;
 extern bool info_hasProx;

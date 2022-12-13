@@ -75,6 +75,12 @@ const char *zh_Hans[] = {
     "MAC地址：",                                                            // 65 MAC address
     "硬件版本：%d",                                                         // 66 HW version:
     "请检查SD卡，\n然后重试。",                                             // 67 Please check SD card, and retry.
+    LV_SYMBOL_HOME,                                                         // 68 Vision utility icon
+    "神之眼实用程序",                                                       // 69 The Vision Utility
+    "启用实用程序",                                                         // 70 Eneble utility
+    "实用程序正在启动...",                                                  // 71 Utility booting...
+    "错误：\n未连接到无线网络，\n实用程序无法启动。",                       // 72 Error: Utility is unavaliable without network.
+    "实用程序未启用。",                                                     // 73 Utility disabled.
 };
 
 const char *en_US[] = {
@@ -146,6 +152,12 @@ const char *en_US[] = {
     "MAC address:",                                                                // 65 MAC address:
     "HW version: %d",                                                              // 66 HW version
     "Please\ncheck\nSD card,\nand retry.",                                         // 67 Please check SD card, and retry.
+    LV_SYMBOL_HOME,                                                                // 68 Vision utility icon
+    "The Vision Utility",                                                          // 69 The Vision Utility
+    "Enable Utility",                                                              // 70 Eneble utility
+    "Starting utility...",                                                         // 71 Utility booting...
+    "Error:\nUtility is\nunavaliable\nwithout network.",                           // 72 Error: Utility is unavaliable without network.
+    "Utility disabled.",                                                           // 73 Utility disabled.
 };
 
 const char **lang[] = {
