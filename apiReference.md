@@ -22,7 +22,8 @@ RESPONSE:
 {
     "device_name": "Vision_f768",
     "app_version": "L0.2.1",
-    "hw_version": 1
+    "hw_version": 1,
+    "mac_address": "abcdef012345"
 }
 
 ~~~
@@ -401,5 +402,43 @@ GET /api/v1/setting/auto_rotate?value=false
 RESPONSE:
 {
     "setting_useAccel":false
+}
+~~~
+
+### GET /api/v1/setting/language
+#### Brief
+该函数用于获取或设置设备语言。
+
+This function is to get or set device language.
+
+#### Param
+value: 要设置的值，下方语言代码表中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of codes bwlow. DO NOT add any query params when getting this value.
+
+| Lanauge | Code |
+| --- | --- |
+| English | 0 |
+| 简体中文 | 1 |
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/language?value=0
+
+RESPONSE:
+{
+    "curr_lang":0
 }
 ~~~

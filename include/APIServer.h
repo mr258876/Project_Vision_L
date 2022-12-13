@@ -8,6 +8,7 @@
 #include <ArduinoJson.h>
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
+#include "ui_multiLanguage.h"
 
 #include <sys/types.h>
 #include <dirent.h>

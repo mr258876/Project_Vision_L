@@ -33,6 +33,7 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req);
 static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req);
 static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
 static esp_err_t setting_volume_get_handler(httpd_req_t *req);
+static esp_err_t setting_language_get_handler(httpd_req_t *req);
 
 //////////////////////////////
 //
@@ -143,6 +144,13 @@ httpd_uri_t uri_setting_volume_get = {
     .uri = "/api/v1/setting/volume",
     .method = HTTP_GET,
     .handler = setting_volume_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/language 的 URI 处理结构 */
+httpd_uri_t uri_setting_language_get = {
+    .uri = "/api/v1/setting/language",
+    .method = HTTP_GET,
+    .handler = setting_language_get_handler,
     .user_ctx = NULL};
 
 //////////////////////////////
@@ -362,6 +370,7 @@ static esp_err_t info_handler(httpd_req_t *req)
     doc["device_name"] = setting_deviceName;
     doc["app_version"] = running_app_info->version;
     doc["hw_version"] = info_hwType;
+    doc["mac_address"] = info_macAddress;
 
     serializeJson(doc, json);
     doc.clear();
@@ -1219,6 +1228,46 @@ static esp_err_t setting_volume_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t setting_language_get_handler(httpd_req_t *req)
+{
+    char str[64];
+    char value[64];
+    int language = curr_lang;
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* 检查输入值 */
+        if (sscanf(value, "%d", &language) == 1 && language >= 0 && language < 2)
+        {
+            curr_lang = atoi(value);
+            prefs.putBool("language", curr_lang);
+        }
+        else
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+    }
+
+    sprintf(str, "{\"curr_lang\":%d}", curr_lang);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 //////////////////////////////
 //
 //  全局函数实现
@@ -1263,6 +1312,7 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_setting_auto_rotate_get);
         // httpd_register_uri_handler(server, &uri_setting_brightness_get);
         // httpd_register_uri_handler(server, &uri_setting_volume_get);
+        httpd_register_uri_handler(server, &uri_setting_language_get);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;
