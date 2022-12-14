@@ -1,3 +1,6 @@
+#ifndef _NETWORKING_H_
+#define _NETWORKING_H_
+
 #include <WiFi.h>
 #include <The_Vision_L_globals.h>
 #include <rtos_externs.h>
@@ -9,3 +12,5 @@ bool disConnectWiFi();
 
 void wifiConfigure(void *parameter);
 void stopWifiConfigure(void *parameter);
+
+#endif

@@ -1,5 +1,5 @@
-#ifndef __sample_source_h__
-#define __sample_source_h__
+#ifndef _SAMPLE_SOURCE_H_
+#define _SAMPLE_SOURCE_H_
 
 #include <Arduino.h>
 

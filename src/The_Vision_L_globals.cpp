@@ -20,13 +20,14 @@ int info_wifiStatus = 255;
 char info_ipv4Address[16] = "N/A";
 char info_SSID[32] = "N/A";
 
-bool info_setAPIstarted = false;
+bool info_setAPIstart = false;
 int info_APIstatus = 0;
 char info_APIaddress[23] = "http://127.0.0.1";
 
 bool info_isSquareLCD = true;
 bool info_hasProx = false;
 bool info_hasAccel = false;
+bool info_hasSD = false;
 char info_macAddress[13] = "";
 
 bool info_timeSynced = false;

@@ -1,3 +1,6 @@
+#ifndef _THE_VISION_L_GLOBALS_H_
+#define _THE_VISION_L_GLOBALS_H_
+
 #include "Hoyoverse.h"
 #include <Preferences.h>
 #include "Hardware.h"
@@ -24,13 +27,14 @@ extern int info_wifiStatus;
 extern char info_ipv4Address[16];
 extern char info_SSID[32];
 
-extern bool info_setAPIstarted;
+extern bool info_setAPIstart;
 extern int info_APIstatus;
 extern char info_APIaddress[23];
 
 extern bool info_isSquareLCD;
 extern bool info_hasProx;
 extern bool info_hasAccel;
+extern bool info_hasSD;
 extern char info_macAddress[13];
 
 extern bool info_timeSynced;
@@ -50,3 +54,5 @@ extern bool setting_soundMuted;
 extern uint8_t setting_soundVolume;
 
 extern unsigned long setting_resinSyncPeriod;
+
+#endif

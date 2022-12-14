@@ -68,19 +68,16 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
 void cb_timer_SettingDispTimer(lv_timer_t *timer)
 {
     // API服务器相关
-    if (info_setAPIstarted)
-        lv_obj_add_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
-    else
-        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
-
     switch (info_APIstatus)
     {
     case 0:
+        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
         lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][73]); // "实用程序未启用。"
         break;
     case 1:
+        lv_obj_add_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED); // 通过API服务器状态设置开关状态
         lv_obj_add_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
         lv_qrcode_update(ui_SettingPanel0QR1, info_APIaddress, strlen(info_APIaddress)); // "http://127.127.127.127"
@@ -90,7 +87,13 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
         lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][71]); // "实用程序正在启动..."
         break;
+    case 3:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][74]); // "实用程序正在停止..."
+        break;
     default:
+        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
         lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][72]); // "错误：\n未连接到无线网络，\n实用程序无法启动。"

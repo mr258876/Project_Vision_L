@@ -10,7 +10,9 @@ SemaphoreHandle_t LVGLMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
+
 SemaphoreHandle_t WiFiConnectMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t APIStartupMutex = xSemaphoreCreateMutex();
 
 /* SPI */
 SemaphoreHandle_t SDMutex = xSemaphoreCreateMutex();

@@ -81,6 +81,7 @@ const char *zh_Hans[] = {
     "实用程序正在启动...",                                                  // 71 Utility booting...
     "错误：\n未连接到无线网络，\n实用程序无法启动。",                       // 72 Error: Utility is unavaliable without network.
     "实用程序未启用。",                                                     // 73 Utility disabled.
+    "实用程序正在关闭...",                                                  // 74 Utility stoping...
 };
 
 const char *en_US[] = {
@@ -158,6 +159,7 @@ const char *en_US[] = {
     "Starting utility...",                                                         // 71 Utility booting...
     "Error:\nUtility is\nunavaliable\nwithout network.",                           // 72 Error: Utility is unavaliable without network.
     "Utility disabled.",                                                           // 73 Utility disabled.
+    "Stoping utility...",                                                          // 74 Utility disabled.
 };
 
 const char **lang[] = {

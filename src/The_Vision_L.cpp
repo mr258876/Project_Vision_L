@@ -434,22 +434,13 @@ void mjpegInit()
                           1);               // 执行任务核心
 }
 
-static int switchScreenDelay = 0;
-void switchToVideoScreen(void *delayTime)
+void switchToVideoScreen(void *parameter)
 {
-  // 等待延时
-  vTaskDelay(pdMS_TO_TICKS(*((int *)delayTime)));
-
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
-    // 删除样式解决内存泄露
-    cleanObj(lv_scr_act());
-
     ui_VideoScreen_screen_init();
-
-    // 切换屏幕
-    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
-
+    lv_scr_load_anim(ui_VideoScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+    lv_async_call(delScr, ui_StartupScreen);
     lv_task_handler();
 
     xSemaphoreTake(*LCDMutexptr, portMAX_DELAY); // 在结束SPI占用后再挂起LVGL任务
@@ -532,6 +523,7 @@ vision_hw_result_t checkHardware(String *errMsg)
   case CARD_MMC:
   case CARD_SD:
   case CARD_SDHC:
+    info_hasSD = true;
     break;
   case CARD_UNKNOWN:
     hwErrDetected = VISION_HW_SD_ERR;
@@ -694,43 +686,13 @@ bool checkSDFiles(String *errMsg)
 
 void cb_switchToVideoScreen()
 {
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-  {
-    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][3]); // "请稍候..."
-    xSemaphoreGive(LVGLMutex);
-  }
-
-  xTaskCreatePinnedToCore(screenAdjustLoop, // 任务函数
-                          "screenAdjLoop",  // 任务名称
-                          4096,             // 任务堆栈大小
-                          NULL,             // 任务参数
-                          1,                // 任务优先级
-                          NULL,             // 任务句柄
-                          0);               // 执行任务核心
-
-  // 每30s计算一次树脂数据
-  esp_timer_create_args_t resinCalc_timer_args = {
-      .callback = &resinCalc,
-      .name = "resinCalc"};
-  ESP_ERROR_CHECK(esp_timer_create(&resinCalc_timer_args, &resinCalcTimer));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
-
-  // 每15分钟同步一次树脂数据
-  esp_timer_create_args_t resinSync_timer_args = {
-      .callback = &resinSync,
-      .name = "resinSync"};
-  ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
-  ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, setting_resinSyncPeriod));
-
-  switchScreenDelay = 2500;
-
-  xTaskCreatePinnedToCore(switchToVideoScreen,        // 任务函数
-                          "swToVideoScr",             // 任务名称
-                          4096,                       // 任务堆栈大小
-                          (void *)&switchScreenDelay, // 任务参数
-                          1,                          // 任务优先级
-                          NULL,                       // 任务句柄
-                          1);                         // 执行任务核心
+  xTaskCreatePinnedToCore(switchToVideoScreen, // 任务函数
+                          "swToVideoScr",      // 任务名称
+                          4096,                // 任务堆栈大小
+                          NULL,                // 任务参数
+                          1,                   // 任务优先级
+                          NULL,                // 任务句柄
+                          1);                  // 执行任务核心
 }
 
 void hardwareSetup(void *parameter)
@@ -760,7 +722,7 @@ void hardwareSetup(void *parameter)
   }
 
   // 若检查到错误则停止启动
-  if (hwErr == VISION_HW_SD_ERR || hwErr == VISION_HW_SPIFFS_ERR || fileErr || updateStatus)
+  if (hwErr == VISION_HW_SPIFFS_ERR || fileErr || updateStatus)
   {
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -838,20 +800,19 @@ void hardwareSetup(void *parameter)
 
     if (!getDailyNote(&nd, &errMsg))
     {
-      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       {
         mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
         lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_center(mbox);
-        xSemaphoreGive(LVGLMutex);
-
-        vTaskDelay(5000);
-
-        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
-        // cleanObj(mbox);
-        lv_obj_del(mbox);
-        xSemaphoreGive(LVGLMutex);
       }
+      xSemaphoreGive(LVGLMutex);
+
+      vTaskDelay(5000);
+
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+      lv_async_call(delScr, mbox);
+      xSemaphoreGive(LVGLMutex);
     }
   }
 
@@ -860,7 +821,50 @@ void hardwareSetup(void *parameter)
   pwrButton->attachDoubleClick(onDoubleClick);
   pwrButton->attachMultiClick(onMultiClick);
 
-  cb_switchToVideoScreen();
+  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  {
+    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][3]); // "请稍候..."
+    xSemaphoreGive(LVGLMutex);
+  }
+
+  xTaskCreatePinnedToCore(screenAdjustLoop, // 任务函数
+                          "screenAdjLoop",  // 任务名称
+                          4096,             // 任务堆栈大小
+                          NULL,             // 任务参数
+                          1,                // 任务优先级
+                          NULL,             // 任务句柄
+                          0);               // 执行任务核心
+
+  // 每30s计算一次树脂数据
+  esp_timer_create_args_t resinCalc_timer_args = {
+      .callback = &resinCalc,
+      .name = "resinCalc"};
+  ESP_ERROR_CHECK(esp_timer_create(&resinCalc_timer_args, &resinCalcTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
+
+  // 每15分钟同步一次树脂数据
+  esp_timer_create_args_t resinSync_timer_args = {
+      .callback = &resinSync,
+      .name = "resinSync"};
+  ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, setting_resinSyncPeriod));
+
+  if (hwErr != VISION_HW_SD_ERR)
+  {
+    // 若有SD卡则进行播放
+    cb_switchToVideoScreen();
+  }
+  else
+  {
+    // 否则切换到菜单屏
+    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    {
+      ui_MenuScreen_screen_init();                                         // 加载菜单屏
+      lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+      lv_async_call(delScr, ui_StartupScreen);
+      xSemaphoreGive(LVGLMutex);
+    }
+  }
 
   vTaskDelete(NULL);
 }
@@ -1055,11 +1059,17 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 void cb_loadVideoScreen(lv_event_t *e)
 {
   DSTATUS status;
-  xSemaphoreTake(SDMutex, portMAX_DELAY);
+
+  if (info_hasSD)
   {
-    status = disk_status(0); // 只有一个fatfs驱动器
-    xSemaphoreGive(SDMutex);
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+      status = disk_status(0); // 只有一个fatfs驱动器
+      xSemaphoreGive(SDMutex);
+    }
   }
+  else
+    status = STA_NOINIT;
 
   if (status == STA_NOINIT)
   {
@@ -1102,7 +1112,7 @@ void cb_stopWifiReConfigure(lv_event_t *e)
 
 void cb_setAPIserver(bool status)
 {
-  info_setAPIstarted = status;
+  info_setAPIstart = status;
   xTaskCreatePinnedToCore(setAPIserver_async,   // 任务函数
                           "setAPIserver_async", // 任务名称
                           4096,                 // 任务堆栈大小
@@ -1114,32 +1124,43 @@ void cb_setAPIserver(bool status)
 
 void setAPIserver_async(void *parameter)
 {
-  if (info_setAPIstarted)
+  xSemaphoreTake(APIStartupMutex, portMAX_DELAY);
   {
-    if (info_APIstatus == 1)
-      vTaskDelete(NULL);
-
-    info_APIstatus = 2;
-    if (connectWiFi())
+    if (info_setAPIstart)
     {
-      startAPIServer();
-      info_APIstatus = 1;
-      sprintf(info_APIaddress, "http://%s", info_ipv4Address);
+      if (info_APIstatus == 1)
+      {
+        xSemaphoreGive(APIStartupMutex);
+        vTaskDelete(NULL);
+      }
+
+      info_APIstatus = 2;
+      if (connectWiFi())
+      {
+        startAPIServer();
+        info_APIstatus = 1;
+        sprintf(info_APIaddress, "http://%s", info_ipv4Address);
+      }
+      else
+      {
+        info_APIstatus = -1;
+      }
     }
     else
     {
-      info_APIstatus = -1;
+      if (info_APIstatus == 0)
+      {
+        xSemaphoreGive(APIStartupMutex);
+        vTaskDelete(NULL);
+      }
+
+      info_APIstatus = 3;
+      endAPIServer();
+      info_APIstatus = 0;
+      disConnectWiFi();
     }
   }
-  else
-  {
-    if (info_APIstatus == 0)
-      vTaskDelete(NULL);
-
-    endAPIServer();
-    info_APIstatus = 0;
-    disConnectWiFi();
-  }
+  xSemaphoreGive(APIStartupMutex);
 
   vTaskDelete(NULL);
 }
@@ -1363,10 +1384,14 @@ void resinCalc(void *parameter)
 
 void resinSync(void *parameter)
 {
-  if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+  if (connectWiFi())
   {
-    hyc.syncDailyNote(&nd);
-    xSemaphoreGive(NoteDataMutex);
+    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+      hyc.syncDailyNote(&nd);
+      xSemaphoreGive(NoteDataMutex);
+    }
+    disConnectWiFi();
   }
 }
 
