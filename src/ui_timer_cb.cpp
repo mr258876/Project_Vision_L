@@ -227,10 +227,19 @@ void cb_timer_ClockTimerHour(lv_timer_t *timer)
 }
 
 /* 数字时钟刷新 */
+static int lastWeekday = -1;
 static int lastHour = -1;
 static int lastMin = -1;
 void cb_timer_DigitalClockTimer(lv_timer_t *timer)
 {
+    if (*((bool *)timer->user_data))
+    {
+        lastWeekday = -1;
+        lastHour = -1;
+        lastMin = -1;
+        *((bool *)timer->user_data) = false;
+    }
+
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
     {
@@ -261,7 +270,7 @@ void cb_timer_DigitalClockTimer(lv_timer_t *timer)
             aniDigitalClockLinear_Animation(ui_DigitalClockTimeLabelMinShadow, 0);
             lastMin = timeinfo.tm_min;
         }
-        
+
         if (lv_obj_has_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN))
         {
             lv_obj_clear_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN);
@@ -274,8 +283,20 @@ void cb_timer_DigitalClockTimer(lv_timer_t *timer)
         }
 
         /* Weekday */
-        lv_label_set_text(ui_DigitalClockWeekdayLabel, lang[curr_lang][75 + timeinfo.tm_wday]);
-        lv_label_set_text(ui_DigitalClockWeekdayLabelShadow, lang[curr_lang][75 + timeinfo.tm_wday]);
+        if (lastWeekday < 0)
+        {
+            lv_label_set_text(ui_DigitalClockWeekdayLabel, lang[curr_lang][75 + timeinfo.tm_wday]);
+            lv_label_set_text(ui_DigitalClockWeekdayLabelShadow, lang[curr_lang][75 + timeinfo.tm_wday]);
+            lastWeekday = timeinfo.tm_wday;
+        }
+
+        if (lastWeekday != timeinfo.tm_wday)
+        {
+            lv_label_set_text_fmt(ui_DigitalClockWeekdayLabel, "%s\n%s", lang[curr_lang][75 + lastWeekday], lang[curr_lang][75 + timeinfo.tm_wday]);
+            lv_label_set_text_fmt(ui_DigitalClockWeekdayLabelShadow, "%s\n%s", lang[curr_lang][75 + lastWeekday], lang[curr_lang][75 + timeinfo.tm_wday]);
+            aniDigitalClockLinear_Animation(ui_DigitalClockWeekdayLabel, 0);
+            aniDigitalClockLinear_Animation(ui_DigitalClockWeekdayLabelShadow, 0);
+        }
 
         /* Date */
         switch (curr_lang)

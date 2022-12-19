@@ -170,6 +170,8 @@ extern lv_timer_t *ui_timer_ScrDelTimer;
 
 extern bool flag_ui_font_HanyiWenhei20;
 
+extern bool flag_ui_DigitalClockNeedInit;
+
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_SettingDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimerSecond(lv_timer_t *timer);

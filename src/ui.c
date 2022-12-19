@@ -167,6 +167,7 @@ lv_timer_t *ui_timer_DigitalClockWeatherTimer;
 lv_timer_t *ui_timer_ScrDelTimer;
 
 bool flag_ui_font_HanyiWenhei20 = false;
+bool flag_ui_DigitalClockNeedInit = true;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -304,7 +305,7 @@ static void aniDigitalClockLinear_nextLine_cb(lv_anim_t *a)
         offset = 0;
     strcpy(s1, s + offset);
     lv_label_set_text(label, s1);
-    lv_obj_set_y(label, lv_obj_get_y(label) + 48);
+    lv_obj_set_y(label, lv_obj_get_y(label) + (lv_obj_get_height(label) / 2)); // <-此处的label因为还没有渲染所以仍是2倍高度
 }
 /* 数字时钟更新动画 */
 void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay)
@@ -314,7 +315,7 @@ void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_time(&PropertyAnimation_0, 750);
     lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
     lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_y);
-    lv_anim_set_values(&PropertyAnimation_0, 0, -48);
+    lv_anim_set_values(&PropertyAnimation_0, 0, -lv_obj_get_height(TargetObject));
     lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_ease_in_out);
     lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
     lv_anim_set_playback_time(&PropertyAnimation_0, 0);
@@ -2071,8 +2072,8 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelColon, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeekdayPanel = lv_obj_create(ui_DigitalClockPanel);
-    lv_obj_set_width(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayPanel, 30);
+    lv_obj_set_width(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockWeekdayPanel, lv_pct(-20));
     lv_obj_set_y(ui_DigitalClockWeekdayPanel, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockWeekdayPanel, LV_ALIGN_CENTER);
@@ -2081,13 +2082,17 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_bg_color(ui_DigitalClockWeekdayPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_DigitalClockWeekdayPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeekdayLabelShadow = lv_label_create(ui_DigitalClockWeekdayPanel);
     lv_obj_set_width(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockWeekdayLabelShadow, 3);
     lv_obj_set_y(ui_DigitalClockWeekdayLabelShadow, 3);
-    lv_obj_set_align(ui_DigitalClockWeekdayLabelShadow, LV_ALIGN_CENTER);
+    lv_obj_set_align(ui_DigitalClockWeekdayLabelShadow, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_DigitalClockWeekdayLabelShadow, "周三");
     lv_obj_set_style_text_color(ui_DigitalClockWeekdayLabelShadow, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_DigitalClockWeekdayLabelShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -2097,13 +2102,13 @@ void ui_DigitalClockScreen_screen_init(void)
     ui_DigitalClockWeekdayLabel = lv_label_create(ui_DigitalClockWeekdayPanel);
     lv_obj_set_width(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_align(ui_DigitalClockWeekdayLabel, LV_ALIGN_CENTER);
+    lv_obj_set_align(ui_DigitalClockWeekdayLabel, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_DigitalClockWeekdayLabel, "周三");
     lv_obj_set_style_text_font(ui_DigitalClockWeekdayLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockDatePanel = lv_obj_create(ui_DigitalClockPanel);
-    lv_obj_set_width(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockDatePanel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_height(ui_DigitalClockDatePanel, 40);
+    lv_obj_set_width(ui_DigitalClockDatePanel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockDatePanel, lv_pct(15));
     lv_obj_set_y(ui_DigitalClockDatePanel, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockDatePanel, LV_ALIGN_CENTER);
@@ -2112,13 +2117,17 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_bg_color(ui_DigitalClockDatePanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_DigitalClockDatePanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockDateLabelShadow = lv_label_create(ui_DigitalClockDatePanel);
     lv_obj_set_width(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockDateLabelShadow, 3);
     lv_obj_set_y(ui_DigitalClockDateLabelShadow, 3);
-    lv_obj_set_align(ui_DigitalClockDateLabelShadow, LV_ALIGN_CENTER);
+    lv_obj_set_align(ui_DigitalClockDateLabelShadow, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_DigitalClockDateLabelShadow, "2022年\n12月14日");
     lv_obj_set_style_text_color(ui_DigitalClockDateLabelShadow, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_DigitalClockDateLabelShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -2128,7 +2137,7 @@ void ui_DigitalClockScreen_screen_init(void)
     ui_DigitalClockDateLabel = lv_label_create(ui_DigitalClockDatePanel);
     lv_obj_set_width(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_DigitalClockDateLabel, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_align(ui_DigitalClockDateLabel, LV_ALIGN_CENTER);
+    lv_obj_set_align(ui_DigitalClockDateLabel, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_DigitalClockDateLabel, "2022年\n12月14日");
     lv_obj_set_style_text_font(ui_DigitalClockDateLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -2138,6 +2147,8 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_group_add_obj(ui_group, ui_DigitalClockScreen);
 
     ui_timer_DigitalClockTimer = lv_timer_create(cb_timer_DigitalClockTimer, 1000, NULL);
+    ui_timer_DigitalClockTimer->user_data = &flag_ui_DigitalClockNeedInit; // <- 其实可以用指针是否为null传递初始化状态，但是为了便于理解还是算了
+    flag_ui_DigitalClockNeedInit = true;
     ui_timer_DigitalClockResinTimer = lv_timer_create(cb_timer_DigitalClockResinTimer, 15000, NULL);
     ui_timer_DigitalClockWeatherTimer = lv_timer_create(cb_timer_DigitalClockWeatherTimer, 30000, NULL);
 
