@@ -424,9 +424,9 @@ void loadSettings()
     weatherProviderNumber = curr_lang;
   else
     weatherProviderNumber = setting_weatherProvider;
-  String cityName = prefs.getString("weatherCityName", "");
-  float latitude = prefs.getFloat("weatherLatitude", NULL);
-  float longitude = prefs.getFloat("weatherLongitude", NULL);
+  String cityName = prefs.getString("weatherCity", "");
+  float latitude = prefs.getFloat("weatherLat", NULL);
+  float longitude = prefs.getFloat("weatherLong", NULL);
   switch (weatherProviderNumber)
   {
   case 0:

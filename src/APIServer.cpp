@@ -1384,9 +1384,9 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         {
             wp->setCoordinate(lat, lon);
             wp->setCity(urldecode(value1).c_str());
-            prefs.putString("weatherCityName", wp->getCity());
-            prefs.putFloat("weatherLatitude", lat);
-            prefs.putFloat("weatherLongitude", lon);
+            prefs.putString("weatherCity", wp->getCity());
+            prefs.putFloat("weatherLat", lat);
+            prefs.putFloat("weatherLon", lon);
         }
         else
         {
