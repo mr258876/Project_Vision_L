@@ -394,6 +394,8 @@ void loadSettings()
   setting_resinSyncPeriod = prefs.getULong("resinSyncPeriod", 900000000);
 
   setting_useDigitalClock = prefs.getBool("useDigitalClock", false);
+  
+  setting_timeZone = prefs.getBool("timeZone", "");
 
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();

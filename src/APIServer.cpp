@@ -34,6 +34,7 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req);
 static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
 static esp_err_t setting_volume_get_handler(httpd_req_t *req);
 static esp_err_t setting_language_get_handler(httpd_req_t *req);
+static esp_err_t setting_timezone_get_handler(httpd_req_t *req);
 
 static esp_err_t weather_city_get_handler(httpd_req_t *req);
 
@@ -153,6 +154,13 @@ httpd_uri_t uri_setting_language_get = {
     .uri = "/api/v1/setting/language",
     .method = HTTP_GET,
     .handler = setting_language_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/timezone 的 URI 处理结构 */
+httpd_uri_t uri_setting_timezone_get = {
+    .uri = "/api/v1/setting/timezone",
+    .method = HTTP_GET,
+    .handler = setting_timezone_get_handler,
     .user_ctx = NULL};
 
 /* GET /weather/city 的 URI 处理结构 */
@@ -1250,7 +1258,7 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
         if (sscanf(value, "%d", &brightness) == 1 && brightness >= 0 && brightness < 256)
         {
             setting_screenBrightness = brightness;
-            prefs.putBool("screenBrightness", setting_screenBrightness);
+            prefs.putUInt("screenBrightness", setting_screenBrightness);
         }
         else
         {
@@ -1315,6 +1323,38 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取/设置时区 */
+/* @param val: 要设置的值，通过url传参 */
+static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
+{
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "val", value, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        setting_timeZone = urldecode(value);
+        setenv("TZ", setting_timeZone.c_str(), 1);
+        tzset();
+        prefs.putString("timeZone", setting_timeZone);
+    }
+
+    sprintf(str, "{\"setting_timeZone\":\"%s\"}", setting_timeZone.c_str());
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* 获取/设置城市 */
 /* @param city: 要设置的城市名称，通过url传参 */
 /* @param latitude: 要设置的城市纬度，通过url传参 */
@@ -1344,9 +1384,9 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         {
             wp->setCoordinate(lat, lon);
             wp->setCity(urldecode(value1).c_str());
-            prefs.getString("weatherCityName", wp->getCity());
-            prefs.getFloat("weatherLatitude", lat);
-            prefs.getFloat("weatherLongitude", lon);
+            prefs.putString("weatherCityName", wp->getCity());
+            prefs.putFloat("weatherLatitude", lat);
+            prefs.putFloat("weatherLongitude", lon);
         }
         else
         {
@@ -1379,7 +1419,7 @@ void startAPIServer()
     }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 16;
+    config.max_uri_handlers = 24;
     config.stack_size = 6144;
 
     /* 置空 esp_http_server 的实例句柄 */
@@ -1409,6 +1449,7 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_setting_brightness_get);
         // httpd_register_uri_handler(server, &uri_setting_volume_get);
         httpd_register_uri_handler(server, &uri_setting_language_get);
+        httpd_register_uri_handler(server, &uri_setting_timezone_get);
 
         httpd_register_uri_handler(server, &uri_weather_city_get);
     }

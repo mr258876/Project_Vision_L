@@ -405,6 +405,39 @@ RESPONSE:
 }
 ~~~
 
+### GET /api/v1/setting/brightness
+#### Brief
+该函数用于获取或设置屏幕亮度。启用自动亮度时调整该值不会引起屏幕亮度变化。
+
+This function is to get or set screen brightness. This will not override auto brightness setting.
+
+#### Param
+value: 要设置的值(0-255)。获取值时uri中不要带有查询参数。
+
+value: Value to set(0-255). DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/brightness?value=127
+
+RESPONSE:
+{
+    "setting_screenBrightness":127
+}
+~~~
+
 ### GET /api/v1/setting/language
 #### Brief
 该函数用于获取或设置设备语言。
@@ -440,5 +473,81 @@ GET /api/v1/setting/language?value=0
 RESPONSE:
 {
     "curr_lang":0
+}
+~~~
+
+### GET /api/v1/setting/timezone
+#### Brief
+该函数用于获取或设置设备时区。
+
+This function is to get or set device timezone.
+
+#### Param
+value: 要设置的值(POSIX)。获取值时uri中不要带有查询参数。
+
+**注意：该值将直接覆盖环境变量，不会受到任何检查。**
+
+value: Value to set (POSIX). DO NOT add any query params when getting this value.
+
+
+**Note: The value will override TZ environment variable directly without any inspection.**
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/timezone?value=CST-8
+
+RESPONSE:
+{
+    "setting_timeZone":"CST-8"
+}
+~~~
+
+## 天气配置 / Weather Configurations
+### GET /api/v1/weather/city
+#### Brief
+该函数用于获取或设置城市。
+
+This function is to get or set city for weather service.
+
+#### Param
+|param|description|
+|---|---|
+|city|城市名称 / city name
+|latitude|纬度 / latitude float, [-90 ~ 90]|
+|langitude|经度 / langitude float, [-180 ~ 180]|
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/weather/city?city=深圳&latitude=22.54554&longitude=114.0683
+
+RESPONSE:
+{
+    "city":"深圳",
+    "latitude":22.545540,
+    "longitude":114.068298
 }
 ~~~
