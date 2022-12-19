@@ -395,7 +395,7 @@ void loadSettings()
 
   setting_useDigitalClock = prefs.getBool("useDigitalClock", false);
   
-  setting_timeZone = prefs.getBool("timeZone", "");
+  setting_timeZone = prefs.getString("timeZone", "");
 
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
