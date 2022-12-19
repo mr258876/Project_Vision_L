@@ -1,9 +1,8 @@
 # The Vision L
 
-↓求个翻译
+Do virtual gods hand out electronic visions?
 
-
-Do Virtual Gods Hand Out Electronic Visions?
+![image](/images/perview.jpg)
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
@@ -11,7 +10,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 测试版 / Beta Release
 - [L0.2.1-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta1)
 ### 开发版 / Indev Release
-- [L0.2.1-Indev22C121](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22C121)
+- None
 
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
