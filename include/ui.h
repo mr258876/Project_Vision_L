@@ -210,6 +210,8 @@ void cb_setAutoBright(bool val);
 void cb_setUseAccel(bool val);
 void cb_setLanguage(uint16_t val);
 
+void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay);
+
 LV_IMG_DECLARE(ui_img_back);
 
 LV_IMG_DECLARE(ui_img_icon_element);

@@ -190,7 +190,7 @@ void aniTitleSlideInY_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
     lv_anim_set_playback_time(&PropertyAnimation_0, 0);
     lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
-    lv_anim_set_repeat_count(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, 1);
     lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
     lv_anim_set_early_apply(&PropertyAnimation_0, false);
     lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_y);
@@ -208,7 +208,7 @@ void aniTitleSlideInX_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
     lv_anim_set_playback_time(&PropertyAnimation_0, 0);
     lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
-    lv_anim_set_repeat_count(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, 1);
     lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
     lv_anim_set_early_apply(&PropertyAnimation_0, false);
     lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_x);
@@ -284,6 +284,46 @@ void aniClockHoroSpin4Reverse_Animation(lv_obj_t *TargetObject, int delay)
     lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
     lv_anim_set_early_apply(&PropertyAnimation_0, false);
     lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_image_angle);
+    lv_anim_start(&PropertyAnimation_0);
+}
+/* 数字时钟更新动画播放完成回调 */
+static void aniDigitalClockLinear_nextLine_cb(lv_anim_t *a)
+{
+    lv_obj_t *label = (lv_obj_t *)a->user_data;
+    const char *s = lv_label_get_text(label);
+    char s1[strlen(s)];
+    int offset = 0;
+    for (size_t i = 0; i < strlen(s); i++)
+    {
+        if (s[i] == '\n')
+            break;
+        offset++;
+    }
+    offset++;
+    if (offset >= strlen(s))
+        offset = 0;
+    strcpy(s1, s + offset);
+    lv_label_set_text(label, s1);
+    lv_obj_set_y(label, lv_obj_get_y(label) + 48);
+}
+/* 数字时钟更新动画 */
+void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay)
+{
+    lv_anim_t PropertyAnimation_0;
+    lv_anim_init(&PropertyAnimation_0);
+    lv_anim_set_time(&PropertyAnimation_0, 750);
+    lv_anim_set_user_data(&PropertyAnimation_0, TargetObject);
+    lv_anim_set_custom_exec_cb(&PropertyAnimation_0, _ui_anim_callback_set_y);
+    lv_anim_set_values(&PropertyAnimation_0, 0, -48);
+    lv_anim_set_path_cb(&PropertyAnimation_0, lv_anim_path_ease_in_out);
+    lv_anim_set_delay(&PropertyAnimation_0, delay + 0);
+    lv_anim_set_playback_time(&PropertyAnimation_0, 0);
+    lv_anim_set_playback_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_repeat_count(&PropertyAnimation_0, 1);
+    lv_anim_set_repeat_delay(&PropertyAnimation_0, 0);
+    lv_anim_set_early_apply(&PropertyAnimation_0, false);
+    lv_anim_set_get_value_cb(&PropertyAnimation_0, &_ui_anim_callback_get_y);
+    lv_anim_set_deleted_cb(&PropertyAnimation_0, aniDigitalClockLinear_nextLine_cb);
     lv_anim_start(&PropertyAnimation_0);
 }
 
@@ -1760,7 +1800,7 @@ void ui_ClockScreen_screen_init(void)
 void ui_DigitalClockScreen_screen_init(void)
 {
     ui_DigitalClockScreen = lv_obj_create(NULL);
-    lv_obj_clear_flag(ui_DigitalClockScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_clear_flag(ui_DigitalClockScreen, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_bg_color(ui_DigitalClockScreen, lv_color_hex(0xE8D3BB), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_color(ui_DigitalClockScreen, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1943,7 +1983,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_width(ui_DigitalClockPanel, lv_pct(100));
     lv_obj_set_height(ui_DigitalClockPanel, lv_pct(50));
     lv_obj_set_align(ui_DigitalClockPanel, LV_ALIGN_TOP_MID);
-    lv_obj_clear_flag(ui_DigitalClockPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_clear_flag(ui_DigitalClockPanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_radius(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_DigitalClockPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1959,7 +1999,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_x(ui_DigitalClockTimePanel, lv_pct(0));
     lv_obj_set_y(ui_DigitalClockTimePanel, lv_pct(-15));
     lv_obj_set_align(ui_DigitalClockTimePanel, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_DigitalClockTimePanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_clear_flag(ui_DigitalClockTimePanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_radius(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_DigitalClockTimePanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1970,8 +2010,8 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_pad_bottom(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelHourShadow = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockTimeLabelHourShadow, -82);
     lv_obj_set_y(ui_DigitalClockTimeLabelHourShadow, -2);
     lv_obj_set_align(ui_DigitalClockTimeLabelHourShadow, LV_ALIGN_TOP_RIGHT);
@@ -1983,8 +2023,8 @@ void ui_DigitalClockScreen_screen_init(void)
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelMinShadow = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockTimeLabelMinShadow, 89);
     lv_obj_set_y(ui_DigitalClockTimeLabelMinShadow, -2);
     lv_label_set_text(ui_DigitalClockTimeLabelMinShadow, "59\n00");
@@ -1994,8 +2034,8 @@ void ui_DigitalClockScreen_screen_init(void)
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelColonShadow = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockTimeLabelColonShadow, 3);
     lv_obj_set_y(ui_DigitalClockTimeLabelColonShadow, 3);
     lv_obj_set_align(ui_DigitalClockTimeLabelColonShadow, LV_ALIGN_CENTER);
@@ -2007,8 +2047,8 @@ void ui_DigitalClockScreen_screen_init(void)
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelHour = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockTimeLabelHour, -85);
     lv_obj_set_y(ui_DigitalClockTimeLabelHour, -5);
     lv_obj_set_align(ui_DigitalClockTimeLabelHour, LV_ALIGN_TOP_RIGHT);
@@ -2016,35 +2056,35 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelHour, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelMin = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockTimeLabelMin, 86);
     lv_obj_set_y(ui_DigitalClockTimeLabelMin, -5);
     lv_label_set_text(ui_DigitalClockTimeLabelMin, "59");
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelMin, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelColon = lv_label_create(ui_DigitalClockTimePanel);
-    lv_obj_set_width(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_DigitalClockTimeLabelColon, LV_ALIGN_CENTER);
     lv_label_set_text(ui_DigitalClockTimeLabelColon, ":");
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelColon, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeekdayPanel = lv_obj_create(ui_DigitalClockPanel);
-    lv_obj_set_width(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockWeekdayPanel, lv_pct(-20));
     lv_obj_set_y(ui_DigitalClockWeekdayPanel, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockWeekdayPanel, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_DigitalClockWeekdayPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_clear_flag(ui_DigitalClockWeekdayPanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_radius(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_DigitalClockWeekdayPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_DigitalClockWeekdayPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeekdayLabelShadow = lv_label_create(ui_DigitalClockWeekdayPanel);
-    lv_obj_set_width(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockWeekdayLabelShadow, 3);
     lv_obj_set_y(ui_DigitalClockWeekdayLabelShadow, 3);
     lv_obj_set_align(ui_DigitalClockWeekdayLabelShadow, LV_ALIGN_CENTER);
@@ -2055,27 +2095,27 @@ void ui_DigitalClockScreen_screen_init(void)
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeekdayLabel = lv_label_create(ui_DigitalClockWeekdayPanel);
-    lv_obj_set_width(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_DigitalClockWeekdayLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_DigitalClockWeekdayLabel, "周三");
     lv_obj_set_style_text_font(ui_DigitalClockWeekdayLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockDatePanel = lv_obj_create(ui_DigitalClockPanel);
-    lv_obj_set_width(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockDatePanel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockDatePanel, lv_pct(15));
     lv_obj_set_y(ui_DigitalClockDatePanel, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockDatePanel, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_DigitalClockDatePanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_clear_flag(ui_DigitalClockDatePanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_obj_set_style_radius(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_DigitalClockDatePanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_DigitalClockDatePanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockDateLabelShadow = lv_label_create(ui_DigitalClockDatePanel);
-    lv_obj_set_width(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockDateLabelShadow, 3);
     lv_obj_set_y(ui_DigitalClockDateLabelShadow, 3);
     lv_obj_set_align(ui_DigitalClockDateLabelShadow, LV_ALIGN_CENTER);
@@ -2086,8 +2126,8 @@ void ui_DigitalClockScreen_screen_init(void)
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockDateLabel = lv_label_create(ui_DigitalClockDatePanel);
-    lv_obj_set_width(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockDateLabel, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_DigitalClockDateLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_DigitalClockDateLabel, "2022年\n12月14日");
     lv_obj_set_style_text_font(ui_DigitalClockDateLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);

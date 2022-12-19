@@ -227,17 +227,41 @@ void cb_timer_ClockTimerHour(lv_timer_t *timer)
 }
 
 /* 数字时钟刷新 */
+static int lastHour = -1;
+static int lastMin = -1;
 void cb_timer_DigitalClockTimer(lv_timer_t *timer)
 {
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
     {
         /* Time */
-        lv_label_set_text_fmt(ui_DigitalClockTimeLabelHour, "%d", timeinfo.tm_hour);
-        lv_label_set_text_fmt(ui_DigitalClockTimeLabelHourShadow, "%d", timeinfo.tm_hour);
-        lv_label_set_text_fmt(ui_DigitalClockTimeLabelMin, "%02d", timeinfo.tm_min);
-        lv_label_set_text_fmt(ui_DigitalClockTimeLabelMinShadow, "%02d", timeinfo.tm_min);
+        if (lastHour < 0)
+        {
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelHour, "%d", timeinfo.tm_hour);
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelHourShadow, "%d", timeinfo.tm_hour);
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelMin, "%02d", timeinfo.tm_min);
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelMinShadow, "%02d", timeinfo.tm_min);
+            lastHour = timeinfo.tm_hour;
+            lastMin = timeinfo.tm_min;
+        }
 
+        if (lastHour != timeinfo.tm_hour)
+        {
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelHour, "%d\n%d", lastHour, timeinfo.tm_hour);
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelHourShadow, "%d\n%d", lastHour, timeinfo.tm_hour);
+            aniDigitalClockLinear_Animation(ui_DigitalClockTimeLabelHour, 0);
+            aniDigitalClockLinear_Animation(ui_DigitalClockTimeLabelHourShadow, 0);
+            lastHour = timeinfo.tm_hour;
+        }
+        if (lastMin != timeinfo.tm_min)
+        {
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelMin, "%02d\n%02d", lastMin, timeinfo.tm_min);
+            lv_label_set_text_fmt(ui_DigitalClockTimeLabelMinShadow, "%02d\n%02d", lastMin, timeinfo.tm_min);
+            aniDigitalClockLinear_Animation(ui_DigitalClockTimeLabelMin, 0);
+            aniDigitalClockLinear_Animation(ui_DigitalClockTimeLabelMinShadow, 0);
+            lastMin = timeinfo.tm_min;
+        }
+        
         if (lv_obj_has_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN))
         {
             lv_obj_clear_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN);
