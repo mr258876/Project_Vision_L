@@ -394,7 +394,7 @@ void loadSettings()
   setting_resinSyncPeriod = prefs.getULong("resinSyncPeriod", 900000000);
 
   setting_useDigitalClock = prefs.getBool("useDigitalClock", false);
-  
+
   setting_timeZone = prefs.getString("timeZone", "");
 
   // get app version
@@ -649,6 +649,17 @@ void hardwareSetup(void *parameter)
     {
       disConnectWiFi();
     }
+  }
+
+  if (!(hwErr & VISION_HW_PROX_ERR))
+  {
+    apds.enableColor(true);
+    apds.enableProximity(true);
+    apds.setProximityInterruptThreshold(0, PROX_THRS);
+    apds.enableProximityInterrupt();
+    pinMode(po.PROX_INT, INPUT_PULLUP);
+    proxButton = new OneButton(po.PROX_INT, true);
+    proxButton->attachDoubleClick(onChangeVideo);
   }
 
   pinMode(po.PWR_BTN, INPUT);
@@ -1158,13 +1169,15 @@ void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);
         {
           gfx.setRotation(toRotate);
           rotation = toRotate;
           lv_obj_invalidate(lv_scr_act());
-          xSemaphoreGive(LVGLMutex);
         }
+        xSemaphoreGive(*LCDMutexptr);
+        xSemaphoreGive(LVGLMutex);
       }
     }
 
