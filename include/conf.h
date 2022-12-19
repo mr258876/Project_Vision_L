@@ -39,22 +39,22 @@
 #define SD_DRIVE_LETTER 'S'
 #define FLASH_DRIVE_LETTER 'F'
 
-// Time settings
-#define GMTOFFSET 28800
-#define DAYLIGHTOFFSET 0
-
 // Updating
 #define UPDATE_FILE_PATH "/update.bin"
 
 // JSON conf buffer size
 #define JSON_CONF_BUFFER_SIZE 1024
 
-/* Play File List */
-#define PLAY_FILE_CONF_PATH "/playFiles.json"
-#define PLAY_FILE_DEFAULT_CONF "{\"files\":[\"S:/Pyro.mjpeg\",\"S:/Hydro.mjpeg\",\"S:/Anemo.mjpeg\",\"S:/Electro.mjpeg\",\"S:/Dendro.mjpeg\",\"S:/Cryo.mjpeg\",\"S:/Geo.mjpeg\"]}"
+/* Play List File */
+#define PLAY_LIST_CONF_PATH "/playFiles.json"
+#define PLAY_LIST_DEFAULT_CONF "{\"files\":[]}"
+#define PLAY_LIST_CONF_DEFAULT_LENGTH 1024
+#define PLAY_LIST_JSON_SIZE 1024
 
 /* Hoyolab cookie */
 #define HOYOLAB_CONF_PATH "/Hoyolab.json"
 #define HOYOLAB_DEFAULT_CONF "{\"uid\":\"\", \"cookie\":\"\", \"device_guid\": \"\"}"
+#define HOYOLAB_CONF_DEFAULT_LENGTH 1024
+#define HOYOLAB_CONF_JSON_SIZE 1024
 
 #endif // _VISION_CONFIGURATIONS_H_

@@ -9,7 +9,7 @@ Do Virtual Gods Hand Out Electronic Visions?
 ### 稳定版 / Stable Release
 - [L0.2.0](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0)
 ### 测试版 / Beta Release
-- None
+- [L0.2.1-Beta1](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta1)
 ### 开发版 / Indev Release
 - [L0.2.1-Indev22C121](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0-Indev22C121)
 
@@ -64,7 +64,7 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 ### L0.2版本及以上
 - 单击按钮将光标移至下一项
 - 双击按钮与按钮进行交互，或与无按钮屏幕进行交互(回到菜单)
-- 三击按钮将光标移至上一项，或与无按钮屏幕进行第二交互(切换元素/手动更新树脂数据)
+- 三击按钮将光标移至上一项，或与无按钮屏幕进行第二交互(切换元素/手动更新树脂数据/切换数字时钟)
 
 ### 米游社/HoyoLab cookie设置
 - 打开SD卡根目录`Hoyolab.json`，并设定玩家id及米游社/Hoyolab cookie。文件格式参考如下：
@@ -138,6 +138,8 @@ if (ask == true) {
 ### 常见问题解答
 #### 为什么获取体力时会出现“错误1034”？
 - 受米游社风控策略影响，部分情况米游社api会直接返回错误1034。目前的解决办法为在手机上使用米游社app查询体力并签到，随后神之眼上的树脂功能将恢复正常。
+#### 如何通过API控制神之眼？
+- 关于管理API的更多内容，请参阅[API参考手册](apiReference.md).
 
 ## English
 
@@ -169,7 +171,7 @@ Features planned for next major release:
 ### For version L0.2 or above
 - Click power button to move cursor to next item
 - Double-click power button to interact with a button item, or to interact with a buttonless screen (go back to menu)
-- Triple-click power button to move cursor to previous item, or perform second interaction with a buttonless screen (switch element / manually update resin data)
+- Triple-click power button to move cursor to previous item, or perform second interaction with a buttonless screen (switch element / update resin data manually / switch between digital clock & analog clock)
 
 ### HoyoLab cookie settings
 - Open `Hoyolab.json` in the root directory of SD card, then set character id and Hoyolab cookie. Example shown as below:
@@ -223,3 +225,5 @@ Features planned for next major release:
 ### FAQ
 #### Why do I get "Error 1034" when getting resin data?
 - Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.
+#### How to control the Vision through APIs?
+- Please reference to [API Refernece Manual](apiReference.md) for more details about the management APIs.

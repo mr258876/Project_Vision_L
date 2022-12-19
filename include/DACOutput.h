@@ -1,5 +1,5 @@
-#ifndef __sampler_base_h__
-#define __sampler_base_h__
+#ifndef _DACOUTPUT_H_
+#define _DACOUTPUT_H_
 
 #include <Arduino.h>
 #include "driver/i2s.h"

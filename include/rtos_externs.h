@@ -1,5 +1,5 @@
-#ifndef PROJECT_VISION_L_MUTEXES
-#define PROJECT_VISION_L_MUTEXES
+#ifndef _RTOS_EXTERNS_H_
+#define _RTOS_EXTERNS_H_
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -11,10 +11,13 @@ extern SemaphoreHandle_t LVGLMutex;
 extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
+
 extern SemaphoreHandle_t WiFiConnectMutex;
+extern SemaphoreHandle_t APIStartupMutex;
 
 // SPI 互斥锁
 extern SemaphoreHandle_t SDMutex;
+extern SemaphoreHandle_t FlashMutex;
 extern SemaphoreHandle_t LCDMutex;
 extern SemaphoreHandle_t *LCDMutexptr;  // In case when SD & LCD share one SPI bus
 

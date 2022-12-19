@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include "ui.h"
 #include "ui_multiLanguage.h"
 #include "The_Vision_L_globals.h"
 #include "rtos_externs.h"
 
+/* 树脂显示刷新 */
 void cb_timer_ResinDispTimer(lv_timer_t *timer)
 {
     if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
@@ -64,36 +64,70 @@ void cb_timer_ResinDispTimer(lv_timer_t *timer)
     }
 }
 
+/* 设置菜单值刷新 */
 void cb_timer_SettingDispTimer(lv_timer_t *timer)
 {
+    // API服务器相关
+    switch (info_APIstatus)
+    {
+    case 0:
+        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][73]); // "实用程序未启用。"
+        break;
+    case 1:
+        lv_obj_add_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED); // 通过API服务器状态设置开关状态
+        lv_obj_add_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_qrcode_update(ui_SettingPanel0QR1, info_APIaddress, strlen(info_APIaddress)); // "http://127.127.127.127"
+        break;
+    case 2:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][71]); // "实用程序正在启动..."
+        break;
+    case 3:
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][74]); // "实用程序正在停止..."
+        break;
+    default:
+        lv_obj_clear_state(ui_SettingPanel0SW1Switch1, LV_STATE_CHECKED);
+        lv_obj_clear_flag(ui_SettingPanel0Label2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_SettingPanel0QR1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][72]); // "错误：\n未连接到无线网络，\n实用程序无法启动。"
+        break;
+    }
+
     // 网络状态
     lv_label_set_text(ui_SettingPanel1Label4, info_macAddress);
-    switch (WiFi.status())
+    switch (info_wifiStatus)
     {
-    case WL_IDLE_STATUS:
+    case 0: // WL_IDLE_STATUS
         lv_label_set_text(ui_SettingPanel1Label2, lang[curr_lang][61]);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
-    case WL_CONNECTED:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][60], WiFi.SSID());
-        lv_label_set_text(ui_SettingPanel1Label6, WiFi.localIP().toString().c_str());
+    case 3: // WL_CONNECTED
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][60], info_SSID);
+        lv_label_set_text(ui_SettingPanel1Label6, info_ipv4Address);
         break;
-    case WL_CONNECTION_LOST:
-    case WL_CONNECT_FAILED:
-    case WL_DISCONNECTED:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][63], WiFi.SSID());
+    case 5: // WL_CONNECTION_LOST
+    case 4: // WL_CONNECT_FAILED
+    case 6: // WL_DISCONNECTED
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][63], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
-    case WL_NO_SSID_AVAIL:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][62], WiFi.SSID());
+    case 1: // WL_NO_SSID_AVAIL
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][62], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
     default:
-        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][59], WiFi.SSID());
+        lv_label_set_text_fmt(ui_SettingPanel1Label2, lang[curr_lang][59], info_SSID);
         lv_label_set_text(ui_SettingPanel1Label6, "N/A");
         break;
     }
-    
+
     // 距离传感器使能
     if (info_hasProx)
     {
@@ -127,9 +161,14 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
         lv_obj_add_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED);
     }
 
-    lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
+    // 语言选择菜单
+    // lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);   // <- 已移动至cb_event_SettingScreen. 在此处更新已选择语言会导致语言菜单一直跳回curr_lang。
+
+    // 硬件版本
+    lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:"
 }
 
+/* 主题时钟秒针刷新 */
 void cb_timer_ClockTimerSecond(lv_timer_t *timer)
 {
     struct tm timeinfo;
@@ -139,6 +178,7 @@ void cb_timer_ClockTimerSecond(lv_timer_t *timer)
     }
 }
 
+/* 主题时钟分针刷新 */
 void cb_timer_ClockTimerMinute(lv_timer_t *timer)
 {
     struct tm timeinfo;
@@ -148,6 +188,7 @@ void cb_timer_ClockTimerMinute(lv_timer_t *timer)
     }
 }
 
+/* 主题时钟时针/四角图标刷新 */
 void cb_timer_ClockTimerHour(lv_timer_t *timer)
 {
     struct tm timeinfo;
@@ -183,4 +224,162 @@ void cb_timer_ClockTimerHour(lv_timer_t *timer)
             }
         }
     }
+}
+
+/* 数字时钟刷新 */
+void cb_timer_DigitalClockTimer(lv_timer_t *timer)
+{
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo))
+    {
+        /* Time */
+        lv_label_set_text_fmt(ui_DigitalClockTimeLabelHour, "%d", timeinfo.tm_hour);
+        lv_label_set_text_fmt(ui_DigitalClockTimeLabelHourShadow, "%d", timeinfo.tm_hour);
+        lv_label_set_text_fmt(ui_DigitalClockTimeLabelMin, "%02d", timeinfo.tm_min);
+        lv_label_set_text_fmt(ui_DigitalClockTimeLabelMinShadow, "%02d", timeinfo.tm_min);
+
+        if (lv_obj_has_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN))
+        {
+            lv_obj_clear_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(ui_DigitalClockTimeLabelColonShadow, LV_OBJ_FLAG_HIDDEN);
+        }
+        else
+        {
+            lv_obj_add_flag(ui_DigitalClockTimeLabelColon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(ui_DigitalClockTimeLabelColonShadow, LV_OBJ_FLAG_HIDDEN);
+        }
+
+        /* Weekday */
+        lv_label_set_text(ui_DigitalClockWeekdayLabel, lang[curr_lang][75 + timeinfo.tm_wday]);
+        lv_label_set_text(ui_DigitalClockWeekdayLabelShadow, lang[curr_lang][75 + timeinfo.tm_wday]);
+
+        /* Date */
+        switch (curr_lang)
+        {
+        case 1: // YYYY年\nMM月DD日
+            lv_label_set_text_fmt(ui_DigitalClockDateLabel, lang[curr_lang][82], 1900 + timeinfo.tm_year, 1 + timeinfo.tm_mon, timeinfo.tm_mday);
+            lv_label_set_text_fmt(ui_DigitalClockDateLabelShadow, lang[curr_lang][82], 1900 + timeinfo.tm_year, 1 + timeinfo.tm_mon, timeinfo.tm_mday);
+            break;
+        default: // MMM DD,\nYYYY
+            lv_label_set_text_fmt(ui_DigitalClockDateLabel, lang[curr_lang][82], lang[curr_lang][83 + timeinfo.tm_mon], timeinfo.tm_mday, 1900 + timeinfo.tm_year);
+            lv_label_set_text_fmt(ui_DigitalClockDateLabelShadow, lang[curr_lang][82], lang[curr_lang][83 + timeinfo.tm_mon], timeinfo.tm_mday, 1900 + timeinfo.tm_year);
+            break;
+        }
+    }
+}
+
+/* 数字时钟树脂显示刷新 */
+void cb_timer_DigitalClockResinTimer(lv_timer_t *timer)
+{
+    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+        lv_label_set_text_fmt(ui_DigitalClockResinLabelResin, "%d", nd.resinRemain);
+        lv_label_set_text_fmt(ui_DigitalClockResinLabelExpe, "%d/%d", nd.expeditionFinished, nd.expeditionOngoing);
+
+        if (nd.homecoinRemain < 1000)
+            lv_label_set_text_fmt(ui_DigitalClockResinLabelHomecoin, "%d", nd.homecoinRemain);
+        else
+            lv_label_set_text_fmt(ui_DigitalClockResinLabelHomecoin, "%.1fK", (nd.homecoinRemain / 1000.0));
+
+        if (nd.hasTransformer)
+        {
+            if (nd.transformerRecoverTime > 86400)
+            {
+                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][46], (int)(nd.transformerRecoverTime / 86400)); // "%d天"
+            }
+            else if (nd.transformerRecoverTime > 3600)
+            {
+                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][47], (int)(nd.transformerRecoverTime / 3600)); // "%d小时"
+            }
+            else if (nd.transformerRecoverTime > 60)
+            {
+                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][48], (int)(nd.transformerRecoverTime / 60)); // "%d分钟"
+            }
+            else
+            {
+                lv_label_set_text(ui_DigitalClockResinLabelTrans, lang[curr_lang][49]); // "已就绪"
+            }
+        }
+        else
+        {
+            lv_label_set_text(ui_DigitalClockResinLabelTrans, lang[curr_lang][50]); // "未解锁"
+        }
+
+        xSemaphoreGive(NoteDataMutex);
+    }
+
+    if (lv_obj_has_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN))
+    {
+        lv_obj_add_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_clear_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinLabelHomecoin, LV_OBJ_FLAG_HIDDEN);
+    }
+    else
+    {
+        lv_obj_clear_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_add_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ui_DigitalClockResinLabelHomecoin, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+/* 天气图标对照表 */
+const void *weather_img_table[] = {
+    &ui_img_weather_clear_sky,
+    &ui_img_weather_partly_cloudy,
+    &ui_img_weather_overcast,
+    &ui_img_weather_rain_showers,
+    &ui_img_weather_thunderstorm,
+    &ui_img_weather_hail,
+    &ui_img_weather_sleet,
+    &ui_img_weather_slight_rain,
+    &ui_img_weather_moderate_rain,
+    &ui_img_weather_heavy_rain,
+    &ui_img_weather_rainstorm,
+    &ui_img_weather_snow_showers,
+    &ui_img_weather_slight_snow_fall,
+    &ui_img_weather_moderate_snow_fall,
+    &ui_img_weather_heavy_snow_fall,
+    &ui_img_weather_snowstorm,
+    &ui_img_weather_fog,
+    &ui_img_weather_freezing_drizzle,
+    &ui_img_weather_sandstorm,
+    &ui_img_weather_sand,
+    &ui_img_weather_haze,
+};
+
+/* 数字时钟天气显示刷新 */
+void cb_timer_DigitalClockWeatherTimer(lv_timer_t *timer)
+{
+    if (flag_ui_font_HanyiWenhei20)
+    {
+        if (wp->getCity().isEmpty())
+        {
+            lv_label_set_text(ui_DigitalClockWeatherCityLabel, "未来");
+        }
+        else
+        {
+            lv_label_set_text(ui_DigitalClockWeatherCityLabel, wp->getCity().c_str());
+        }
+        lv_obj_set_style_text_font(ui_DigitalClockWeatherCityLabel, &ui_font_HanyiWenhei20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    else
+    {
+        lv_obj_add_flag(ui_DigitalClockWeatherCityLabel, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    lv_img_set_src(ui_DigitalClockWeatherIcon, weather_img_table[(int)weather.weather]);
+    lv_label_set_text_fmt(ui_DigitalClockWeatherTempLabel, "%d°", weather.temp);
+    lv_label_set_text_fmt(ui_DigitalClockWeatherAirLabel, "%d", weather.aqi);
 }

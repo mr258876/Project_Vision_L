@@ -17,8 +17,11 @@ void cleanObj(lv_obj_t *obj)
 
 void delScr(void *scr)
 {
-  cleanObj((lv_obj_t *)scr);
-  lv_obj_del_async((lv_obj_t *)scr);
+  if (scr)
+  {
+    cleanObj((lv_obj_t *)scr);
+    lv_obj_del_async((lv_obj_t *)scr);
+  }
 }
 
 void refreshScr(void *scr)
@@ -30,27 +33,26 @@ void cb_timer_ScrDelTimer(lv_timer_t *timer)
 {
   lv_obj_t *scr = (lv_obj_t *)(timer->user_data);
   delScr(scr);
+  lv_timer_del(timer);
 }
 
-void cb_leaveResinScreen_async(void *parameter)
-{
-  lv_group_remove_all_objs(ui_group);                                       // 删除控制组内对象
-  ui_MenuScreen_screen_init();                                              // 初始化下个要显示的屏幕
-  lv_group_focus_obj(ui_MenuButton2);                                       // 聚焦在树脂按钮上
-  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
-
-  refreshScr(ui_MenuScreen); // 刷新屏幕消除切换回菜单后的残留部分
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_ResinScreen);
-  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
-}
 void cb_leaveResinScreen(lv_event_t *e)
 {
-  lv_timer_del(ui_timer_ResinDispTimer);          // 删除树脂显示刷新定时器
-  lv_async_call(cb_leaveResinScreen_async, NULL); // 异步调用屏幕切换函数
+  lv_timer_del(ui_timer_ResinDispTimer);                                             // 删除树脂显示刷新定时器
+  lv_group_remove_all_objs(ui_group);                                                // 删除控制组内对象
+  ui_MenuScreen_screen_init();                                                       // 初始化下个要显示的屏幕
+  lv_group_focus_obj(ui_MenuButton2);                                                // 聚焦在树脂按钮上
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);          // 切换屏幕
+  refreshScr(ui_MenuScreen);                                                         // 刷新屏幕消除切换回菜单后的残留部分
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_ResinScreen); // 创建定时器异步删除屏幕
 }
 
-void cb_leaveClockScreen_async(void *parameter)
+void cb_leaveClockScreen(lv_event_t *e)
 {
+  lv_anim_del_all();                                                   // 删除时钟背景动画
+  lv_timer_del(ui_timer_ClockTimerSecond);                             // 删除秒针刷新定时器
+  lv_timer_del(ui_timer_ClockTimerMinute);                             // 删除分针刷新定时器
+  lv_timer_del(ui_timer_ClockTimerHour);                               // 删除时针刷新定时器
   lv_group_remove_all_objs(ui_group);                                  // 删除控制组内对象
   ui_MenuScreen_screen_init();                                         // 初始化下个要显示的屏幕
   lv_group_focus_obj(ui_MenuButton3);                                  // 聚焦在时钟按钮上
@@ -58,30 +60,29 @@ void cb_leaveClockScreen_async(void *parameter)
   refreshScr(ui_MenuScreen);                                           // 刷新屏幕消除切换回菜单后的残留部分
   delScr(ui_ClockScreen);                                              // 屏幕切换后释放资源
 }
-void cb_leaveClockScreen(lv_event_t *e)
+
+void cb_leaveDigitalClockScreen(lv_event_t *e)
 {
-  lv_anim_del_all();                              // 删除时钟背景动画
-  lv_timer_del(ui_timer_ClockTimerSecond);        // 删除秒针刷新定时器
-  lv_timer_del(ui_timer_ClockTimerMinute);        // 删除分针刷新定时器
-  lv_timer_del(ui_timer_ClockTimerHour);          // 删除时针刷新定时器
-  lv_async_call(cb_leaveClockScreen_async, NULL); // 异步调用屏幕切换函数
+  lv_timer_del(ui_timer_DigitalClockTimer);                            // 删除秒针刷新定时器
+  lv_timer_del(ui_timer_DigitalClockResinTimer);                       // 删除分针刷新定时器
+  lv_group_remove_all_objs(ui_group);                                  // 删除控制组内对象
+  ui_MenuScreen_screen_init();                                         // 初始化下个要显示的屏幕
+  lv_group_focus_obj(ui_MenuButton3);                                  // 聚焦在时钟按钮上
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+  refreshScr(ui_MenuScreen);                                           // 刷新屏幕消除切换回菜单后的残留部分
+  delScr(ui_DigitalClockScreen);                                       // 屏幕切换后释放资源
 }
 
-void cb_leaveSettingScreen_async(void *parameter)
-{
-  lv_group_remove_all_objs(ui_group);                                       // 删除控制组内对象
-  ui_MenuScreen_screen_init();                                              // 初始化下个要显示的屏幕
-  lv_group_focus_obj(ui_MenuButton4);                                       // 聚焦在设置按钮上
-  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
-  refreshScr(ui_MenuScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_SettingScreen);
-  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
-}
 void cb_leaveSettingScreen(lv_event_t *e)
 {
-  lv_anim_del_all();                                // 删除时钟背景动画
-  lv_timer_del(ui_timer_SettingDispTimer);          // 删除设置值显示刷新定时器
-  lv_async_call(cb_leaveSettingScreen_async, NULL); // 异步调用屏幕切换函数
+  lv_anim_del_all();                                                                   // 删除时钟背景动画
+  lv_timer_del(ui_timer_SettingDispTimer);                                             // 删除设置值显示刷新定时器
+  lv_group_remove_all_objs(ui_group);                                                  // 删除控制组内对象
+  ui_MenuScreen_screen_init();                                                         // 初始化下个要显示的屏幕
+  lv_group_focus_obj(ui_MenuButton4);                                                  // 聚焦在设置按钮上
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);            // 切换屏幕
+  refreshScr(ui_MenuScreen);                                                           // 刷新屏幕消除切换回菜单后的残留部分
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_SettingScreen); // 创建定时器异步删除屏幕
 }
 
 void cb_loadResinScreen(lv_event_t *e)
@@ -91,7 +92,35 @@ void cb_loadResinScreen(lv_event_t *e)
   lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_ResinScreen);
   ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_MenuScreen);
-  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
+}
+
+void cb_loadClock(lv_event_t *e)
+{
+  if (setting_useDigitalClock)
+  {
+    cb_loadDigitalClockScreen(e);
+  }
+  else
+  {
+    cb_loadClockScreen(e);
+  }
+}
+
+void cb_switchClockScreen(lv_event_t *e)
+{
+  if (setting_useDigitalClock)
+  {
+    cb_leaveDigitalClockScreen(e);
+    cb_loadClockScreen(e);
+  }
+  else
+  {
+    cb_leaveClockScreen(e);
+    cb_loadDigitalClockScreen(e);
+  }
+
+  setting_useDigitalClock = !setting_useDigitalClock;
+  prefs.putBool("useDigitalClock", setting_useDigitalClock);
 }
 
 void cb_loadClockScreen(lv_event_t *e)
@@ -104,7 +133,7 @@ void cb_loadClockScreen(lv_event_t *e)
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(mbox);
     ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
-    lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
+
     return;
   }
 
@@ -121,6 +150,27 @@ void cb_loadClockScreen(lv_event_t *e)
   }
 }
 
+void cb_loadDigitalClockScreen(lv_event_t *e)
+{
+  // Check whether time is avaliable
+  if (!info_timeSynced)
+  {
+    // if not, pop out error message
+    mbox = lv_msgbox_create(ui_MenuScreen, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
+    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_center(mbox);
+    ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
+
+    return;
+  }
+
+  // Remove menu screen, Load clock screen
+  lv_group_remove_all_objs(ui_group);
+  ui_DigitalClockScreen_screen_init();
+  lv_scr_load_anim(ui_DigitalClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+  delScr(ui_MenuScreen);
+}
+
 void cb_loadSettingScreen(lv_event_t *e)
 {
   lv_group_remove_all_objs(ui_group);
@@ -128,7 +178,6 @@ void cb_loadSettingScreen(lv_event_t *e)
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_SettingScreen);
   ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_MenuScreen);
-  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
 }
 
 void cb_leaveWifiReconfigInfo()
@@ -139,7 +188,6 @@ void cb_leaveWifiReconfigInfo()
   lv_group_focus_obj(ui_SettingPanel1Button1Button);
   refreshScr(ui_SettingScreen);
   ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
-  lv_timer_set_repeat_count(ui_timer_ScrDelTimer, 1);
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -147,6 +195,8 @@ void cb_leaveWifiReconfigInfo()
 void cb_loadWifiReconfigInfo(lv_event_t *e)
 {
   ui_InfoScreen_screen_init();
+
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][58]); // "配网模式"
 
   lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
   lv_obj_set_width(ui_InfoPanelLabel1, LV_SIZE_CONTENT);  /// 1
@@ -178,6 +228,182 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
   refreshScr(ui_InfoScreen);
 
   cb_startWifiReConfigure(NULL);
+}
+
+void cb_leaveSDErrorInfo()
+{
+  cb_ui_InfoScreen_back = NULL;
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+  lv_group_focus_freeze(ui_group, false);
+  lv_group_focus_obj(ui_MenuButton1);
+  refreshScr(ui_MenuScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+
+  cb_stopWifiReConfigure(NULL);
+}
+
+void cb_loadSDErrorInfo(lv_event_t *e)
+{
+  ui_InfoScreen_screen_init();
+
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][54]); // "错误"
+
+  lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel1, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel1, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel1, 15);
+  lv_obj_set_y(ui_InfoPanelLabel1, 10);
+  lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][12]); // "未检测到SD卡\n"
+  lv_obj_set_style_text_color(ui_InfoPanelLabel1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel2 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel2, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel2, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel2, 25);
+  lv_obj_set_y(ui_InfoPanelLabel2, 0);
+  lv_obj_set_align(ui_InfoPanelLabel2, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel2, LV_SYMBOL_SD_CARD);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel2, &ui_font_FontAwesomeIcon48, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel3 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel3, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel3, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel3, 100);
+  lv_obj_set_y(ui_InfoPanelLabel3, 0);
+  lv_obj_set_align(ui_InfoPanelLabel3, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel3, lang[curr_lang][67]); // "请检查SD卡，\n然后重试。"
+  lv_obj_set_style_text_font(ui_InfoPanelLabel3, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel4 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel4, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel4, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel4, 50);
+  lv_obj_set_y(ui_InfoPanelLabel4, 10);
+  lv_obj_set_align(ui_InfoPanelLabel4, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel4, LV_SYMBOL_CLOSE);
+  lv_obj_set_style_text_color(ui_InfoPanelLabel4, lv_color_hex(0xE20000), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel4, &ui_font_FontAwesomeIcon24, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  cb_ui_InfoScreen_back = cb_leaveSDErrorInfo;
+
+  lv_scr_load_anim(ui_InfoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+
+  lv_group_focus_obj(ui_InfoTitleBackButton);
+  lv_group_focus_freeze(ui_group, true);
+  refreshScr(ui_InfoScreen);
+}
+
+void cb_leavePlaylistErrorInfo()
+{
+  cb_ui_InfoScreen_back = NULL;
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+  lv_group_focus_freeze(ui_group, false);
+  lv_group_focus_obj(ui_MenuButton1);
+  refreshScr(ui_MenuScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+
+  cb_stopWifiReConfigure(NULL);
+}
+
+void cb_loadPlaylistErrorInfo(lv_event_t *e)
+{
+  ui_InfoScreen_screen_init();
+
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][54]); // "错误"
+
+  lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel1, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel1, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel1, 15);
+  lv_obj_set_y(ui_InfoPanelLabel1, 10);
+  lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][13]); // "没有可播放的文件"
+  lv_obj_set_style_text_color(ui_InfoPanelLabel1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel2 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel2, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel2, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel2, 25);
+  lv_obj_set_y(ui_InfoPanelLabel2, 0);
+  lv_obj_set_align(ui_InfoPanelLabel2, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel2, LV_SYMBOL_IMAGE);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel2, &ui_font_FontAwesomeIcon48, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel3 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel3, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel3, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel3, 100);
+  lv_obj_set_y(ui_InfoPanelLabel3, 0);
+  lv_obj_set_align(ui_InfoPanelLabel3, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel3, lang[curr_lang][109]); // "请检查播放列表，\n然后重试。"
+  lv_obj_set_style_text_font(ui_InfoPanelLabel3, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel4 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel4, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel4, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel4, 50);
+  lv_obj_set_y(ui_InfoPanelLabel4, 10);
+  lv_obj_set_align(ui_InfoPanelLabel4, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel4, LV_SYMBOL_CLOSE);
+  lv_obj_set_style_text_color(ui_InfoPanelLabel4, lv_color_hex(0xE20000), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel4, &ui_font_FontAwesomeIcon24, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  cb_ui_InfoScreen_back = cb_leaveSDErrorInfo;
+
+  lv_scr_load_anim(ui_InfoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+
+  lv_group_focus_obj(ui_InfoTitleBackButton);
+  lv_group_focus_freeze(ui_group, true);
+  refreshScr(ui_InfoScreen);
+}
+
+void cb_loadWifiConfigInfoStartupScreen(lv_event_t *e)
+{
+  lv_obj_clean(ui_StartupScreen);
+
+  lv_obj_t *ui_NetConfigureTitle = lv_label_create(ui_StartupScreen);
+
+  lv_obj_set_width(ui_NetConfigureTitle, LV_SIZE_CONTENT);
+  lv_obj_set_height(ui_NetConfigureTitle, LV_SIZE_CONTENT);
+
+  lv_obj_set_x(ui_NetConfigureTitle, 25);
+  lv_obj_set_y(ui_NetConfigureTitle, 35);
+
+  lv_label_set_text(ui_NetConfigureTitle, lang[curr_lang][32]); // "网络配置"
+
+  lv_obj_set_style_text_color(ui_NetConfigureTitle, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_NetConfigureTitle, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_NetConfigureTitle, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_NetConfigureLabel = lv_label_create(ui_StartupScreen);
+
+  lv_obj_set_width(ui_NetConfigureLabel, LV_SIZE_CONTENT);
+  lv_obj_set_height(ui_NetConfigureLabel, LV_SIZE_CONTENT);
+
+  lv_obj_set_x(ui_NetConfigureLabel, 30);
+  lv_obj_set_y(ui_NetConfigureLabel, 85);
+
+  lv_label_set_text(ui_NetConfigureLabel, lang[curr_lang][35]); // "神之眼的部分功能\n依赖网络。\n\n使用微信\n扫描右侧\nQR码配\n置网络。"
+
+  lv_obj_set_style_text_color(ui_NetConfigureLabel, lv_color_hex(0xECE5D8), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_NetConfigureLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_NetConfigureLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen, 100, lv_color_black(), lv_color_white());
+
+  /*Set data*/
+  lv_qrcode_update(qr, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
+  lv_obj_set_x(qr, 105);
+  lv_obj_set_y(qr, 110);
+
+  /*Add a border with bg_color*/
+  lv_obj_set_style_border_color(qr, lv_color_white(), 0);
+  lv_obj_set_style_border_width(qr, 5, 0);
 }
 
 void cb_setAutoBright(bool val)

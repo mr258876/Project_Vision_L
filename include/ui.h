@@ -1,5 +1,5 @@
-#ifndef _THE_VISION_L_UI_H
-#define _THE_VISION_L_UI_H
+#ifndef _UI_H_
+#define _UI_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,12 +26,21 @@ extern lv_obj_t * ui_SettingTitleLabel;
 extern lv_obj_t * ui_SettingTitleBackButton;
 extern lv_obj_t * ui_SettingTitleBackButtonImg;
 extern lv_obj_t * ui_SettingSidePanel;
+extern lv_obj_t * ui_SettingSideButton0;
+extern lv_obj_t * ui_SettingSideButton0Label1;
 extern lv_obj_t * ui_SettingSideButton1;
 extern lv_obj_t * ui_SettingSideButton1Label;
 extern lv_obj_t * ui_SettingSideButton2;
 extern lv_obj_t * ui_SettingSideButton2Label;
 extern lv_obj_t * ui_SettingSideButton3;
 extern lv_obj_t * ui_SettingSideButton3Label;
+extern lv_obj_t * ui_SettingInfoPanel0;
+extern lv_obj_t * ui_SettingPanel0Label1;
+extern lv_obj_t * ui_SettingPanel0SW1;
+extern lv_obj_t * ui_SettingPanel0SW1Label1;
+extern lv_obj_t * ui_SettingPanel0SW1Switch1;
+extern lv_obj_t * ui_SettingPanel0Label2;
+extern lv_obj_t * ui_SettingPanel0QR1;
 extern lv_obj_t * ui_SettingPanel1Label1;
 extern lv_obj_t * ui_SettingPanel1Button1;
 extern lv_obj_t * ui_SettingPanel1Button1Label1;
@@ -59,6 +68,7 @@ extern lv_obj_t * ui_SettingInfoPanelAboutLabel2;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel3;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel4;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel5;
+extern lv_obj_t * ui_SettingInfoPanelAboutLabel6;
 
 extern void (*cb_ui_InfoScreen_back)();
 extern lv_obj_t * ui_InfoScreen;
@@ -112,6 +122,38 @@ extern lv_obj_t * ui_ClockIconNoon;
 extern lv_obj_t * ui_ClockIconDusk;
 extern lv_obj_t * ui_ClockIconNight;
 
+extern lv_obj_t * ui_DigitalClockScreen;
+extern lv_obj_t * ui_DigitalClockWeatherPanel;
+extern lv_obj_t * ui_DigitalClockWeatherCityLabel;
+extern lv_obj_t * ui_DigitalClockWeatherTempLabel;
+extern lv_obj_t * ui_DigitalClockWeatherIcon;
+extern lv_obj_t * ui_DigitalClockWeatherAirPanel;
+extern lv_obj_t * ui_DigitalClockWeatherAirLabel;
+extern lv_obj_t * ui_DigitalClockResinPanel;
+extern lv_obj_t * ui_DigitalClockResinIconResin;
+extern lv_obj_t * ui_DigitalClockResinLabelResin;
+extern lv_obj_t * ui_DigitalClockResinIconHomecoin;
+extern lv_obj_t * ui_DigitalClockResinLabelHomecoin;
+extern lv_obj_t * ui_DigitalClockResinIconExpe;
+extern lv_obj_t * ui_DigitalClockResinLabelExpe;
+extern lv_obj_t * ui_DigitalClockResinIconTrans;
+extern lv_obj_t * ui_DigitalClockResinLabelTrans;
+extern lv_obj_t * ui_DigitalClockPanel;
+extern lv_obj_t * ui_DigitalClockTimePanel;
+extern lv_obj_t * ui_DigitalClockTimeLabelHourShadow;
+extern lv_obj_t * ui_DigitalClockTimeLabelMinShadow;
+extern lv_obj_t * ui_DigitalClockTimeLabelColonShadow;
+extern lv_obj_t * ui_DigitalClockTimeLabelHour;
+extern lv_obj_t * ui_DigitalClockTimeLabelMin;
+extern lv_obj_t * ui_DigitalClockTimeLabelColon;
+extern lv_obj_t * ui_DigitalClockWeekdayPanel;
+extern lv_obj_t * ui_DigitalClockWeekdayLabelShadow;
+extern lv_obj_t * ui_DigitalClockWeekdayLabel;
+extern lv_obj_t * ui_DigitalClockDatePanel;
+extern lv_obj_t * ui_DigitalClockDateLabelShadow;
+extern lv_obj_t * ui_DigitalClockDateLabel;
+extern lv_obj_t * ui_DigitalClockDateLabel;
+
 extern lv_obj_t * mbox;
 
 extern lv_group_t * ui_group;
@@ -121,13 +163,21 @@ extern lv_timer_t *ui_timer_SettingDispTimer;
 extern lv_timer_t *ui_timer_ClockTimerSecond;
 extern lv_timer_t *ui_timer_ClockTimerMinute;
 extern lv_timer_t *ui_timer_ClockTimerHour;
+extern lv_timer_t *ui_timer_DigitalClockTimer;
+extern lv_timer_t *ui_timer_DigitalClockResinTimer;
+extern lv_timer_t *ui_timer_DigitalClockWeatherTimer;
 extern lv_timer_t *ui_timer_ScrDelTimer;
+
+extern bool flag_ui_font_HanyiWenhei20;
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_SettingDispTimer(lv_timer_t *timer);
 void cb_timer_ClockTimerSecond(lv_timer_t *timer);
 void cb_timer_ClockTimerMinute(lv_timer_t *timer);
 void cb_timer_ClockTimerHour(lv_timer_t *timer);
+void cb_timer_DigitalClockTimer(lv_timer_t *timer);
+void cb_timer_DigitalClockResinTimer(lv_timer_t *timer);
+void cb_timer_DigitalClockWeatherTimer(lv_timer_t *timer);
 void cb_timer_ScrDelTimer(lv_timer_t *timer);
 
 void cb_hardwareSetup(lv_event_t * e);
@@ -138,48 +188,84 @@ void cb_getDailyNoteFromResinScreen(lv_event_t * e);
 
 void cb_leaveResinScreen(lv_event_t * e);
 void cb_leaveClockScreen(lv_event_t * e);
+void cb_leaveDigitalClockScreen(lv_event_t * e);
 void cb_leaveSettingScreen(lv_event_t * e);
 void cb_loadResinScreen(lv_event_t * e);
+void cb_loadClock(lv_event_t * e);
+void cb_switchClockScreen(lv_event_t * e);
 void cb_loadClockScreen(lv_event_t * e);
+void cb_loadDigitalClockScreen(lv_event_t * e);
 void cb_loadSettingScreen(lv_event_t * e);
 
 void cb_loadVideoScreen(lv_event_t * e);
 
 void cb_loadWifiReconfigInfo(lv_event_t * e);
+void cb_loadSDErrorInfo(lv_event_t * e);
+void cb_loadPlaylistErrorInfo(lv_event_t * e);
 
+void cb_loadWifiConfigInfoStartupScreen(lv_event_t * e);
+
+void cb_setAPIserver(bool val);
 void cb_setAutoBright(bool val);
 void cb_setUseAccel(bool val);
 void cb_setLanguage(uint16_t val);
 
-LV_IMG_DECLARE(ui_img_back);    // assets\UI_IconSmall_Back.png
+LV_IMG_DECLARE(ui_img_back);
 
-LV_IMG_DECLARE(ui_img_icon_element);    // assets\UI_Icon_Element.png
-LV_IMG_DECLARE(ui_img_icon_activity_signintab);    // assets\UI_Icon_Activity_SignInTab.png
-LV_IMG_DECLARE(ui_img_icon_timespeedup_s);    // assets\UI_Icon_TimeSpeedUp_S.png
-LV_IMG_DECLARE(ui_img_icon_setting_s);    // assets\UI_Icon_Setting_S.png
+LV_IMG_DECLARE(ui_img_icon_element);
+LV_IMG_DECLARE(ui_img_icon_activity_signintab);
+LV_IMG_DECLARE(ui_img_icon_timespeedup_s);
+LV_IMG_DECLARE(ui_img_icon_setting_s);
 
-LV_IMG_DECLARE(ui_img_Resin);           // assets\Resin.png
-LV_IMG_DECLARE(ui_img_Homecoin);        // assets\HomeCoin.png
-LV_IMG_DECLARE(ui_img_Expeditions);     // assets\Expeditions.png
-LV_IMG_DECLARE(ui_img_Transformer);     // assets\Transformer.png
+LV_IMG_DECLARE(ui_img_Resin);
+LV_IMG_DECLARE(ui_img_Homecoin);
+LV_IMG_DECLARE(ui_img_Expeditions);
+LV_IMG_DECLARE(ui_img_Transformer);
 
-LV_IMG_DECLARE(ui_img_HoroscopeBg);    // assets\HoroscopeBg.png
-LV_IMG_DECLARE(ui_img_Horoscope03);    // assets\ui_img_Horoscope03.png
-LV_IMG_DECLARE(ui_img_Horoscope04);    // assets\ui_img_Horoscope04.png
-LV_IMG_DECLARE(ui_img_Horoscope05);    // assets\ui_img_Horoscope05.png
-LV_IMG_DECLARE(ui_img_Horoscope06);    // assets\ui_img_Horoscope06.png
-LV_IMG_DECLARE(ui_img_clock_mask);    // assets\Clock_Mask.png
-LV_IMG_DECLARE(ui_img_clock_minutehand);    // assets\ui_Clock_MinuteHand.png
-LV_IMG_DECLARE(ui_img_clock_secondhand);    // assets\ui_Clock_SecondHand.png
-LV_IMG_DECLARE(ui_img_clock_hourhand);    // assets\ui_Clock_HourHand.png
-LV_IMG_DECLARE(ui_img_clockicon_morning);    // assets\ui_ClockIcon_Morning.png
-LV_IMG_DECLARE(ui_img_clockicon_noon);    // assets\ui_ClockIcon_Noon.png
-LV_IMG_DECLARE(ui_img_clockicon_dusk);    // assets\ui_ClockIcon_Dusk.png
-LV_IMG_DECLARE(ui_img_clockicon_night);    // assets\ui_ClockIcon_Night.png
-
+LV_IMG_DECLARE(ui_img_HoroscopeBg);
+LV_IMG_DECLARE(ui_img_Horoscope03);
+LV_IMG_DECLARE(ui_img_Horoscope04);
+LV_IMG_DECLARE(ui_img_Horoscope05);
+LV_IMG_DECLARE(ui_img_Horoscope06);
+LV_IMG_DECLARE(ui_img_clock_mask);
+LV_IMG_DECLARE(ui_img_clock_minutehand);
+LV_IMG_DECLARE(ui_img_clock_secondhand);
+LV_IMG_DECLARE(ui_img_clock_hourhand);
+LV_IMG_DECLARE(ui_img_clockicon_morning);
+LV_IMG_DECLARE(ui_img_clockicon_noon);
+LV_IMG_DECLARE(ui_img_clockicon_dusk);
+LV_IMG_DECLARE(ui_img_clockicon_night);
+LV_IMG_DECLARE(ui_img_weather_clear_sky);
+LV_IMG_DECLARE(ui_img_weather_fog);
+LV_IMG_DECLARE(ui_img_weather_freezing_drizzle);
+LV_IMG_DECLARE(ui_img_weather_hail);
+LV_IMG_DECLARE(ui_img_weather_haze);
+LV_IMG_DECLARE(ui_img_weather_heavy_rain);
+LV_IMG_DECLARE(ui_img_weather_heavy_snow_fall);
+LV_IMG_DECLARE(ui_img_weather_moderate_rain);
+LV_IMG_DECLARE(ui_img_weather_moderate_snow_fall);
+LV_IMG_DECLARE(ui_img_weather_overcast);
+LV_IMG_DECLARE(ui_img_weather_partly_cloudy);
+LV_IMG_DECLARE(ui_img_weather_rain_showers);
+LV_IMG_DECLARE(ui_img_weather_rainstorm);
+LV_IMG_DECLARE(ui_img_weather_sand);
+LV_IMG_DECLARE(ui_img_weather_sandstorm);
+LV_IMG_DECLARE(ui_img_weather_sleet);
+LV_IMG_DECLARE(ui_img_weather_slight_rain);
+LV_IMG_DECLARE(ui_img_weather_slight_snow_fall);
+LV_IMG_DECLARE(ui_img_weather_snow_showers);
+LV_IMG_DECLARE(ui_img_weather_snowstorm);
+LV_IMG_DECLARE(ui_img_weather_thunderstorm);
 
 LV_FONT_DECLARE(ui_font_HanyiWenhei16ZhHans);
+LV_FONT_DECLARE(ui_font_HanyiWenhei20ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei24ZhHans);
+LV_FONT_DECLARE(ui_font_HanyiWenhei48ASCII);
+LV_FONT_DECLARE(ui_font_FontAwesomeIcon24);
+LV_FONT_DECLARE(ui_font_FontAwesomeIcon48);
+
+/* Check flag_ui_font_HanyiWenhei20 before use! */
+LV_FONT_DECLARE(ui_font_HanyiWenhei20);
 
 
 void ui_init(void);
@@ -191,6 +277,7 @@ void ui_MenuScreen_screen_init();
 void ui_ResinScreen_screen_init();
 void ui_InfoScreen_screen_init();
 void ui_ClockScreen_screen_init();
+void ui_DigitalClockScreen_screen_init();
 
 #ifdef __cplusplus
 } /*extern "C"*/

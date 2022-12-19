@@ -1,5 +1,5 @@
-#ifndef __wav_file_reader_h__
-#define __wav_file_reader_h__
+#ifndef _WAV_FILE_RAEDER_H_
+#define _WAV_FILE_RAEDER_H_
 
 #include <SPIFFS.h>
 #include <FS.h>
