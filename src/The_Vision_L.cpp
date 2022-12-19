@@ -661,7 +661,7 @@ void hardwareSetup(void *parameter)
   }
 
   /* 显示错误信息 */
-  if (hwErr || fileErr || !errMsg.isEmpty())
+  if (hwErr || fileErr || weatherErr || !hasWifi || !errMsg.isEmpty())
   {
     if (hwErr & VISION_HW_SD_ERR)
       errMsg.concat(lang[curr_lang][12]); // "未检测到SD卡\n"
