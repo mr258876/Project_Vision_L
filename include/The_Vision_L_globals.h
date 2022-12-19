@@ -5,6 +5,8 @@
 #include <Preferences.h>
 #include "Hardware.h"
 #include "LinkedList.h"
+#include "Weather.h"
+#include <FS.h>
 
 /* Hardware Pinout */
 extern uint8_t info_hwType;
@@ -13,6 +15,13 @@ extern Pinout po;
 /* Hoyolab Client */
 extern HoyoverseClient hyc;
 extern Notedata nd;
+
+/* Weather */
+extern WeatherProvider *wp;
+extern Weather_current_t weather;
+
+/* Arduino FS */
+extern fs::FS *sdfs;
 
 /* NVS */
 extern Preferences prefs;
@@ -54,5 +63,11 @@ extern bool setting_soundMuted;
 extern uint8_t setting_soundVolume;
 
 extern unsigned long setting_resinSyncPeriod;
+
+extern bool setting_useDigitalClock;
+
+extern int setting_weatherProvider;
+
+extern String setting_timeZone;
 
 #endif

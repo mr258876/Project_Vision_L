@@ -35,6 +35,8 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
 static esp_err_t setting_volume_get_handler(httpd_req_t *req);
 static esp_err_t setting_language_get_handler(httpd_req_t *req);
 
+static esp_err_t weather_city_get_handler(httpd_req_t *req);
+
 //////////////////////////////
 //
 //  URI结构体
@@ -153,13 +155,20 @@ httpd_uri_t uri_setting_language_get = {
     .handler = setting_language_get_handler,
     .user_ctx = NULL};
 
+/* GET /weather/city 的 URI 处理结构 */
+httpd_uri_t uri_weather_city_get = {
+    .uri = "/api/v1/weather/city",
+    .method = HTTP_GET,
+    .handler = weather_city_get_handler,
+    .user_ctx = NULL};
+
 //////////////////////////////
 //
 //  helper 函数
 //
 //////////////////////////////
 
-SemaphoreHandle_t *get_FS_mutex(char drv_letter)
+static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
 {
     switch (drv_letter)
     {
@@ -997,11 +1006,10 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
 
     /* 尝试打开文件(检测路径是否存在) */
     strcpy(path, urldecode(path).c_str());
-    struct stat file_stat;
     int res;
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
     {
-        res = stat(path, &file_stat);
+        res = access(path, F_OK);
     }
     xSemaphoreGive(*FSMutex);
     if (res == 0)
@@ -1113,7 +1121,7 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 }
 
 /* 获取/设置自动亮度开关 */
-/* @param value: 要设置的值，通过url传参 */
+/* @param value: 要设置的值，通过url传参(true, false) */
 static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 {
     char str[64];
@@ -1166,7 +1174,7 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 }
 
 /* 获取/设置自动旋转开关 */
-/* @param value: 要设置的值，通过url传参 */
+/* @param value: 要设置的值，通过url传参(true, false) */
 static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
 {
     char str[64];
@@ -1218,8 +1226,45 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取/设置屏幕亮度 */
+/* @param value: 要设置的值，通过url传参(0-255) */
 static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
 {
+    char str[64];
+    char value[64];
+    int brightness = setting_screenBrightness;
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* 检查输入值 */
+        if (sscanf(value, "%d", &brightness) == 1 && brightness >= 0 && brightness < 256)
+        {
+            setting_screenBrightness = brightness;
+            prefs.putBool("screenBrightness", setting_screenBrightness);
+        }
+        else
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+    }
+
+    sprintf(str, "{\"setting_screenBrightness\":%d}", setting_screenBrightness);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -1228,6 +1273,8 @@ static esp_err_t setting_volume_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取/设置语言 */
+/* @param value: 要设置的值，通过url传参(0-1) */
 static esp_err_t setting_language_get_handler(httpd_req_t *req)
 {
     char str[64];
@@ -1249,7 +1296,7 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
         /* 检查输入值 */
         if (sscanf(value, "%d", &language) == 1 && language >= 0 && language < 2)
         {
-            curr_lang = atoi(value);
+            curr_lang = language;
             prefs.putBool("language", curr_lang);
         }
         else
@@ -1262,6 +1309,55 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
     }
 
     sprintf(str, "{\"curr_lang\":%d}", curr_lang);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 获取/设置城市 */
+/* @param city: 要设置的城市名称，通过url传参 */
+/* @param latitude: 要设置的城市纬度，通过url传参 */
+/* @param longitude: 要设置的城市经度，通过url传参 */
+static esp_err_t weather_city_get_handler(httpd_req_t *req)
+{
+    char str[128];
+    char value1[64];
+    char value2[64];
+    char value3[64];
+    float lat, lon;
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 128)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "city", value1, 64) || httpd_query_key_value(str, "latitude", value2, 64) || httpd_query_key_value(str, "longitude", value3, 64)) // <-- ESP_OK = 0
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+
+        /* 检查输入值 */
+        if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180))
+        {
+            wp->setCoordinate(lat, lon);
+            wp->setCity(urldecode(value1).c_str());
+            prefs.getString("weatherCityName", wp->getCity());
+            prefs.getFloat("weatherLatitude", lat);
+            prefs.getFloat("weatherLongitude", lon);
+        }
+        else
+        {
+            httpd_resp_set_status(req, HTTPD_500);
+            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
+            return ESP_FAIL;
+        }
+    }
+
+    sprintf(str, "{\"city\":\"%s\",\"latitude\":%f,\"longitude\":%f}", wp->getCity().c_str(), wp->getLatitude(), wp->getLongitude());
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
@@ -1310,9 +1406,11 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_setting_auto_bright_get);
         httpd_register_uri_handler(server, &uri_setting_auto_rotate_get);
-        // httpd_register_uri_handler(server, &uri_setting_brightness_get);
+        httpd_register_uri_handler(server, &uri_setting_brightness_get);
         // httpd_register_uri_handler(server, &uri_setting_volume_get);
         httpd_register_uri_handler(server, &uri_setting_language_get);
+
+        httpd_register_uri_handler(server, &uri_weather_city_get);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;

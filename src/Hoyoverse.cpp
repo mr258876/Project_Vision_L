@@ -19,6 +19,7 @@ modification, are permitted provided that the following conditions are met:
 
 #include "Hoyoverse.h"
 #include "Hoyoverse_const.h"
+#include "TLScert.h"
 
 #define MAX_HTTP_RECV_BUFFER 2048
 static const PROGMEM char *HTTP_TAG = "HTTP_CLIENT";
@@ -212,7 +213,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 
     esp_http_client_config_t conf = {
         .url = url.c_str(),
-        .cert_pem = Hoyoverse_SSL_root_cert,
+        .cert_pem = GlobalSign_Root_CA,
         .user_agent = Hoyoverse_App_UA[forumtype],
         .method = HTTP_METHOD_GET,
         .buffer_size_tx = 1536,

@@ -121,6 +121,37 @@ lv_obj_t *ui_ClockIconNoon;
 lv_obj_t *ui_ClockIconDusk;
 lv_obj_t *ui_ClockIconNight;
 
+lv_obj_t *ui_DigitalClockScreen;
+lv_obj_t *ui_DigitalClockWeatherPanel;
+lv_obj_t *ui_DigitalClockWeatherCityLabel;
+lv_obj_t *ui_DigitalClockWeatherTempLabel;
+lv_obj_t *ui_DigitalClockWeatherIcon;
+lv_obj_t *ui_DigitalClockWeatherAirPanel;
+lv_obj_t *ui_DigitalClockWeatherAirLabel;
+lv_obj_t *ui_DigitalClockResinPanel;
+lv_obj_t *ui_DigitalClockResinIconResin;
+lv_obj_t *ui_DigitalClockResinLabelResin;
+lv_obj_t *ui_DigitalClockResinIconHomecoin;
+lv_obj_t *ui_DigitalClockResinLabelHomecoin;
+lv_obj_t *ui_DigitalClockResinIconExpe;
+lv_obj_t *ui_DigitalClockResinLabelExpe;
+lv_obj_t *ui_DigitalClockResinIconTrans;
+lv_obj_t *ui_DigitalClockResinLabelTrans;
+lv_obj_t *ui_DigitalClockPanel;
+lv_obj_t *ui_DigitalClockTimePanel;
+lv_obj_t *ui_DigitalClockTimeLabelHourShadow;
+lv_obj_t *ui_DigitalClockTimeLabelMinShadow;
+lv_obj_t *ui_DigitalClockTimeLabelColonShadow;
+lv_obj_t *ui_DigitalClockTimeLabelHour;
+lv_obj_t *ui_DigitalClockTimeLabelMin;
+lv_obj_t *ui_DigitalClockTimeLabelColon;
+lv_obj_t *ui_DigitalClockWeekdayPanel;
+lv_obj_t *ui_DigitalClockWeekdayLabelShadow;
+lv_obj_t *ui_DigitalClockWeekdayLabel;
+lv_obj_t *ui_DigitalClockDatePanel;
+lv_obj_t *ui_DigitalClockDateLabelShadow;
+lv_obj_t *ui_DigitalClockDateLabel;
+
 lv_obj_t *mbox;
 
 lv_group_t *ui_group;
@@ -130,7 +161,12 @@ lv_timer_t *ui_timer_SettingDispTimer;
 lv_timer_t *ui_timer_ClockTimerSecond;
 lv_timer_t *ui_timer_ClockTimerMinute;
 lv_timer_t *ui_timer_ClockTimerHour;
+lv_timer_t *ui_timer_DigitalClockTimer;
+lv_timer_t *ui_timer_DigitalClockResinTimer;
+lv_timer_t *ui_timer_DigitalClockWeatherTimer;
 lv_timer_t *ui_timer_ScrDelTimer;
+
+bool flag_ui_font_HanyiWenhei20 = false;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -289,12 +325,40 @@ void ui_event_ClockScreen(lv_event_t *e)
     {
         cb_leaveClockScreen(e);
     }
+    else if (event == LV_EVENT_KEY)
+    {
+        switch (lv_event_get_key(e))
+        {
+        case LV_KEY_PREV:
+            cb_switchClockScreen(e);
+            break;
+        }
+    }
     else if (event == LV_EVENT_SCREEN_LOADED)
     {
         aniClockHoroSpin1Reverse_Animation(ui_Horoscpoe1, 0);
         aniClockHoroSpin2Reverse_Animation(ui_Horoscope2, 0);
         aniClockHoroSpin3_Animation(ui_Horoscope3, 0);
         aniClockHoroSpin4Reverse_Animation(ui_Horoscope4, 0);
+    }
+}
+
+void ui_event_DigitalClockScreen(lv_event_t *e)
+{
+    lv_event_code_t event = lv_event_get_code(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event == LV_EVENT_CLICKED)
+    {
+        cb_leaveDigitalClockScreen(e);
+    }
+    else if (event == LV_EVENT_KEY)
+    {
+        switch (lv_event_get_key(e))
+        {
+        case LV_KEY_PREV:
+            cb_switchClockScreen(e);
+            break;
+        }
     }
 }
 
@@ -324,7 +388,7 @@ void ui_event_Menubutton_Clock(lv_event_t *e)
     lv_obj_t *ta = lv_event_get_target(e);
     if (event == LV_EVENT_CLICKED)
     {
-        cb_loadClockScreen(e);
+        cb_loadClock(e);
     }
 }
 
@@ -335,6 +399,16 @@ void ui_event_Menubutton_Setting(lv_event_t *e)
     if (event == LV_EVENT_CLICKED)
     {
         cb_loadSettingScreen(e);
+    }
+}
+
+void ui_event_SettingScreen(lv_event_t *e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_SCREEN_LOADED)
+    {
+        lv_dropdown_set_selected(ui_SettingPanel2DP1Dropdown1, curr_lang);
     }
 }
 
@@ -466,6 +540,8 @@ void ui_event_SettingPanel2DP1Dropdown1(lv_event_t *e)
     }
     else if (event_code == LV_EVENT_VALUE_CHANGED)
     {
+        LV_LOG_WARN("Selected item:%d", lv_dropdown_get_selected(ui_SettingPanel2DP1Dropdown1));
+        LV_LOG_WARN("Event Code:%d", event_code);
         cb_setLanguage(lv_dropdown_get_selected(ui_SettingPanel2DP1Dropdown1));
     }
 }
@@ -1139,6 +1215,7 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel6, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    lv_obj_add_event_cb(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingTitleBackButton, ui_event_SettingTitleBackButton, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingSideButton0, ui_event_SettingSideButton0, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_SettingSideButton1, ui_event_SettingSideButton1, LV_EVENT_ALL, NULL);
@@ -1680,6 +1757,355 @@ void ui_ClockScreen_screen_init(void)
     lv_timer_ready(ui_timer_ClockTimerHour);
 }
 
+void ui_DigitalClockScreen_screen_init(void)
+{
+    ui_DigitalClockScreen = lv_obj_create(NULL);
+    lv_obj_clear_flag(ui_DigitalClockScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_DigitalClockScreen, lv_color_hex(0xE8D3BB), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_color(ui_DigitalClockScreen, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_main_stop(ui_DigitalClockScreen, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_stop(ui_DigitalClockScreen, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(ui_DigitalClockScreen, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeatherPanel = lv_obj_create(ui_DigitalClockScreen);
+    lv_obj_set_width(ui_DigitalClockWeatherPanel, 110);
+    lv_obj_set_height(ui_DigitalClockWeatherPanel, 110);
+    lv_obj_set_x(ui_DigitalClockWeatherPanel, lv_pct(-25));
+    lv_obj_set_y(ui_DigitalClockWeatherPanel, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockWeatherPanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DigitalClockWeatherPanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_set_style_bg_color(ui_DigitalClockWeatherPanel, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockWeatherPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_DigitalClockWeatherPanel, lv_color_hex(0xDEC9B3), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_DigitalClockWeatherPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeatherCityLabel = lv_label_create(ui_DigitalClockWeatherPanel);
+    lv_obj_set_width(ui_DigitalClockWeatherCityLabel, 100);
+    lv_obj_set_height(ui_DigitalClockWeatherCityLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockWeatherCityLabel, lv_pct(-5));
+    lv_obj_set_y(ui_DigitalClockWeatherCityLabel, lv_pct(5));
+    lv_label_set_long_mode(ui_DigitalClockWeatherCityLabel, LV_LABEL_LONG_DOT);
+    lv_label_set_text(ui_DigitalClockWeatherCityLabel, "Inasuma city");
+    lv_obj_set_style_text_color(ui_DigitalClockWeatherCityLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockWeatherCityLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockWeatherCityLabel, &ui_font_HanyiWenhei20ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeatherTempLabel = lv_label_create(ui_DigitalClockWeatherPanel);
+    lv_obj_set_width(ui_DigitalClockWeatherTempLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockWeatherTempLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockWeatherTempLabel, lv_pct(40));
+    lv_obj_set_y(ui_DigitalClockWeatherTempLabel, lv_pct(5));
+    lv_obj_set_align(ui_DigitalClockWeatherTempLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockWeatherTempLabel, "-25°");
+    lv_obj_set_style_text_color(ui_DigitalClockWeatherTempLabel, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockWeatherTempLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockWeatherTempLabel, &ui_font_HanyiWenhei24ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeatherIcon = lv_img_create(ui_DigitalClockWeatherPanel);
+    lv_img_set_src(ui_DigitalClockWeatherIcon, &ui_img_weather_clear_sky);
+    lv_obj_set_width(ui_DigitalClockWeatherIcon, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockWeatherIcon, LV_SIZE_CONTENT); /// 40
+    lv_obj_set_x(ui_DigitalClockWeatherIcon, lv_pct(-27));
+    lv_obj_set_y(ui_DigitalClockWeatherIcon, lv_pct(15));
+    lv_obj_set_align(ui_DigitalClockWeatherIcon, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockWeatherIcon, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_DigitalClockWeatherIcon, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+
+    ui_DigitalClockWeatherAirPanel = lv_obj_create(ui_DigitalClockWeatherPanel);
+    lv_obj_set_width(ui_DigitalClockWeatherAirPanel, 40);
+    lv_obj_set_height(ui_DigitalClockWeatherAirPanel, 20);
+    lv_obj_set_x(ui_DigitalClockWeatherAirPanel, lv_pct(35));
+    lv_obj_set_y(ui_DigitalClockWeatherAirPanel, lv_pct(35));
+    lv_obj_set_align(ui_DigitalClockWeatherAirPanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DigitalClockWeatherAirPanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x67BD63), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockWeatherAirPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DigitalClockWeatherAirPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeatherAirLabel = lv_label_create(ui_DigitalClockWeatherAirPanel);
+    lv_obj_set_width(ui_DigitalClockWeatherAirLabel, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockWeatherAirLabel, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_align(ui_DigitalClockWeatherAirLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockWeatherAirLabel, "优");
+    lv_obj_set_style_text_font(ui_DigitalClockWeatherAirLabel, &ui_font_HanyiWenhei16ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockResinPanel = lv_obj_create(ui_DigitalClockScreen);
+    lv_obj_set_width(ui_DigitalClockResinPanel, 110);
+    lv_obj_set_height(ui_DigitalClockResinPanel, 110);
+    lv_obj_set_x(ui_DigitalClockResinPanel, lv_pct(25));
+    lv_obj_set_y(ui_DigitalClockResinPanel, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinPanel, LV_ALIGN_CENTER);
+    lv_obj_set_scrollbar_mode(ui_DigitalClockResinPanel, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scroll_dir(ui_DigitalClockResinPanel, LV_DIR_VER);
+    lv_obj_set_style_bg_color(ui_DigitalClockResinPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockResinPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_DigitalClockResinPanel, lv_color_hex(0xDEC9B3), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_DigitalClockResinPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockResinIconResin = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIconResin, &ui_img_Resin);
+    lv_obj_set_width(ui_DigitalClockResinIconResin, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIconResin, LV_SIZE_CONTENT); /// 40
+    lv_obj_set_x(ui_DigitalClockResinIconResin, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIconResin, lv_pct(-20));
+    lv_obj_set_align(ui_DigitalClockResinIconResin, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_img_set_zoom(ui_DigitalClockResinIconResin, 192);
+
+    ui_DigitalClockResinLabelResin = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabelResin, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabelResin, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabelResin, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabelResin, lv_pct(-20));
+    lv_obj_set_align(ui_DigitalClockResinLabelResin, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabelResin, "160");
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabelResin, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelResin, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabelResin, &ui_font_HanyiWenhei20ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockResinIconHomecoin = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIconHomecoin, &ui_img_Homecoin);
+    lv_obj_set_width(ui_DigitalClockResinIconHomecoin, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIconHomecoin, LV_SIZE_CONTENT); /// 40
+    lv_obj_set_x(ui_DigitalClockResinIconHomecoin, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIconHomecoin, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinIconHomecoin, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_img_set_zoom(ui_DigitalClockResinIconHomecoin, 192);
+
+    ui_DigitalClockResinLabelHomecoin = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabelHomecoin, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabelHomecoin, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabelHomecoin, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabelHomecoin, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinLabelHomecoin, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabelHomecoin, "2.4K");
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabelHomecoin, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelHomecoin, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabelHomecoin, &ui_font_HanyiWenhei20ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockResinIconExpe = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIconExpe, &ui_img_Expeditions);
+    lv_obj_set_width(ui_DigitalClockResinIconExpe, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIconExpe, LV_SIZE_CONTENT); /// 40
+    lv_obj_set_x(ui_DigitalClockResinIconExpe, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIconExpe, lv_pct(-20));
+    lv_obj_set_align(ui_DigitalClockResinIconExpe, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST); /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_SCROLLABLE);                     /// Flags
+    lv_img_set_zoom(ui_DigitalClockResinIconExpe, 192);
+
+    ui_DigitalClockResinLabelExpe = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabelExpe, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabelExpe, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabelExpe, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabelExpe, lv_pct(-20));
+    lv_obj_set_align(ui_DigitalClockResinLabelExpe, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabelExpe, "0/5");
+    lv_obj_add_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN); /// Flags
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabelExpe, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelExpe, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabelExpe, &ui_font_HanyiWenhei20ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockResinIconTrans = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIconTrans, &ui_img_Transformer);
+    lv_obj_set_width(ui_DigitalClockResinIconTrans, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIconTrans, LV_SIZE_CONTENT); /// 40
+    lv_obj_set_x(ui_DigitalClockResinIconTrans, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIconTrans, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinIconTrans, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST); /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_SCROLLABLE);                     /// Flags
+    lv_img_set_zoom(ui_DigitalClockResinIconTrans, 192);
+
+    ui_DigitalClockResinLabelTrans = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabelTrans, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabelTrans, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabelTrans, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabelTrans, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinLabelTrans, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabelTrans, "6 Day");
+    lv_obj_add_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN); /// Flags
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabelTrans, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelTrans, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabelTrans, &ui_font_HanyiWenhei20ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockPanel = lv_obj_create(ui_DigitalClockScreen);
+    lv_obj_set_width(ui_DigitalClockPanel, lv_pct(100));
+    lv_obj_set_height(ui_DigitalClockPanel, lv_pct(50));
+    lv_obj_set_align(ui_DigitalClockPanel, LV_ALIGN_TOP_MID);
+    lv_obj_clear_flag(ui_DigitalClockPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_DigitalClockPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DigitalClockPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_DigitalClockPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimePanel = lv_obj_create(ui_DigitalClockPanel);
+    lv_obj_set_width(ui_DigitalClockTimePanel, 160);
+    lv_obj_set_height(ui_DigitalClockTimePanel, 50);
+    lv_obj_set_x(ui_DigitalClockTimePanel, lv_pct(0));
+    lv_obj_set_y(ui_DigitalClockTimePanel, lv_pct(-15));
+    lv_obj_set_align(ui_DigitalClockTimePanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DigitalClockTimePanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_DigitalClockTimePanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DigitalClockTimePanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_DigitalClockTimePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelHourShadow = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelHourShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockTimeLabelHourShadow, -82);
+    lv_obj_set_y(ui_DigitalClockTimeLabelHourShadow, -2);
+    lv_obj_set_align(ui_DigitalClockTimeLabelHourShadow, LV_ALIGN_TOP_RIGHT);
+    lv_label_set_text(ui_DigitalClockTimeLabelHourShadow, "24");
+    lv_obj_set_style_text_color(ui_DigitalClockTimeLabelHourShadow, lv_color_hex(0x000000),
+                                LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockTimeLabelHourShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelHourShadow, &ui_font_HanyiWenhei48ASCII,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelMinShadow = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockTimeLabelMinShadow, 89);
+    lv_obj_set_y(ui_DigitalClockTimeLabelMinShadow, -2);
+    lv_label_set_text(ui_DigitalClockTimeLabelMinShadow, "59\n00");
+    lv_obj_set_style_text_color(ui_DigitalClockTimeLabelMinShadow, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockTimeLabelMinShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelMinShadow, &ui_font_HanyiWenhei48ASCII,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelColonShadow = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelColonShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockTimeLabelColonShadow, 3);
+    lv_obj_set_y(ui_DigitalClockTimeLabelColonShadow, 3);
+    lv_obj_set_align(ui_DigitalClockTimeLabelColonShadow, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockTimeLabelColonShadow, ":");
+    lv_obj_set_style_text_color(ui_DigitalClockTimeLabelColonShadow, lv_color_hex(0x000000),
+                                LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockTimeLabelColonShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelColonShadow, &ui_font_HanyiWenhei48ASCII,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelHour = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelHour, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockTimeLabelHour, -85);
+    lv_obj_set_y(ui_DigitalClockTimeLabelHour, -5);
+    lv_obj_set_align(ui_DigitalClockTimeLabelHour, LV_ALIGN_TOP_RIGHT);
+    lv_label_set_text(ui_DigitalClockTimeLabelHour, "24");
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelHour, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelMin = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockTimeLabelMin, 86);
+    lv_obj_set_y(ui_DigitalClockTimeLabelMin, -5);
+    lv_label_set_text(ui_DigitalClockTimeLabelMin, "59");
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelMin, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockTimeLabelColon = lv_label_create(ui_DigitalClockTimePanel);
+    lv_obj_set_width(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockTimeLabelColon, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_DigitalClockTimeLabelColon, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockTimeLabelColon, ":");
+    lv_obj_set_style_text_font(ui_DigitalClockTimeLabelColon, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeekdayPanel = lv_obj_create(ui_DigitalClockPanel);
+    lv_obj_set_width(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayPanel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockWeekdayPanel, lv_pct(-20));
+    lv_obj_set_y(ui_DigitalClockWeekdayPanel, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockWeekdayPanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DigitalClockWeekdayPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_DigitalClockWeekdayPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockWeekdayPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DigitalClockWeekdayPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeekdayLabelShadow = lv_label_create(ui_DigitalClockWeekdayPanel);
+    lv_obj_set_width(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayLabelShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockWeekdayLabelShadow, 3);
+    lv_obj_set_y(ui_DigitalClockWeekdayLabelShadow, 3);
+    lv_obj_set_align(ui_DigitalClockWeekdayLabelShadow, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockWeekdayLabelShadow, "周三");
+    lv_obj_set_style_text_color(ui_DigitalClockWeekdayLabelShadow, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockWeekdayLabelShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockWeekdayLabelShadow, &ui_font_HanyiWenhei24ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockWeekdayLabel = lv_label_create(ui_DigitalClockWeekdayPanel);
+    lv_obj_set_width(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockWeekdayLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_DigitalClockWeekdayLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockWeekdayLabel, "周三");
+    lv_obj_set_style_text_font(ui_DigitalClockWeekdayLabel, &ui_font_HanyiWenhei24ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockDatePanel = lv_obj_create(ui_DigitalClockPanel);
+    lv_obj_set_width(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockDatePanel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockDatePanel, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockDatePanel, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockDatePanel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_DigitalClockDatePanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_DigitalClockDatePanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_DigitalClockDatePanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_DigitalClockDatePanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockDateLabelShadow = lv_label_create(ui_DigitalClockDatePanel);
+    lv_obj_set_width(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockDateLabelShadow, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockDateLabelShadow, 3);
+    lv_obj_set_y(ui_DigitalClockDateLabelShadow, 3);
+    lv_obj_set_align(ui_DigitalClockDateLabelShadow, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockDateLabelShadow, "2022年\n12月14日");
+    lv_obj_set_style_text_color(ui_DigitalClockDateLabelShadow, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockDateLabelShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockDateLabelShadow, &ui_font_HanyiWenhei16ZhHans,
+                               LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_DigitalClockDateLabel = lv_label_create(ui_DigitalClockDatePanel);
+    lv_obj_set_width(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockDateLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_DigitalClockDateLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockDateLabel, "2022年\n12月14日");
+    lv_obj_set_style_text_font(ui_DigitalClockDateLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_obj_add_event_cb(ui_DigitalClockScreen, ui_event_DigitalClockScreen, LV_EVENT_ALL, NULL);
+
+    // 将屏幕添加至group内监听按键触发
+    lv_group_add_obj(ui_group, ui_DigitalClockScreen);
+
+    ui_timer_DigitalClockTimer = lv_timer_create(cb_timer_DigitalClockTimer, 1000, NULL);
+    ui_timer_DigitalClockResinTimer = lv_timer_create(cb_timer_DigitalClockResinTimer, 15000, NULL);
+    ui_timer_DigitalClockWeatherTimer = lv_timer_create(cb_timer_DigitalClockWeatherTimer, 30000, NULL);
+
+    lv_timer_ready(ui_timer_DigitalClockTimer);
+    lv_timer_ready(ui_timer_DigitalClockResinTimer);
+    lv_timer_ready(ui_timer_DigitalClockWeatherTimer);
+}
+
 void ui_init(void)
 {
     lv_disp_t *dispp = lv_disp_get_default();
@@ -1692,6 +2118,7 @@ void ui_init(void)
     // ui_MenuScreen_screen_init();
     // ui_ResinScreen_screen_init();
     // ui_ClockScreen_screen_init();
+    // ui_DigitalClockScreen_screen_init();
     lv_disp_load_scr(ui_StartupScreen);
 
     ui_group = lv_group_create();

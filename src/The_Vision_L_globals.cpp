@@ -8,6 +8,13 @@ Pinout po;
 HoyoverseClient hyc;
 Notedata nd;
 
+/* Weather */
+WeatherProvider *wp = nullptr;
+Weather_current_t weather;
+
+/* Arduino FS */
+fs::FS *sdfs = nullptr;
+
 /* NVS */
 Preferences prefs;
 
@@ -45,4 +52,11 @@ uint8_t setting_screenBrightness = 127;
 
 bool setting_soundMuted = false;
 uint8_t setting_soundVolume = 75;
+
 unsigned long setting_resinSyncPeriod = 900000000;
+
+bool setting_useDigitalClock = false;
+
+int setting_weatherProvider = -1;
+
+String setting_timeZone = "";
