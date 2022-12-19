@@ -306,57 +306,49 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
     return DOWNLOAD_RES_FILE_OPEN_FAIL;
   }
 
-  if (esp_http_client_is_chunked_response(client)) // <- File download uses chunked encoding
+  int content_length = esp_http_client_fetch_headers(client);
+  int read_len, write_len;
+  while (1)
   {
-    int read_len, write_len;
-    while (1)
+    read_len = esp_http_client_read(client, buffer, FILE_DOWNLOAD_RECV_BUFFER_SIZE);
+    if (read_len <= 0)
     {
-      read_len = esp_http_client_read(client, buffer, FILE_DOWNLOAD_RECV_BUFFER_SIZE);
-      if (read_len <= 0)
+      if (esp_http_client_is_complete_data_received(client))
+      {
+        break;
+      }
+      xSemaphoreTake(*FSMutex, portMAX_DELAY);
+      fclose(f);
+      remove(path_to_save);
+      xSemaphoreGive(*FSMutex);
+
+      ESP_LOGE(HTTP_TAG, "Error reading data");
+      free(buffer);
+      return DOWNLOAD_RES_HTTP_READ_FAIL;
+    }
+    else
+    {
+      xSemaphoreTake(*FSMutex, portMAX_DELAY);
+      write_len = fwrite(buffer, read_len, 1, f);
+      xSemaphoreGive(*FSMutex);
+
+      if (write_len != 1)
       {
         xSemaphoreTake(*FSMutex, portMAX_DELAY);
         fclose(f);
         remove(path_to_save);
         xSemaphoreGive(*FSMutex);
 
-        if (esp_http_client_is_complete_data_received(client))
-        {
-          break;
-        }
-        ESP_LOGE(HTTP_TAG, "Error reading data");
+        ESP_LOGE(HTTP_TAG, "Error writing data, path=%s", path_to_save);
         free(buffer);
-        return DOWNLOAD_RES_HTTP_READ_FAIL;
-      }
-      else
-      {
-        xSemaphoreTake(*FSMutex, portMAX_DELAY);
-        write_len = fwrite(buffer, read_len, 1, f);
-        xSemaphoreGive(*FSMutex);
-
-        if (read_len > write_len)
-        {
-          xSemaphoreTake(*FSMutex, portMAX_DELAY);
-          fclose(f);
-          remove(path_to_save);
-          xSemaphoreGive(*FSMutex);
-
-          ESP_LOGE(HTTP_TAG, "Error writing data, path=%s", path_to_save);
-          free(buffer);
-          return DOWNLOAD_RES_FILE_WRITE_FAIL;
-        }
+        return DOWNLOAD_RES_FILE_WRITE_FAIL;
       }
     }
   }
-  else
-  {
-    xSemaphoreTake(*FSMutex, portMAX_DELAY);
-    fclose(f);
-    remove(path_to_save);
-    xSemaphoreGive(*FSMutex);
 
-    ESP_LOGE(HTTP_TAG, "Not chunked coding!");
-    return DOWNLOAD_RES_NOT_CHUNKED_ENCODING;
-  }
+  xSemaphoreTake(*FSMutex, portMAX_DELAY);
+  fclose(f);
+  xSemaphoreGive(*FSMutex);
 
   esp_http_client_close(client);
   esp_http_client_cleanup(client);
