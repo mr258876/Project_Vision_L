@@ -412,9 +412,9 @@ RESPONSE:
 This function is to get or set screen brightness. This will not override auto brightness setting.
 
 #### Param
-value: 要设置的值(0-255)。获取值时uri中不要带有查询参数。
+value: 要设置的值(1-255)。获取值时uri中不要带有查询参数。
 
-value: Value to set(0-255). DO NOT add any query params when getting this value.
+value: Value to set(1-255). DO NOT add any query params when getting this value.
 
 #### Return
 当前设置值，或更新后的设置值（若有）。

@@ -1131,18 +1131,18 @@ void screenAdjustLoop(void *parameter)
           apds.clearInterrupt();
         }
       }
+    }
 
-      if (setting_autoBright)
-      {
-        apds.getColorData(&r, &g, &b, &c);
-        int light = (c / 2) > 191 ? 191 : (c / 2);
-        light += 64;
-        ledcWrite(1, light);
-      }
-      else
-      {
-        ledcWrite(1, setting_screenBrightness);
-      }
+    if (info_hasProx && setting_autoBright)
+    {
+      apds.getColorData(&r, &g, &b, &c);
+      int light = (c / 2) > 191 ? 191 : (c / 2);
+      light += 64;
+      ledcWrite(1, light);
+    }
+    else
+    {
+      ledcWrite(1, setting_screenBrightness);
     }
 
     if (info_hasAccel && setting_useAccel)

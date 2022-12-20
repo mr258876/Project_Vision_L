@@ -1255,7 +1255,7 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
         }
 
         /* 检查输入值 */
-        if (sscanf(value, "%d", &brightness) == 1 && brightness >= 0 && brightness < 256)
+        if (sscanf(value, "%d", &brightness) == 1 && brightness > 0 && brightness < 256)
         {
             setting_screenBrightness = brightness;
             prefs.putUInt("screenBrightness", setting_screenBrightness);
