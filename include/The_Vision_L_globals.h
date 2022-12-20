@@ -1,12 +1,13 @@
 #ifndef _THE_VISION_L_GLOBALS_H_
 #define _THE_VISION_L_GLOBALS_H_
 
-#include "Hoyoverse.h"
 #include <Preferences.h>
-#include "Hardware.h"
-#include "LinkedList.h"
-#include "Weather.h"
+#include <LinkedList.h>
 #include <FS.h>
+
+#include "hoyoverse/Hoyoverse.h"
+#include "system/Hardware.h"
+#include "weather/Weather.h"
 
 /* Hardware Pinout */
 extern uint8_t info_hwType;

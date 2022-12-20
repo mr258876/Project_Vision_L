@@ -1,9 +1,10 @@
 #include "conf.h"
 #include "rtos_externs.h"
 #include "The_Vision_L_globals.h"
-#include "ui_multiLanguage.h"
-#include "FileCheck.h"
-#include "TimeManager.h"
+
+#include "system/FileCheck.h"
+#include "system/TimeManager.h"
+#include "system/Networking.h"
 
 #include <FS.h>
 #include <SD.h>
@@ -16,43 +17,41 @@
 #include <Update.h>
 
 #include <lvgl.h>
-#include "lv_fs_fatfs.h"
-#include "ui.h"
-#include "ui_supply_functions.h"
+#include "ui/lv_fs_fatfs.h"
+#include "ui/ui.h"
+#include "ui/ui_multiLanguage.h"
+#include "ui/ui_supply_functions.h"
 
-#include <ArduinoJson.h>
-#include "LinkedList.h"
+#include <LinkedList.h>
 #include <Preferences.h>
 
 #include "LCD.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 
-#include "MjpegClass.h"
+#include "mjpeg/MjpegClass.h"
 
-#include "Wire.h"
+#include <Wire.h>
 #if defined(_CONFIG_PROX_LIGHT_USE_APDS9960_)
-#include "APDS9960.h"
+#include <APDS9960.h>
 #elif defined(_CONFIG_PROX_LIGHT_USE_APDS9930_)
-#include "APDS9930.h"
+#include <APDS9930.h>
 #endif
 
 #include <OneButton.h>
 #include <kxtj3-1057.h>
 #undef getName
 
-#include <Networking.h>
+#include "hoyoverse/Hoyoverse.h"
+#include "api/APIServer.h"
+#include "weather/MojiTianqi.h"
+#include "weather/OpenMeteo.h"
 
-#include "Hoyoverse.h"
-#include "APIServer.h"
-#include "MojiTianqi.h"
-#include "OpenMeteo.h"
-
-#include "DACOutput.h"
-#include "WAVFileReader.h"
+#include "sound/DACOutput.h"
+#include "sound/WAVFileReader.h"
 
 // Freertos
-#include "rtc_wdt.h"
+#include <rtc_wdt.h>
 
 ////////////////////////
 //
@@ -138,31 +137,31 @@ DACOutput *aOut;
 //  Function Declartions
 //
 ////////////////////////
-void loadSettings();
-vision_update_result_t updateFromSD(String *errMsg);
-uint checkHardware();
-bool getDailyNote(Notedata *nd, String *errMsg);
-void resinCalc(void *parameter);
-void resinSync(void *parameter);
+static void loadSettings();
+static vision_update_result_t updateFromSD(String *errMsg);
+static uint checkHardware();
+static bool getDailyNote(Notedata *nd, String *errMsg);
+static void resinCalc(void *parameter);
+static void resinSync(void *parameter);
 
-void setAPIserver_async(void *parameter);
+static void setAPIserver_async(void *parameter);
 
-void mjpegInit();
-void leaveVideoScreen(void *parameter);
-void loadVideoScreen(void *parameter);
-void playVideo(void *parameter);
+static void mjpegInit();
+static void leaveVideoScreen(void *parameter);
+static void loadVideoScreen(void *parameter);
+static void playVideo(void *parameter);
 
-void getDailyNoteFromResinScreen(void *parameter);
+static void getDailyNoteFromResinScreen(void *parameter);
 
-void lvglLoop(void *parameter);
-void screenAdjustLoop(void *parameter);
-void screenFlushLoop(void *parameter);
-void screenFlushLoop(void *parameter);
+static void lvglLoop(void *parameter);
+static void screenAdjustLoop(void *parameter);
+static void screenFlushLoop(void *parameter);
+static void screenFlushLoop(void *parameter);
 
-void onChangeVideo();
-void onSingleClick();
-void onDoubleClick();
-void onMultiClick();
+static void onChangeVideo();
+static void onSingleClick();
+static void onDoubleClick();
+static void onMultiClick();
 
 ////////////////////////
 //
@@ -357,8 +356,15 @@ void setup()
   vTaskDelete(NULL); // comment to show avaliable heap
 }
 
+void loop()
+{
+  ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
+  ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+  vTaskDelay(pdMS_TO_TICKS(2500));
+}
+
 // Load Settings From NVS
-void loadSettings()
+static void loadSettings()
 {
   info_hwType = prefs.getUInt("hwType", 0);
   info_deviceGuid = prefs.getString("deviceGuid", "");
@@ -440,7 +446,7 @@ void loadSettings()
   wp->setCoordinate(latitude, longitude);
 }
 
-void mjpegInit()
+static void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
@@ -464,7 +470,7 @@ void mjpegInit()
 //  Hardware Checkup
 //
 ////////////////////////
-uint checkHardware()
+static uint checkHardware()
 {
   int err = VISION_HW_OK;
   if (po.I2C_SDA && po.I2C_SCL)
@@ -779,7 +785,7 @@ void hardwareSetup(void *parameter)
   vTaskDelete(NULL);
 }
 
-void leaveVideoScreen(void *parameter)
+static void leaveVideoScreen(void *parameter)
 {
   // 暂停解码
   if (xSemaphoreTake(MjpegMutex, portMAX_DELAY) == pdTRUE)
@@ -805,7 +811,7 @@ void leaveVideoScreen(void *parameter)
   vTaskDelete(NULL);
 }
 
-void loadVideoScreen(void *parameter)
+static void loadVideoScreen(void *parameter)
 {
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
@@ -836,7 +842,7 @@ void loadVideoScreen(void *parameter)
   vTaskDelete(NULL);
 }
 
-void getDailyNoteFromResinScreen(void *parameter)
+static void getDailyNoteFromResinScreen(void *parameter)
 {
   String errMsg = "";
   bool updateRes = false;
@@ -876,7 +882,7 @@ void getDailyNoteFromResinScreen(void *parameter)
 //  Updating from SD
 //
 //*****************************/
-vision_update_result_t updateFromSD(String *errMsg)
+static vision_update_result_t updateFromSD(String *errMsg)
 {
   xSemaphoreTake(SDMutex, portMAX_DELAY);
   File f = sdfs->open(UPDATE_FILE_PATH);
@@ -1089,14 +1095,7 @@ void setAPIserver_async(void *parameter)
 //  Loop Functions
 //
 ////////////////////
-void loop()
-{
-  ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
-  ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
-  vTaskDelay(pdMS_TO_TICKS(2500));
-}
-
-void lvglLoop(void *parameter)
+static void lvglLoop(void *parameter)
 {
   while (1)
   {
@@ -1109,7 +1108,7 @@ void lvglLoop(void *parameter)
   }
 }
 
-void screenAdjustLoop(void *parameter)
+static void screenAdjustLoop(void *parameter)
 {
   float accX = 0;
   float accY = 0;
@@ -1169,7 +1168,8 @@ void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        if (isInLVGL)
+          xSemaphoreTake(LVGLMutex, portMAX_DELAY);
         xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);
         {
           gfx.setRotation(toRotate);
@@ -1177,7 +1177,8 @@ void screenAdjustLoop(void *parameter)
           lv_obj_invalidate(lv_scr_act());
         }
         xSemaphoreGive(*LCDMutexptr);
-        xSemaphoreGive(LVGLMutex);
+        if (isInLVGL)
+          xSemaphoreGive(LVGLMutex);
       }
     }
 
@@ -1189,10 +1190,10 @@ void screenAdjustLoop(void *parameter)
 //  Video Play Loop
 //
 //********************//
-unsigned long vfile_ms;
-unsigned long vfile_frame_start_ms;
-unsigned long vfile_frame_end_ms;
-void playVideo(void *parameter)
+static unsigned long vfile_ms;
+static unsigned long vfile_frame_start_ms;
+static unsigned long vfile_frame_end_ms;
+static void playVideo(void *parameter)
 {
   ESP_LOGI("playVideo", "MJPEG video start");
   vfile_ms = millis();
@@ -1238,7 +1239,7 @@ void playVideo(void *parameter)
 //  Resin Functions
 //
 ////////////////////////
-bool getDailyNote(Notedata *nd, String *errMsg)
+static bool getDailyNote(Notedata *nd, String *errMsg)
 {
   if (!connectWiFi())
   {
@@ -1292,7 +1293,7 @@ bool getDailyNote(Notedata *nd, String *errMsg)
   return res;
 }
 
-void resinCalc(void *parameter)
+static void resinCalc(void *parameter)
 {
   if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
   {
@@ -1301,7 +1302,7 @@ void resinCalc(void *parameter)
   }
 }
 
-void resinSync(void *parameter)
+static void resinSync(void *parameter)
 {
   if (info_timeSynced && connectWiFi())
   {
@@ -1314,7 +1315,7 @@ void resinSync(void *parameter)
   }
 }
 
-void onChangeVideo()
+static void onChangeVideo()
 {
   if (isInLVGL)
   {
@@ -1348,87 +1349,80 @@ void onChangeVideo()
 //  Button Callbacks
 //
 ////////////////////////
-bool inEditMode = false;
-void onSingleClick()
+static bool inEditMode = false;
+static void onSingleClick()
 {
-  if (isInLVGL)
+  if (!isInLVGL)
   {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    return;
+  }
+
+  xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+  {
+    if (inEditMode)
     {
-      if (inEditMode)
-      {
-        lv_group_send_data(ui_group, LV_KEY_RIGHT);
-      }
-      else
-      {
-        lv_group_send_data(ui_group, LV_KEY_NEXT);
-        lv_group_focus_next(ui_group);
-      }
-      xSemaphoreGive(LVGLMutex);
+      lv_group_send_data(ui_group, LV_KEY_RIGHT);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_NEXT);
+      lv_group_focus_next(ui_group);
     }
   }
+  xSemaphoreGive(LVGLMutex);
 }
 
-void onDoubleClick()
+static void onDoubleClick()
 {
-  if (isInLVGL)
+  if (!isInLVGL)
   {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-    {
-      if (inEditMode)
-      {
-        lv_group_send_data(ui_group, LV_KEY_ENTER);
-        inEditMode = false;
-        xSemaphoreGive(LVGLMutex);
-        return;
-      }
-      else if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
-      {
-        lv_group_send_data(ui_group, LV_KEY_ENTER);
-        inEditMode = true;
-        xSemaphoreGive(LVGLMutex);
-        return;
-      }
-      else
-      {
-        lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
-      }
+    // 若在视频播放界面则返回主菜单
+    xTaskCreatePinnedToCore(leaveVideoScreen, "leaveVideoScr", 3072, NULL, 2, NULL, 1);
+  }
 
+  xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+  {
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_ENTER);
+      inEditMode = false;
       xSemaphoreGive(LVGLMutex);
+      return;
+    }
+    else if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+    {
+      lv_group_send_data(ui_group, LV_KEY_ENTER);
+      inEditMode = true;
+      xSemaphoreGive(LVGLMutex);
+      return;
+    }
+    else
+    {
+      lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
     }
   }
-  else
-  {
-    xTaskCreatePinnedToCore(leaveVideoScreen, // 任务函数
-                            "leaveVideoScr",  // 任务名称
-                            3072,             // 任务堆栈大小
-                            NULL,             // 任务参数
-                            2,                // 任务优先级
-                            NULL,             // 任务句柄
-                            1);               // 执行任务核心
-  }
+  xSemaphoreGive(LVGLMutex);
 }
 
-void onMultiClick()
+static void onMultiClick()
 {
-  if (isInLVGL)
+  if (!isInLVGL)
   {
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-    {
-      if (inEditMode)
-      {
-        lv_group_send_data(ui_group, LV_KEY_LEFT);
-      }
-      else
-      {
-        lv_group_send_data(ui_group, LV_KEY_PREV);
-        lv_group_focus_prev(ui_group);
-      }
-      xSemaphoreGive(LVGLMutex);
-    }
-  }
-  else
-  {
+    // 若在视频播放界面则切换视频
     onChangeVideo();
   }
+
+  xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+  {
+    if (inEditMode)
+    {
+      lv_group_send_data(ui_group, LV_KEY_LEFT);
+    }
+    else
+    {
+      lv_group_send_data(ui_group, LV_KEY_PREV);
+      lv_group_focus_prev(ui_group);
+    }
+  }
+  xSemaphoreGive(LVGLMutex);
 }
