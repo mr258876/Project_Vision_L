@@ -189,7 +189,7 @@ static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
     }
 }
 
-int remove_files(const char *path)
+static int remove_files(const char *path)
 {
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
@@ -360,6 +360,14 @@ static String urldecode(String str)
     return encodedString;
 }
 
+static esp_err_t return_err(httpd_req_t *req, const char *err_message)
+{
+    httpd_resp_set_status(req, HTTPD_500);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, err_message, HTTPD_RESP_USE_STRLEN);
+    return ESP_FAIL;
+}
+
 //////////////////////////////
 //
 //  函数实现
@@ -379,6 +387,15 @@ static esp_err_t root_handler(httpd_req_t *req)
 /* 获取神之眼基本信息 */
 static esp_err_t info_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     // 获取app版本
     const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
 
@@ -401,6 +418,15 @@ static esp_err_t info_handler(httpd_req_t *req)
 /* 获取播放列表 */
 static esp_err_t playlist_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     String json = "";
     StaticJsonDocument<1024> doc;
     JsonArray files = doc.createNestedArray("files");
@@ -427,6 +453,15 @@ static esp_err_t playlist_get_handler(httpd_req_t *req)
 /* 设置播放列表 */
 static esp_err_t playlist_post_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char post_ctx[1024];
 
     /* 如果内容长度大于缓冲区则截断 */
@@ -453,20 +488,14 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
     error = deserializeJson(doc, (const char *)post_ctx, recv_size);
     if (error)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}");
     }
 
     JsonArray files = doc["files"];
 
     if (files.isNull() || files[0].isNull())
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid JSON\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid JSON\",\"code\":-2}");
     }
 
     int error_count = 0;
@@ -512,34 +541,41 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
 /* @param path: 文件夹路径，通过url传参 */
 static esp_err_t file_listdir_handler(httpd_req_t *req)
 {
-    char str[512];
-    char path[512];
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length];
+    char path[query_length];
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
     if (!FSMutex)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
     }
 
     /* 尝试打开文件夹(检测路径是否存在) */
@@ -552,10 +588,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
     xSemaphoreGive(*FSMutex);
     if (!dir)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Unable to open path\",\"code\":-3}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Unable to open path\",\"code\":-3}");
     }
 
     DynamicJsonDocument doc(4096);
@@ -606,34 +639,41 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
 /* @param path: 文件路径，通过url传参 */
 static esp_err_t file_get_handler(httpd_req_t *req)
 {
-    char str[512];
-    char path[512];
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length];
+    char path[query_length];
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
     if (!FSMutex)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
     }
 
     /* 尝试打开文件(检测路径是否存在) */
@@ -695,10 +735,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
     if (!chunk)
     {
         ESP_LOGE("file_get_handler", "No enough memory to create scratch buffer!");
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No enough ram\",\"code\":-20}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No enough ram\",\"code\":-20}");
     }
 
     size_t bytesread;
@@ -726,10 +763,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
                 /* Abort sending file */
                 httpd_resp_sendstr_chunk(req, NULL);
                 /* Respond with 500 Internal Server Error */
-                httpd_resp_set_status(req, HTTPD_500);
-                httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-                httpd_resp_send(req, "{\"response\":\"Failed on sending file\",\"code\":-11}", HTTPD_RESP_USE_STRLEN);
-                return ESP_FAIL;
+                return return_err(req, "{\"response\":\"Failed on sending file\",\"code\":-11}");
             }
         }
 
@@ -753,44 +787,48 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 /* @param path: 文件路径，通过url传参 */
 static esp_err_t file_post_handler(httpd_req_t *req)
 {
-    char str[512];
-    char path[512];
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length];
+    char path[query_length];
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     strcpy(path, urldecode(path).c_str());
     if (path[strlen(path) - 1] == '/')
     {
         ESP_LOGE("file_post_handler", "Invalid filename : %s", path);
-        httpd_resp_set_status(req, HTTPD_200);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
     if (!FSMutex)
     {
-        httpd_resp_set_status(req, HTTPD_200);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
     }
 
     FILE *fd = nullptr;
@@ -802,10 +840,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
     if (!fd)
     {
-        httpd_resp_set_status(req, HTTPD_200);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Unable to open (create) file\",\"code\":-8}", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+        return return_err(req, "{\"response\":\"Unable to open (create) file\",\"code\":-8}");
     }
 
     /* Retrieve the pointer to scratch buffer for temporary storage */
@@ -820,10 +855,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
     if (!chunk)
     {
         ESP_LOGE("file_get_handler", "No enough memory to create scratch buffer!");
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No enough ram\",\"code\":-20}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No enough ram\",\"code\":-20}");
     }
 
     size_t remaining = req->content_len;
@@ -853,10 +885,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
             ESP_LOGE("file_post_handler", "File reception failed!");
             /* Respond with 500 Internal Server Error */
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Failed on receiving file\",\"code\":-9}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Failed on receiving file\",\"code\":-9}");
         }
 
         /* Write buffer content to file on storage */
@@ -883,10 +912,7 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 
                 ESP_LOGE("file_post_handler", "File write failed!");
                 /* Respond with 500 Internal Server Error */
-                httpd_resp_set_status(req, HTTPD_500);
-                httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-                httpd_resp_send(req, "{\"response\":\"Failed on writing file\",\"code\":-10}", HTTPD_RESP_USE_STRLEN);
-                return ESP_FAIL;
+                return return_err(req, "{\"response\":\"Failed on writing file\",\"code\":-10}");
             }
         }
 
@@ -915,34 +941,41 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 /* @param path: 文件路径，通过url传参 */
 static esp_err_t file_delete_handler(httpd_req_t *req)
 {
-    char str[512];
-    char path[512];
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length];
+    char path[query_length];
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
     if (!FSMutex)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
     }
 
     /* 检测文件状态 */
@@ -966,10 +999,7 @@ static esp_err_t file_delete_handler(httpd_req_t *req)
 
     if (res == -1)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Error occured deleting files\",\"code\":-4}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Error occured deleting files\",\"code\":-4}");
     }
 
     httpd_resp_set_status(req, HTTPD_200);
@@ -982,34 +1012,41 @@ static esp_err_t file_delete_handler(httpd_req_t *req)
 /* @param path: 文件路径，通过url传参 */
 static esp_err_t file_makedir_handler(httpd_req_t *req)
 {
-    char str[512];
-    char path[512];
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length];
+    char path[query_length];
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, 512)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid query\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, 512)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid path\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
 
     /* 根据驱动器号获取互斥量 */
     SemaphoreHandle_t *FSMutex = get_FS_mutex(path[1]);
     if (!FSMutex)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"No such volume\",\"code\":-5}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
     }
 
     /* 尝试打开文件(检测路径是否存在) */
@@ -1023,10 +1060,7 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
     if (res == 0)
     {
         ESP_LOGE("file_makedir_handler", "File (dir) already exists!");
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"File already exist\",\"code\":-7}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"File already exist\",\"code\":-7}");
     }
 
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
@@ -1037,10 +1071,7 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
     if (res == 0)
     {
         ESP_LOGE("file_makedir_handler", "Unable to create folder!");
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Error create folder!\",\"code\":-8}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Error create folder!\",\"code\":-8}");
     }
 
     httpd_resp_set_status(req, HTTPD_200);
@@ -1052,6 +1083,15 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
 /* 获取米游社配置 */
 static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     String json = "";
     StaticJsonDocument<1024> doc;
     doc["uid"] = hyc.getUid();
@@ -1070,6 +1110,15 @@ static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req)
 /* 更新米游社配置 */
 static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char post_ctx[1024];
 
     /* 如果内容长度大于缓冲区则截断 */
@@ -1096,10 +1145,7 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
     error = deserializeJson(doc, post_ctx, recv_size);
     if (error)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Error when deserializing json\",\"code\":-1}");
     }
 
     const char *uid = doc["uid"];
@@ -1108,10 +1154,7 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 
     if (!uid || !cookie || !guid)
     {
-        httpd_resp_set_status(req, HTTPD_500);
-        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-        httpd_resp_send(req, "{\"response\":\"Invalid JSON\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-        return ESP_FAIL;
+        return return_err(req, "{\"response\":\"Invalid JSON\",\"code\":-2}");
     }
 
     prefs.putString("hoyolabUID", uid);
@@ -1132,6 +1175,15 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 /* @param value: 要设置的值，通过url传参(true, false) */
 static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[64];
     char value[64];
 
@@ -1141,10 +1193,7 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
@@ -1160,10 +1209,7 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
         }
         else
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
     }
 
@@ -1185,6 +1231,15 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 /* @param value: 要设置的值，通过url传参(true, false) */
 static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[64];
     char value[64];
 
@@ -1194,10 +1249,7 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
@@ -1213,10 +1265,7 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
         }
         else
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
     }
 
@@ -1238,6 +1287,15 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
 /* @param value: 要设置的值，通过url传参(0-255) */
 static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[64];
     char value[64];
     int brightness = setting_screenBrightness;
@@ -1248,10 +1306,7 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
@@ -1262,10 +1317,7 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
         }
         else
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
     }
 
@@ -1285,6 +1337,15 @@ static esp_err_t setting_volume_get_handler(httpd_req_t *req)
 /* @param value: 要设置的值，通过url传参(0-1) */
 static esp_err_t setting_language_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[64];
     char value[64];
     int language = curr_lang;
@@ -1295,10 +1356,7 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
@@ -1309,10 +1367,7 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
         }
         else
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
     }
 
@@ -1327,6 +1382,15 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
 /* @param val: 要设置的值，通过url传参 */
 static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[64];
     char value[64];
 
@@ -1336,10 +1400,7 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "val", value, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         setting_timeZone = urldecode(value);
@@ -1361,6 +1422,15 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
 /* @param longitude: 要设置的城市经度，通过url传参 */
 static esp_err_t weather_city_get_handler(httpd_req_t *req)
 {
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
     char str[128];
     char value1[64];
     char value2[64];
@@ -1373,10 +1443,7 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         /* 提取输入值 */
         if (httpd_query_key_value(str, "city", value1, 64) || httpd_query_key_value(str, "latitude", value2, 64) || httpd_query_key_value(str, "longitude", value3, 64)) // <-- ESP_OK = 0
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
@@ -1390,10 +1457,7 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         }
         else
         {
-            httpd_resp_set_status(req, HTTPD_500);
-            httpd_resp_set_type(req, HTTPD_TYPE_JSON);
-            httpd_resp_send(req, "{\"response\":\"Invalid value\",\"code\":-2}", HTTPD_RESP_USE_STRLEN);
-            return ESP_FAIL;
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
     }
 
