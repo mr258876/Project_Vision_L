@@ -32,11 +32,7 @@
 #include "mjpeg/MjpegClass.h"
 
 #include <Wire.h>
-#if defined(_CONFIG_PROX_LIGHT_USE_APDS9960_)
-#include <APDS9960.h>
-#elif defined(_CONFIG_PROX_LIGHT_USE_APDS9930_)
 #include <APDS9930.h>
-#endif
 
 #include <OneButton.h>
 #include <kxtj3-1057.h>
@@ -119,7 +115,7 @@ static MjpegClass mjpeg;
 bool mjpegInited = false;
 
 /* Proximity sensor Object */
-PROX_LIGHT_METER apds;
+APDS9930 apds;
 uint16_t r, g, b, c;
 OneButton *proxButton = NULL;
 

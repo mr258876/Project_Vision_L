@@ -32,6 +32,8 @@
         "random": "cpp",
         "ff.h": "c",
         "esp_ota_ops.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "optional": "cpp",
+        "system_error": "cpp"
     }
 }

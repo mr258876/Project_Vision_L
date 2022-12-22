@@ -3,28 +3,16 @@
 
 #define VIDEO_FPS 30
 
-
 #define LCD_WIDTH 240
 #define LCD_HEIGHT 240
 
 #define LCD_PIXEL_CLOCK_HZ (80 * 1000 * 1000)
-#define LCD_CMD_BITS           8
-#define LCD_PARAM_BITS         8
-
-// Proximiter / Lightingmeter type
-#define _CONFIG_PROX_LIGHT_USE_APDS9930_
-// #define _CONFIG_PROX_LIGHT_USE_APDS9960_
+#define LCD_CMD_BITS 8
+#define LCD_PARAM_BITS 8
 
 // Parameters for proximeter
-#ifdef _CONFIG_PROX_LIGHT_USE_APDS9960_
-#define PROX_LIGHT_METER APDS9960
-#define PROX_THRS 120      // Proximeter interrupt threshold (Smaller value is further)
-#define LCD_BRIGHTNESS 127 // Default screen brightness, Value in 0-255
-#elif defined( _CONFIG_PROX_LIGHT_USE_APDS9930_)
-#define PROX_LIGHT_METER APDS9930
 #define PROX_THRS 210      // Proximeter interrupt threshold (Smaller value is further)
 #define LCD_BRIGHTNESS 127 // Default screen brightness, Value in 0-255
-#endif
 
 // Parameters for accelerometer
 #define ACC_SAMPLE_RATE 6.25 // Sample rate in HZ -> {0.781, 1.563, 3.125, 6.25, 12.5, 25, 50, 100, 200, 400, 800, 1600Hz}
