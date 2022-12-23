@@ -377,10 +377,15 @@ static esp_err_t return_err(httpd_req_t *req, const char *err_message)
 /* 根目录跳转 */
 static esp_err_t root_handler(httpd_req_t *req)
 {
+    char redirect_link[65];
+    char redirect_html[165];
+    sprintf(redirect_link, "https://mr258876.github.io/Project_Vision_L/?ip=%s", info_ipv4Address);
+    sprintf(redirect_html, "<html><h2>Please visit the management page here:</h2><br><a href=\"%s\">Project_Vision_L</a></html>", redirect_link);
+
     httpd_resp_set_status(req, "302	Found");
     httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
-    httpd_resp_set_hdr(req, "Location", "https://mr258876.github.io/Project_Vision_L/"); // Redirect to page on github
-    httpd_resp_send(req, "<html><h2>Please visit the management page here:</h2><br><a href=\"https://mr258876.github.io/Project_Vision_L/\">Project_Vision_L</a></html>", HTTPD_RESP_USE_STRLEN);
+    httpd_resp_set_hdr(req, "Location", redirect_link); // Redirect to page on github
+    httpd_resp_send(req, redirect_html, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -1398,7 +1403,7 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
     if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
     {
         /* 提取输入值 */
-        if (httpd_query_key_value(str, "val", value, 64)) // <-- ESP_OK = 0
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
         {
             return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }

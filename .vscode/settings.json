@@ -35,5 +35,6 @@
         "string.h": "c",
         "optional": "cpp",
         "system_error": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": true
 }

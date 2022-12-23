@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "lvgl.h"
+#include <lvgl.h>
 
 /*  file send/receive buffer size */
 #define FILE_SCRATCH_BUFSIZE 4096

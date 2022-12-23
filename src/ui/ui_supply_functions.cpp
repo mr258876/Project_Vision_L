@@ -422,6 +422,5 @@ void cb_setLanguage(uint16_t val)
 {
   curr_lang = val;
   prefs.putUInt("language", val);
-
-  esp_restart(); // Temporary solution
+  lv_obj_invalidate(lv_scr_act());
 }

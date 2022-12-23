@@ -487,10 +487,16 @@ value: 要设置的值(POSIX)。获取值时uri中不要带有查询参数。
 
 **注意：该值将直接覆盖环境变量，不会受到任何检查。**
 
+
+**注意：该值与常见时区格式不同，时区代码后的数字代表比该时区慢X小时。例如，UTC-8代表比世界协调时慢-8小时，即快8小时，实为UTC+8:00。**
+
 value: Value to set (POSIX). DO NOT add any query params when getting this value.
 
 
 **Note: The value will override TZ environment variable directly without any inspection.**
+
+
+**Note: This value is different from the common time zone format, the number after the time zone code represents X hours behind the time zone. For example, UTC-8 means -8 hours behind UTC, that is, 8 hours ahead, which is actually UTC+8:00.**
 
 #### Return
 当前设置值，或更新后的设置值（若有）。
@@ -506,11 +512,11 @@ or error among table below:
 
 #### Example
 ~~~
-GET /api/v1/setting/timezone?value=CST-8
+GET /api/v1/setting/timezone?value=UTC-8
 
 RESPONSE:
 {
-    "setting_timeZone":"CST-8"
+    "setting_timeZone":"UTC-8"
 }
 ~~~
 
