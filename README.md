@@ -1,5 +1,7 @@
 # The Vision L
 
+虚拟神明会发放电子神之眼吗？
+
 Do virtual gods hand out electronic visions?
 
 ![image](/images/perview.jpg)
@@ -8,7 +10,7 @@ Do virtual gods hand out electronic visions?
 ### 稳定版 / Stable Release
 - [L0.2.0](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0)
 ### 测试版 / Beta Release
-- [L0.2.1-Beta2](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta2)
+- [L0.2.1-Beta3](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta3)
 ### 开发版 / Indev Release
 - None
 
@@ -55,6 +57,9 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 - 恢复模式(应对ROM不足)🚧
 - 综合信息界面(数字时钟/天气/树脂数据)🚧
 - 管理界面(远程控制/文件管理)🚧
+
+## 神之眼实用程序
+自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码进入实用程序，或者点击[这里](https://mr258876.github.io/Project_Vision_L/)输入设备ip地址后进入实用程序。
 
 ## 使用方法
 ### L0.1版本
