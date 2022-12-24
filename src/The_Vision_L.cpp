@@ -107,11 +107,8 @@ static lv_color_t *disp_draw_buf_2;
 static lv_disp_drv_t disp_drv;
 bool isInLVGL = true;
 
-/* Things of files */
+/* Mjpeg stuff */
 uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
-
-/* Mjpeg decoder & Image Buffers */
-static MjpegClass mjpeg;
 bool mjpegInited = false;
 
 /* Proximity sensor Object */

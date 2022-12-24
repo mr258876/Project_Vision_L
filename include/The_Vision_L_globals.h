@@ -8,6 +8,7 @@
 #include "hoyoverse/Hoyoverse.h"
 #include "system/Hardware.h"
 #include "weather/Weather.h"
+#include "mjpeg/MjpegClass.h"
 
 /* Hardware Pinout */
 extern uint8_t info_hwType;
@@ -29,6 +30,9 @@ extern Preferences prefs;
 
 /* Playlist */
 extern LinkedList<String> filePaths;
+
+/* Mjpeg decoder */
+extern MjpegClass mjpeg;
 
 /* Runtime info */
 extern int info_processUsingWifi;

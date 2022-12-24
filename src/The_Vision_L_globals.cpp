@@ -21,6 +21,9 @@ Preferences prefs;
 /* Playlist */
 LinkedList<String> filePaths;
 
+/* Mjpeg decoder */
+MjpegClass mjpeg;
+
 /* Runtime info */
 int info_processUsingWifi = 0;
 int info_wifiStatus = 255;

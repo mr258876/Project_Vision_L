@@ -19,6 +19,7 @@ static esp_err_t info_handler(httpd_req_t *req);
 
 static esp_err_t playlist_get_handler(httpd_req_t *req);
 static esp_err_t playlist_post_handler(httpd_req_t *req);
+static esp_err_t playlist_current_get_handler(httpd_req_t *req);
 
 static esp_err_t file_listdir_handler(httpd_req_t *req);
 static esp_err_t file_get_handler(httpd_req_t *req);
@@ -70,6 +71,13 @@ httpd_uri_t uri_playlist_post = {
     .uri = "/api/v1/playlist",
     .method = HTTP_POST,
     .handler = playlist_post_handler,
+    .user_ctx = NULL};
+
+/* GET /playlist/current 的 URI 处理结构 */
+httpd_uri_t uri_playlist_current_get = {
+    .uri = "/api/v1/playlist/current",
+    .method = HTTP_GET,
+    .handler = playlist_current_get_handler,
     .user_ctx = NULL};
 
 /* GET /file/listdir 的 URI 处理结构 */
@@ -539,6 +547,57 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 获取/设置当前播放文件编号 */
+/* @param value: 要设置的值，通过url传参(uint8_t) */
+static esp_err_t playlist_current_get_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    char str[64];
+    char value[64];
+    int fileNo = prefs.getUInt("currFileId", 0);
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+
+        /* 检查输入值 */
+        if (sscanf(value, "%d", &fileNo) == 1 && fileNo >= 0 && fileNo < filePaths.size())
+        {
+            if (xSemaphoreTake(MjpegReadMutex, portMAX_DELAY) == pdTRUE)
+            {
+                if (mjpeg.switchFile(filePaths.get(fileNo).c_str()))
+                {
+                    prefs.putUInt("currFileId", fileNo);
+                }
+                xSemaphoreGive(MjpegReadMutex);
+            }
+        }
+        else
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+    }
+
+    sprintf(str, "{\"currFileId\":%d}", fileNo);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -1204,8 +1263,9 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
         /* 检查输入值 */
         if (strcmp(value, "true") == 0)
         {
-            setting_autoBright = true;
-            prefs.putBool("useAutoBright", true);
+            // 不直接设为true，防止设备没有传感器时出现问题
+            setting_autoBright = info_hasProx;
+            prefs.putBool("useAutoBright", info_hasProx);
         }
         else if (strcmp(value, "false") == 0)
         {
@@ -1260,8 +1320,9 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
         /* 检查输入值 */
         if (strcmp(value, "true") == 0)
         {
-            setting_useAccel = true;
-            prefs.putBool("useAccelMeter", true);
+            // 不直接设为true，防止设备没有传感器时出现问题
+            setting_useAccel = info_hasAccel;
+            prefs.putBool("useAccelMeter", info_hasAccel);
         }
         else if (strcmp(value, "false") == 0)
         {
@@ -1503,6 +1564,7 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_playlist_get);
         httpd_register_uri_handler(server, &uri_playlist_post);
+        httpd_register_uri_handler(server, &uri_playlist_current_get);
 
         httpd_register_uri_handler(server, &uri_file_listdir);
         httpd_register_uri_handler(server, &uri_file_get);
