@@ -43,6 +43,11 @@ void syncTime_NTP_async()
             break;
         }
     }
+    else
+    {
+        setenv("TZ", setting_timeZone.c_str(), 1);
+    }
+    
     tzset();
 
     sntp_init();
