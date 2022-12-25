@@ -345,15 +345,30 @@ void setup()
 
     LV_LOG_INFO("LVGL booted.");
   }
-
-  vTaskDelete(NULL); // comment to show avaliable heap
 }
 
+uint8_t CPU_RunInfo[512];
 void loop()
 {
+#ifdef USE_TASK_MONITOR
+  /* Enable FreeRTOS runtime stats in menuconfig before use */
   ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
   ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
-  vTaskDelay(pdMS_TO_TICKS(2500));
+
+  memset(CPU_RunInfo, 0, 512);
+  vTaskList((char *)&CPU_RunInfo); // 获取任务运行时间信息
+  printf("---------------------------------------------\r\n");
+  printf("任务名       任务状态     优先级     剩余栈     任务序号\r\n");
+  printf("%s", CPU_RunInfo);
+  printf("---------------------------------------------\r\n");
+  memset(CPU_RunInfo, 0, 512);
+  vTaskGetRunTimeStats((char *)&CPU_RunInfo);
+  printf("任务名         运行计数     使用率\r\n");
+  printf("%s", CPU_RunInfo);
+  printf("---------------------------------------------\r\n\n");
+
+  vTaskDelay(pdMS_TO_TICKS(2000));
+#endif
 }
 
 // Load Settings From NVS
