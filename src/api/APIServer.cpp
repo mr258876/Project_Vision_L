@@ -401,7 +401,13 @@ static esp_err_t root_handler(httpd_req_t *req)
 static esp_err_t info_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     // 获取app版本
     const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
@@ -426,7 +432,13 @@ static esp_err_t info_handler(httpd_req_t *req)
 static esp_err_t playlist_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     String json = "";
     StaticJsonDocument<1024> doc;
@@ -455,7 +467,13 @@ static esp_err_t playlist_get_handler(httpd_req_t *req)
 static esp_err_t playlist_post_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char post_ctx[1024];
 
@@ -537,7 +555,13 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
 static esp_err_t playlist_current_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -582,7 +606,13 @@ static esp_err_t playlist_current_get_handler(httpd_req_t *req)
 static esp_err_t file_listdir_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     /* 获取查询字符串长度 */
     int query_length = httpd_req_get_url_query_len(req);
@@ -674,7 +704,13 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
 static esp_err_t file_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     /* 获取查询字符串长度 */
     int query_length = httpd_req_get_url_query_len(req);
@@ -816,7 +852,13 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 static esp_err_t file_post_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     /* 获取查询字符串长度 */
     int query_length = httpd_req_get_url_query_len(req);
@@ -964,7 +1006,13 @@ static esp_err_t file_post_handler(httpd_req_t *req)
 static esp_err_t file_delete_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     /* 获取查询字符串长度 */
     int query_length = httpd_req_get_url_query_len(req);
@@ -1029,7 +1077,13 @@ static esp_err_t file_delete_handler(httpd_req_t *req)
 static esp_err_t file_makedir_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     /* 获取查询字符串长度 */
     int query_length = httpd_req_get_url_query_len(req);
@@ -1094,7 +1148,13 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
 static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     String json = "";
     StaticJsonDocument<1024> doc;
@@ -1115,7 +1175,13 @@ static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req)
 static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char post_ctx[1024];
 
@@ -1174,7 +1240,13 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
 static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -1225,7 +1297,13 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
 static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -1276,7 +1354,13 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
 static esp_err_t setting_brightness_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -1320,7 +1404,13 @@ static esp_err_t setting_volume_get_handler(httpd_req_t *req)
 static esp_err_t setting_language_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -1359,7 +1449,13 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
 static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[64];
     char value[64];
@@ -1393,7 +1489,13 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
 static esp_err_t weather_city_get_handler(httpd_req_t *req)
 {
     // 解决跨域请求报错
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
 
     char str[128];
     char value1[64];
