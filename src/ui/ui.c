@@ -1707,17 +1707,6 @@ void ui_ClockScreen_screen_init(void)
     lv_obj_add_flag(ui_ClockDial, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
     lv_obj_clear_flag(ui_ClockDial, LV_OBJ_FLAG_SCROLLABLE); /// Flags
 
-    ui_ClockHour = lv_img_create(ui_ClockScreen);
-    lv_img_set_src(ui_ClockHour, &ui_img_clock_hourhand);
-    lv_obj_set_width(ui_ClockHour, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_ClockHour, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_ClockHour, 0);
-    lv_obj_set_y(ui_ClockHour, 42);
-    lv_obj_set_align(ui_ClockHour, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_ClockHour, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
-    lv_obj_clear_flag(ui_ClockHour, LV_OBJ_FLAG_SCROLLABLE); /// Flags
-    lv_img_set_pivot(ui_ClockHour, 15, -9);
-
     ui_ClockSecond = lv_img_create(ui_ClockScreen);
     lv_img_set_src(ui_ClockSecond, &ui_img_clock_secondhand);
     lv_obj_set_width(ui_ClockSecond, LV_SIZE_CONTENT);  /// 1
@@ -1728,6 +1717,17 @@ void ui_ClockScreen_screen_init(void)
     lv_obj_add_flag(ui_ClockSecond, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
     lv_obj_clear_flag(ui_ClockSecond, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_img_set_pivot(ui_ClockSecond, 6, 116);
+
+    ui_ClockHour = lv_img_create(ui_ClockScreen);
+    lv_img_set_src(ui_ClockHour, &ui_img_clock_hourhand);
+    lv_obj_set_width(ui_ClockHour, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_ClockHour, LV_SIZE_CONTENT); /// 1
+    lv_obj_set_x(ui_ClockHour, 0);
+    lv_obj_set_y(ui_ClockHour, 42);
+    lv_obj_set_align(ui_ClockHour, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_ClockHour, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_ClockHour, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_img_set_pivot(ui_ClockHour, 15, -9);
 
     ui_ClockMinute = lv_img_create(ui_ClockScreen);
     lv_img_set_src(ui_ClockMinute, &ui_img_clock_minutehand);
