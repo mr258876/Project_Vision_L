@@ -8,6 +8,8 @@
 #include "hoyoverse/Hoyoverse.h"
 #include "system/Hardware.h"
 #include "weather/Weather.h"
+#include "weather/OpenMeteo.h"
+#include "weather/MojiTianqi.h"
 #include "mjpeg/MjpegClass.h"
 
 /* Hardware Pinout */

@@ -148,8 +148,6 @@ static void getDailyNoteFromResinScreen(void *parameter);
 
 static void lvglLoop(void *parameter);
 static void screenAdjustLoop(void *parameter);
-static void screenFlushLoop(void *parameter);
-static void screenFlushLoop(void *parameter);
 
 static void onChangeVideo();
 static void onSingleClick();

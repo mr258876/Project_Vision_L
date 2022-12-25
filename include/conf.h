@@ -45,6 +45,12 @@
 #define HOYOLAB_CONF_DEFAULT_LENGTH 1024
 #define HOYOLAB_CONF_JSON_SIZE 1024
 
+/* Weather conf file */
+#define WEATHER_CONF_PATH "/Weather.json"
+#define WEATHER_DEFAULT_CONF "{\"city\":\"\", \"latitude\":0.0, \"longitude\":0.0, \"provider\":1}"
+#define WEATHER_CONF_DEFAULT_LENGTH 1024
+#define WEATHER_CONF_JSON_SIZE 1024
+
 /* Task Monitor */
 // #define USE_TASK_MONITOR
 
