@@ -5,9 +5,10 @@
 //  Function declaraions
 //
 //////////////////////////////
-uint loadPlayList();
-uint loadHoyolabConfig();
-uint loadConfig();
+static uint loadPlayList();
+static uint loadHoyolabConfig();
+static uint loadWeatherConfig();
+static uint loadConfig();
 
 Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
 
@@ -77,6 +78,7 @@ uint checkSDFiles()
 
   err = err | loadPlayList();
   err = err | loadHoyolabConfig();
+  err = err | loadWeatherConfig();
   // err = err | loadConfig();
 
   SemaphoreHandle_t *FSMutex;
@@ -100,7 +102,7 @@ uint checkSDFiles()
   return err;
 }
 
-uint loadPlayList()
+static uint loadPlayList()
 {
   int err = VISION_FILE_OK;
   FILE *f;
@@ -159,7 +161,7 @@ uint loadPlayList()
   return err;
 }
 
-uint loadHoyolabConfig()
+static uint loadHoyolabConfig()
 {
   int err = VISION_FILE_OK;
   FILE *f;
@@ -223,6 +225,75 @@ uint loadHoyolabConfig()
   xSemaphoreTake(SDMutex, portMAX_DELAY);
   {
     remove("/s" HOYOLAB_CONF_PATH); // delete the file after conf imported
+  }
+  xSemaphoreGive(SDMutex);
+
+  doc.clear();
+
+  return err;
+}
+
+static uint loadWeatherConfig()
+{
+  int err = VISION_FILE_OK;
+  FILE *f;
+  StaticJsonDocument<WEATHER_CONF_JSON_SIZE> doc;
+  DeserializationError error;
+  char buf[WEATHER_CONF_DEFAULT_LENGTH];
+
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    /* 打开米游社配置文件 */
+    f = fopen("/s" WEATHER_CONF_PATH, "r");
+    if (!f)
+    {
+      /* 若不存在则直接返回 */
+      fclose(f);
+      xSemaphoreGive(SDMutex);
+      return err;
+    }
+    fread(buf, WEATHER_CONF_DEFAULT_LENGTH, 1, f);
+    fclose(f);
+  }
+  xSemaphoreGive(SDMutex);
+
+  error = deserializeJson(doc, buf, WEATHER_CONF_DEFAULT_LENGTH);
+
+  if (error)
+  {
+    err = err | VISION_FILE_CONF_CRITICAL;
+    return err;
+  }
+
+  const char *city = doc["city"];     // "深圳"
+  float latitude = doc["latitude"];   // 12.7
+  float longitude = doc["longitude"]; // 3.5
+  int provider = doc["provider"];     // 0
+
+  // if (provider >= 0 && provider <= 1)
+  if (provider == 1)
+  {
+    prefs.putString("weatherCity", city);
+    prefs.putFloat("weatherLat", latitude);
+    prefs.putFloat("weatherLong", longitude);
+    prefs.putInt("weatherProvider", provider);
+
+    switch (provider)
+    {
+    case 0:
+      // wp = &OpenMeteo;
+      break;
+    default:
+      wp = &MojiTianqi;
+      break;
+    }
+    wp->setCity(city);
+    wp->setCoordinate(latitude, longitude);
+  }
+
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    remove("/s" WEATHER_CONF_PATH); // delete the file after conf imported
   }
   xSemaphoreGive(SDMutex);
 
