@@ -398,6 +398,8 @@ static void loadSettings()
 
   setting_timeZone = prefs.getString("timeZone", "");
 
+  setting_autoUpdate = prefs.getBool("autoUpdate", true);
+
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
   strcpy(info_appVersion, running_app_info->version);
@@ -687,6 +689,16 @@ void hardwareSetup(void *parameter)
         xSemaphoreGive(LVGLMutex);
       }
       fileErr = (fileErr & 0b11111100) | fixMissingFiles();
+    }
+
+    if (setting_autoUpdate)
+    {
+      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      {
+        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][110]); // "正在检查更新..."
+        xSemaphoreGive(LVGLMutex);
+      }
+      checkUpdate();
     }
 
     /* 关闭Wifi */

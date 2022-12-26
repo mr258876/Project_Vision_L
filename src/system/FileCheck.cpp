@@ -10,26 +10,60 @@ static uint loadHoyolabConfig();
 static uint loadWeatherConfig();
 static uint loadConfig();
 
-Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
 
 //////////////////////////////
 //
 //  Variables
 //
 //////////////////////////////
-const char *fileDownloadUrls[] = {
-    "https://mr258876.github.io/Project_Vision_L/resources/fonts/ui_font_HanyiWenhei20.bin",
+const char *fileDownloadPrefix[] = {
+    "https://mr258876.github.io/Project_Vision_L/resources/0.2.1",
+};
+
+const char *updateConfPath = "update.json";
+
+const char *fileDownloadPaths[] = {
+    "/fonts/ui_font_HanyiWenhei20.bin",
+    "/utility/index.html",
+    "/utility/css/mdui.min.css",
+    "/utility/js/mdui.min.js",
+    "/utility/js/jquery-3.6.3.min.js",
+    "/utility/icons/material-icons/MaterialIcons-Regular.ijmap",
+    "/utility/icons/material-icons/MaterialIcons-Regular.woff2",
+    "/utility/images/Liyue.png",
+    "/utility/images/Liyue_Extended.png",
+    "/utility/images/Mondstadt.png",
 };
 
 const char *fileCheckPaths[] = {
     "/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin",
+    "/s/The Vision L/utility/index.html",
+    "/s/The Vision L/utility/css/mdui.min.css",
+    "/s/The Vision L/utility/js/mdui.min.js",
+    "/s/The Vision L/utility/js/jquery-3.6.3.min.js",
+    "/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.ijmap",
+    "/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.woff2",
+    "/s/The Vision L/utility/images/Liyue.png",
+    "/s/The Vision L/utility/images/Liyue_Extended.png",
+    "/s/The Vision L/utility/images/Mondstadt.png",
 };
 
 const Vision_FileCheck_cb_t fileCheckCallbacks[] = {
     cb_ui_font_HanyiWenhei20,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
+    cb_general_sys_file,
 };
 
-Vision_FileCheck_result_t fileCheckResults[1];
+Vision_FileCheck_result_t fileCheckResults[10];
 
 //////////////////////////////
 //
@@ -54,6 +88,13 @@ static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
 //  File check callbacks
 //
 //////////////////////////////
+Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck)
+{
+  if (filePassedCheck)
+    return VISION_FILE_OK;
+  return VISION_FILE_SYS_FILE_ERR;
+}
+
 Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck)
 {
   if (filePassedCheck)
@@ -342,18 +383,10 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
       .keep_alive_enable = false,
   };
 
-  char *buffer = (char *)malloc(FILE_DOWNLOAD_RECV_BUFFER_SIZE);
-  if (buffer == NULL)
-  {
-    ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
-    return DOWNLOAD_RES_OUT_OF_MEM;
-  }
-
   esp_http_client_handle_t client = esp_http_client_init(&conf);
   if (!client)
   {
     ESP_LOGE(HTTP_TAG, "HTTP client init failed!");
-    free(buffer);
     return DOWNLOAD_RES_HTTP_OPEN_FAIL;
   }
 
@@ -362,8 +395,14 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
   if ((http_err = esp_http_client_open(client, 0)) != ESP_OK)
   {
     ESP_LOGE(HTTP_TAG, "Failed to open HTTP connection: %s", esp_err_to_name(http_err));
-    free(buffer);
     return DOWNLOAD_RES_HTTP_OPEN_FAIL;
+  }
+
+  int status_code = esp_http_client_get_status_code(client);
+  if (status_code >= 400)
+  {
+    ESP_LOGE(HTTP_TAG, "HTTP abnormal status code: %d", status_code);
+    return DOWNLOAD_RES_HTTP_READ_FAIL;
   }
 
   /* 打开文件 */
@@ -373,8 +412,14 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
   if (!f)
   {
     ESP_LOGE(HTTP_TAG, "Could not open file! Path=%s", path_to_save);
-    free(buffer);
     return DOWNLOAD_RES_FILE_OPEN_FAIL;
+  }
+
+  char *buffer = (char *)malloc(FILE_DOWNLOAD_RECV_BUFFER_SIZE);
+  if (buffer == NULL)
+  {
+    ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
+    return DOWNLOAD_RES_OUT_OF_MEM;
   }
 
   int content_length = esp_http_client_fetch_headers(client);
@@ -434,7 +479,11 @@ uint fixMissingFiles()
   {
     if (fileCheckResults[i])
     {
-      if (downloadGithubFile(fileDownloadUrls[i], fileCheckPaths[i])) // <- DOWNLOAD_RES_OK=0
+      /* 拼接url */
+      char url[strlen(getFileDownloadPrefix()) + strlen(fileCheckPaths[i]) + 1];
+      sprintf(url, "%s%s", getFileDownloadPrefix(), fileDownloadPaths[i]);
+
+      if (downloadGithubFile(url, fileCheckPaths[i])) // <- DOWNLOAD_RES_OK=0
       {
         res = res | fileCheckResults[i];
       }
@@ -450,4 +499,13 @@ uint fixMissingFiles()
 uint downloadGithubFile(const char *url, const char *path_to_save)
 {
   return downloadFile(url, path_to_save, GlobalSign_Root_CA);
+}
+
+const char *getFileDownloadPrefix()
+{
+  // if (curr_lang == 1)
+  // {
+  //   return fileDownloadPrefix[1];
+  // }
+  return fileDownloadPrefix[0];
 }

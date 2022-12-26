@@ -25,18 +25,10 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
         .keep_alive_enable = false,
     };
 
-    char *buffer = (char *)malloc(WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
-    if (buffer == NULL)
-    {
-        ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
-        return WEATHER_RESULT_OUT_OF_MEM;
-    }
-
     esp_http_client_handle_t client = esp_http_client_init(&conf);
     if (!client)
     {
         ESP_LOGE(HTTP_TAG, "HTTP client init failed!");
-        free(buffer);
         return WEATHER_RESULT_HTTP_OPEN_FAIL;
     }
 
@@ -45,8 +37,21 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
     if ((http_err = esp_http_client_open(client, 0)) != ESP_OK)
     {
         ESP_LOGE(HTTP_TAG, "Failed to open HTTP connection: %s", esp_err_to_name(http_err));
-        free(buffer);
         return WEATHER_RESULT_HTTP_OPEN_FAIL;
+    }
+
+    int status_code = esp_http_client_get_status_code(client);
+    if (status_code >= 400)
+    {
+        ESP_LOGE(HTTP_TAG, "HTTP abnormal status code: %d", status_code);
+        return WEATHER_RESULT_HTTP_READ_FAIL;
+    }
+
+    char *buffer = (char *)malloc(WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
+    if (buffer == NULL)
+    {
+        ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
+        return WEATHER_RESULT_OUT_OF_MEM;
     }
 
     int content_length = esp_http_client_fetch_headers(client);
@@ -69,7 +74,7 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
             }
         }
     }
-    else 
+    else
     {
         /* Just in case */
         int read_len = 0;
@@ -146,7 +151,7 @@ Weather_result_t MojiTianqiWeather::getCurrentWeather(float latitude, float long
     return performCurrentWeatherQuery(url.c_str(), weather);
 }
 
-String urlEncode(const char* msg)
+String urlEncode(const char *msg)
 {
     const char *hex = "0123456789ABCDEF";
     String encodedMsg = "";

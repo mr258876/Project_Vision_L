@@ -63,3 +63,5 @@ bool setting_useDigitalClock = false;
 int setting_weatherProvider = -1;
 
 String setting_timeZone = "";
+
+bool setting_autoUpdate = false;

@@ -10,6 +10,7 @@
 
 #include "lvgl.h"
 #include "ui/ui.h"
+#include "ui/ui_multiLanguage.h"
 
 #define FILE_DOWNLOAD_RECV_BUFFER_SIZE 1024
 
@@ -51,5 +52,7 @@ enum Vision_FileCheck_download_res_t : uint8_t
 uint downloadFile(const char* url, const char* path_to_save, const char* TLScert = nullptr);
 
 uint downloadGithubFile(const char* url, const char* path_to_save);
+
+const char* getFileDownloadPrefix();
 
 #endif

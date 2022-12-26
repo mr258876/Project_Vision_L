@@ -117,6 +117,7 @@ const char *zh_Hans[] = {
     "天气：JSON解析失败",                                                   // 107 Weather: JSON parsing failed
     "天气：响应异常",                                                       // 108 Weather: Unexpected response
     "请检查播放列表，\n然后重试。",                                         // 109 Please check playlist, and retry.
+    "正在检查更新...",                                                      // 110 Checking for update
 };
 
 const char *en_US[] = {
@@ -230,6 +231,7 @@ const char *en_US[] = {
     "Weather: JSON parsing failed\n",                                               // 107 Weather: JSON parsing failed
     "Weather: Unexpected response",                                                 // 108 Weather: Unexpected response
     "Please\ncheck\nplaylist,\nand retry.",                                         // 109 Please check playlist, and retry.
+    "Checking for update...",                                                       // 110 Checking for update...
 };
 
 const char **lang[] = {

@@ -3,6 +3,9 @@
 
 #include <esp_ota_ops.h>
 
+#include <ArduinoJson.h>
+#include "system/FileCheck.h"
+
 enum Vision_update_res_t {
     UPDATE_VALIDATE_FAIL = -4,
     UPDATE_OTA_ABORTED = -3,
@@ -21,3 +24,5 @@ struct Vision_update_info_t
 
 bool updateFileAvaliable();
 void tsk_performUpdate(void *parameter);
+
+void checkUpdate();

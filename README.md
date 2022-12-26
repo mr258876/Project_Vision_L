@@ -10,7 +10,7 @@ Do virtual gods hand out electronic visions?
 ### 稳定版 / Stable Release
 - [L0.2.0](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.0)
 ### 测试版 / Beta Release
-- [L0.2.1-Beta3](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta3)
+- [L0.2.1-Beta4](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.1-Beta4)
 ### 开发版 / Indev Release
 - None
 
@@ -59,7 +59,7 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 - 管理界面(远程控制/文件管理)🚧
 
 ## 神之眼实用程序
-自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码进入实用程序，或者点击[这里](https://mr258876.github.io/Project_Vision_L/)输入设备ip地址后进入实用程序。
+自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置、天气城市配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码进入实用程序。
 
 ## 使用方法
 ### L0.1版本
@@ -114,6 +114,20 @@ if (ask == true) {
 ```
 - 注意：图片格式需为JPG/JPEG，尺寸240\*240且小于12KB，视频格式需为MJPEG，尺寸240\*240且每帧小于12KB。
 - 您可以在[mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos)找到元素视频文件。
+
+### 天气城市配置
+- 打开SD卡根目录`Weather.json`，设定城市名称、纬度与经度(WGS84格式)、天气服务提供商。文件格式参考如下：
+```
+{
+    "city":"深圳",
+    "latitude":22.547,
+    "longitude":114.085947,
+    "provider":1
+}
+```
+- 注意：仅`city`项为字符串格式。其他三项数值不要带上引号。
+- 目前天气服务提供商仅`墨迹天气`可选。请保持`provider`项为`1`。
+- 您可以在[这里](http://www.jsons.cn/lngcode/)查询城市或区县对应坐标。将经度填入`longitude`项，纬度填入`latitude`项。
 
 ## 刷入固件
 ### 刷入预编译固件
@@ -178,7 +192,7 @@ Features planned for next major release:
 - Triple-click power button to move cursor to previous item, or perform second interaction with a buttonless screen (switch element / update resin data manually / switch between digital clock & analog clock)
 
 ### HoyoLab cookie settings
-- Open `Hoyolab.json` in the root directory of SD card, then set character id and Hoyolab cookie. Example shown as below:
+- Open `Hoyolab.json` in SD card root directory, then set character id and Hoyolab cookie. Example shown as below:
 ```
 {
     "uid": "100000000",
@@ -189,7 +203,7 @@ Features planned for next major release:
 - `device_guid` is optional. It should be a random generated guid without dash line, 32 characters in total. The vision will generate one if left blank.
 
 ### Customizing element order (custom video file and order)
-- Open `playFiles.json`in the root directory of SD card, then set the path and sequence of videos and pictures. The paths need include driver letter 'S'. Example shown as below:
+- Open `playFiles.json`in SD card root directory, then set the path and sequence of videos and pictures. The paths need include driver letter 'S'. Example shown as below:
 ```
 {
     "files": [
@@ -201,6 +215,20 @@ Features planned for next major release:
 ```
 - Note: The format of pictures should be JPG/JPEG, with size 240px\*240px, file size less than 12KB; videos should be MJPEG, size 240px\*240px, less than 12 KB for each frame.
 - You could find the element videos at [mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos).
+
+### Weather location configuration
+- Open `Weather.json` in SD card root directory, set the city name, latitude & longitude (WGS84), and weather service provider. Example shown as below:
+```
+{
+    "city":"Shenzhen",
+    "latitude":22.547,
+    "longitude":114.085947,
+    "provider":1
+}
+```
+- Note: Only `city` entry is in string. Do not quote the other three values.
+- Please keep `provider` as `1` for now.
+- You can check the coordinates of your location [here](https://open-meteo.com/en/docs/geocoding-api).
 
 ## Flashing Firmware
 ### Flashing recompiled firmware

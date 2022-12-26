@@ -54,4 +54,7 @@
 /* Task Monitor */
 // #define USE_TASK_MONITOR
 
+/* OTA update */
+#define OTA_BUFFER_SIZE 1024
+
 #endif // _VISION_CONFIGURATIONS_H_

@@ -34,7 +34,11 @@
         "esp_ota_ops.h": "c",
         "string.h": "c",
         "optional": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "exception": "cpp",
+        "iosfwd": "cpp",
+        "new": "cpp",
+        "algorithm": "cpp"
     },
     "cmake.configureOnOpen": true
 }

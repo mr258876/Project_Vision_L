@@ -261,6 +261,13 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
         return HOYO_CLI_HTTP_OPEN_FAIL;
     }
 
+    int status_code = esp_http_client_get_status_code(client);
+    if (status_code >= 400)
+    {
+        ESP_LOGE(HTTP_TAG, "HTTP abnormal status code: %d", status_code);
+        return HOYO_CLI_HTTP_READ_FAIL;
+    }
+
     int content_length = esp_http_client_fetch_headers(client);
     // ESP_LOGI(HTTP_TAG, "Content Length:%d", content_length);
     int total_read_len = 0, read_len;
@@ -283,11 +290,8 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     // printf("\nResponse:%s\n\n", buffer);
 
     /* JSON deserializing */
-    StaticJsonDocument<0> filter;
-    filter.set(true);
-
     StaticJsonDocument<1024> doc;
-    DeserializationError error = deserializeJson(doc, buffer, content_length, DeserializationOption::Filter(filter));
+    DeserializationError error = deserializeJson(doc, buffer, content_length);
 
     if (error)
     {

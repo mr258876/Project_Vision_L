@@ -140,3 +140,72 @@ void tsk_performUpdate(void *parameter)
     stats->result = UPDATE_SUCCESS;
     vTaskDelete(NULL);
 }
+
+void checkUpdate()
+{
+    char url[strlen(getFileDownloadPrefix()) + 13];
+    sprintf(url, "%s/Update.json", getFileDownloadPrefix());
+    if (downloadGithubFile(url, "/s/Update.json")) // <- DOWNLOAD_RES_OK=0
+        return;
+
+    FILE *f;
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+        f = fopen("/s/Update.json", "r");
+    }
+    xSemaphoreGive(SDMutex);
+
+    if (!f)
+    {
+        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        {
+            fclose(f);
+        }
+        xSemaphoreGive(SDMutex);
+        return;
+    }
+
+    char buf[512];
+    fread(buf, 1, 512, f);
+
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, buf, 512);
+
+    if (error)
+    {
+        ESP_LOGE("checkUpdate", "deserializeJson() failed:%s", error.c_str());
+        return;
+    }
+
+    JsonArray files = doc["files"];
+    if (files.size() == 0)
+    {
+        return;
+    }
+
+    uint download_err = 0;
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        char url[strlen(getFileDownloadPrefix()) + strlen(files[i][0]) + 1];
+        const char* download_path = files[i][0];
+        sprintf(url, "%s%s", getFileDownloadPrefix(), download_path);
+        download_err = download_err | downloadGithubFile(url, files[i][1]);
+        if (download_err)
+        {
+            break;
+        }
+    }
+
+    if (download_err > 0)
+    {
+        for (size_t i = 0; i < files.size(); i++)
+        {
+            xSemaphoreTake(SDMutex, portMAX_DELAY);
+            remove(files[i][1]);
+            xSemaphoreGive(SDMutex);
+        }
+        return;
+    }
+    
+    esp_restart();
+}
