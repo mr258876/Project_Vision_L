@@ -5,6 +5,7 @@
 #include "system/FileCheck.h"
 #include "system/TimeManager.h"
 #include "system/Networking.h"
+#include "system/Updating.h"
 
 #include <FS.h>
 #include <SD.h>
@@ -13,8 +14,6 @@
 
 #include <ff.h>
 #include <diskio.h>
-
-#include <Update.h>
 
 #include <lvgl.h>
 #include "ui/lv_fs_fatfs.h"
@@ -62,15 +61,6 @@ enum Vision_HW_result_t
   VISION_HW_ACCEL_ERR = 0b100,  // 重力传感器初始化失败
   VISION_HW_SPIFFS_ERR = 0b1000 // SPIFFS分区初始化失败
 };
-
-typedef enum
-{
-  VISION_NO_UPDATE = 0,     // No update file
-  VISION_UPDATE_BAD_FILE,   // not a updateable file
-  VISION_UPDATE_START_FAIL, // Update start failed
-  VISION_UPDATE_STARTED,    // Update started
-  VISION_UPDATE_OK          // Update finished (probably never gonna to use)
-} vision_update_result_t;
 
 ////////////////////////
 //
@@ -131,7 +121,6 @@ DACOutput *aOut;
 //
 ////////////////////////
 static void loadSettings();
-static vision_update_result_t updateFromSD(String *errMsg);
 static uint checkHardware();
 static bool getDailyNote(Notedata *nd, String *errMsg);
 static void resinCalc(void *parameter);
@@ -544,7 +533,6 @@ void hardwareSetup(void *parameter)
   uint fileErr = 0;
   uint weatherErr = 0;
   bool hasWifi = false;
-  vision_update_result_t updateStatus = VISION_NO_UPDATE;
   String errMsg = "";
 
   /* 硬件检查 */
@@ -558,17 +546,62 @@ void hardwareSetup(void *parameter)
   /* 文件检查 */
   if (!(hwErr & VISION_HW_SD_ERR))
   {
+    /* 从Update.bin更新 */
+    if (updateFileAvaliable())
+    {
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+      {
+        lv_label_set_text_fmt(ui_StartupLabel1, lang[curr_lang][6], 0); //"正在升级(%d%%)..."
+        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]);        // "请不要关闭电源\n或拔出SD卡"
+      }
+      xSemaphoreGive(LVGLMutex);
+
+      Vision_update_info_t update_info;
+      /* 创建执行更新任务 */
+      xTaskCreatePinnedToCore(tsk_performUpdate,
+                              "tsk_performUpdate",
+                              4096,
+                              &update_info,
+                              1,
+                              NULL,
+                              0);
+      while (!update_info.result)
+      {
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        lv_label_set_text_fmt(ui_StartupLabel1, lang[curr_lang][6], (int)(100.0 *update_info.writtenBytes / (update_info.totalBytes + 1))); //"正在升级(%d%%)..."
+        xSemaphoreGive(LVGLMutex);
+        vTaskDelay(pdMS_TO_TICKS(100));
+      }
+
+      /* 显示结果 */
+      if (update_info.result == UPDATE_SUCCESS)
+      {
+        esp_restart();
+      }
+      else
+      {
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        {
+          mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败"  "请通过串口手动更新固件"
+          lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+          lv_obj_center(mbox);
+        }
+        xSemaphoreGive(LVGLMutex);
+        vTaskDelete(NULL);
+      }
+    }
+
+    /* 检查文件 */
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
       lv_label_set_text(ui_StartupLabel2, lang[curr_lang][5]); //"正在检查文件..."
       xSemaphoreGive(LVGLMutex);
     }
-    updateStatus = updateFromSD(&errMsg);
     fileErr = checkSDFiles();
   }
 
   // 若检查到错误则停止启动
-  if ((hwErr & VISION_HW_SPIFFS_ERR) || updateStatus)
+  if (hwErr & VISION_HW_SPIFFS_ERR)
   {
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -882,75 +915,6 @@ static void getDailyNoteFromResinScreen(void *parameter)
   }
 
   vTaskDelete(NULL);
-}
-
-//*****************************/
-//  Updating from SD
-//
-//*****************************/
-static vision_update_result_t updateFromSD(String *errMsg)
-{
-  xSemaphoreTake(SDMutex, portMAX_DELAY);
-  File f = sdfs->open(UPDATE_FILE_PATH);
-  xSemaphoreGive(SDMutex);
-  if (!f)
-  {
-    f.close();
-    return VISION_NO_UPDATE;
-  }
-
-  if (f.isDirectory() || f.size() < 1024)
-  {
-    f.close();
-    errMsg->concat(lang[curr_lang][16]); // "升级文件错误\n"
-    return VISION_UPDATE_BAD_FILE;
-  }
-
-  size_t fSize = f.size();
-
-  if (!Update.begin(fSize))
-  {
-    f.close();
-    errMsg->concat(lang[curr_lang][17]); // "升级程序启动失败\n"
-    return VISION_UPDATE_START_FAIL;
-  }
-
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-  {
-    lv_label_set_text(ui_StartupLabel1, lang[curr_lang][6]); // "正在升级..."
-    lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]); // "请不要关闭电源\n或拔出SD卡"
-    xSemaphoreGive(LVGLMutex);
-  }
-
-  xSemaphoreTake(SDMutex, portMAX_DELAY);
-  {
-    ESP_LOGI("updateFromSD", "Start update...");
-    Update.writeStream(f);
-
-    if (Update.end())
-    {
-      if (Update.isFinished())
-      {
-        ESP_LOGI("updateFromSD", "Update finished!");
-        f.close();
-        sdfs->remove(UPDATE_FILE_PATH);
-        esp_restart();
-      }
-    }
-
-    f.close();
-  }
-  xSemaphoreGive(SDMutex);
-
-  ESP_LOGE("updateFromSD", "Update failed!");
-  if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-  {
-    mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败", "请通过串口手动更新固件"
-    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_center(mbox);
-    xSemaphoreGive(LVGLMutex);
-  }
-  return VISION_UPDATE_STARTED;
 }
 
 ////////////////////
