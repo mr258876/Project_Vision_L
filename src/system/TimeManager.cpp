@@ -19,8 +19,9 @@ void syncTime_NTP_async()
     {
         /* 根据语言设置ntp服务器 */
     case 1:
-        sntp_setservername(0, "cn.ntp.org.cn");
+        sntp_setservername(0, "cn.pool.ntp.org");
         sntp_setservername(1, "time.pool.aliyun.com");
+        sntp_setservername(2, "time3.cloud.tencent.com");
         break;
     default:
         sntp_setservername(0, "pool.ntp.org");
