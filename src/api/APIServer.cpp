@@ -15,6 +15,7 @@ httpd_handle_t s;
 //////////////////////////////
 
 static esp_err_t root_handler(httpd_req_t *req);
+static esp_err_t utility_handler(httpd_req_t *req);
 static esp_err_t info_handler(httpd_req_t *req);
 
 static esp_err_t playlist_get_handler(httpd_req_t *req);
@@ -50,6 +51,13 @@ httpd_uri_t uri_root = {
     .uri = "/",
     .method = HTTP_GET,
     .handler = root_handler,
+    .user_ctx = NULL};
+
+/* GET /utility 的 URI 处理结构 */
+httpd_uri_t uri_utility = {
+    .uri = "/utility/*",
+    .method = HTTP_GET,
+    .handler = utility_handler,
     .user_ctx = NULL};
 
 /* GET /info 的 URI 处理结构 */
@@ -293,9 +301,24 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
     {
         return httpd_resp_set_type(req, "text/html");
     }
+    else if (IS_FILE_EXT(filename, ".woff2"))
+    {
+        return httpd_resp_set_type(req, "application/font-woff2");
+    }
+    else if (IS_FILE_EXT(filename, ".css"))
+    {
+        return httpd_resp_set_type(req, "text/css");
+    }
+    else if (IS_FILE_EXT(filename, ".js"))
+    {
+        return httpd_resp_set_type(req, "application/javascript");
+    }
     else if (IS_FILE_EXT(filename, ".jpeg"))
     {
         return httpd_resp_set_type(req, "image/jpeg");
+    }
+    else if (IS_FILE_EXT(filename, ".png")) {
+        return httpd_resp_set_type(req, "image/png");
     }
     else if (IS_FILE_EXT(filename, ".ico"))
     {
@@ -387,13 +410,98 @@ static esp_err_t root_handler(httpd_req_t *req)
 {
     char redirect_link[65];
     char redirect_html[165];
-    sprintf(redirect_link, "https://mr258876.github.io/Project_Vision_L/?ip=%s", info_ipv4Address);
+    sprintf(redirect_link, "https://%s/utility/index.html?ip=%s", info_ipv4Address, info_ipv4Address);
     sprintf(redirect_html, "<html><h2>Please visit the management page here:</h2><br><a href=\"%s\">Project_Vision_L</a></html>", redirect_link);
 
     httpd_resp_set_status(req, "302	Found");
     httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
     httpd_resp_set_hdr(req, "Location", redirect_link); // Redirect to page on github
     httpd_resp_send(req, redirect_html, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 神之眼实用程序 */
+static esp_err_t utility_handler(httpd_req_t *req)
+{
+    char file_path[strlen(req->uri)+16];
+    sprintf(file_path, "/s/The Vision L%s", req->uri);
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    int file_res = access(file_path, F_OK);
+    xSemaphoreGive(SDMutex);
+
+    if (file_res)
+    {
+        ESP_LOGE("utility_handler", "File not exist! path:%s", file_path);
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
+    FILE *fd = fopen(file_path, "r");
+    if (!fd) {
+        ESP_LOGE("utility_handler", "Failed to read existing file : %s", file_path);
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
+        return ESP_FAIL;
+    }
+    set_content_type_from_file(req, file_path);
+
+    /* Retrieve the pointer to scratch buffer for temporary storage */
+    char *chunk = (char *)malloc(FILE_SCRATCH_BUFSIZE);
+    size_t chunksize = FILE_SCRATCH_BUFSIZE;
+    if (!chunk)
+    {
+        ESP_LOGI("utility_handler", "Create scratch buffer failed. Falling back to smaller size.");
+        chunk = (char *)malloc(FILE_SCRATCH_FALLBACK_BUFSIZE);
+        chunksize = FILE_SCRATCH_FALLBACK_BUFSIZE;
+    }
+    if (!chunk)
+    {
+        ESP_LOGE("utility_handler", "No enough memory to create scratch buffer!");
+        return return_err(req, "{\"response\":\"No enough ram\",\"code\":-20}");
+    }
+
+    size_t bytesread;
+    do
+    {
+        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        {
+            /* Read file in chunks into the scratch buffer */
+            bytesread = fread(chunk, 1, chunksize, fd);
+        }
+        xSemaphoreGive(SDMutex);
+
+        if (bytesread > 0)
+        {
+            /* Send the buffer contents as HTTP response chunk */
+            if (httpd_resp_send_chunk(req, chunk, bytesread) != ESP_OK)
+            {
+                free(chunk);
+                xSemaphoreTake(SDMutex, portMAX_DELAY);
+                {
+                    fclose(fd);
+                }
+                xSemaphoreGive(SDMutex);
+                ESP_LOGE("utility_handler", "File sending failed!");
+                /* Abort sending file */
+                httpd_resp_sendstr_chunk(req, NULL);
+                /* Respond with 500 Internal Server Error */
+                return return_err(req, "{\"response\":\"Failed on sending file\",\"code\":-11}");
+            }
+        }
+        /* Keep looping till the whole file is sent */
+    } while (bytesread > 0);
+
+    /* To finish the transfer */
+    httpd_resp_send_chunk(req, NULL, 0);
+    free(chunk);
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+        fclose(fd);
+    }
+    xSemaphoreGive(SDMutex);
+
     return ESP_OK;
 }
 
@@ -1552,6 +1660,11 @@ void startAPIServer()
     config.max_uri_handlers = 24;
     config.stack_size = 6144;
 
+    /* Use the URI wildcard matching function in order to
+     * allow the same handler to respond to multiple different
+     * target URIs which match the wildcard scheme */
+    config.uri_match_fn = httpd_uri_match_wildcard;
+
     /* 置空 esp_http_server 的实例句柄 */
     httpd_handle_t server = NULL;
 
@@ -1560,6 +1673,7 @@ void startAPIServer()
     {
         /* 注册 URI 处理程序 */
         httpd_register_uri_handler(server, &uri_root);
+        httpd_register_uri_handler(server, &uri_utility);
         httpd_register_uri_handler(server, &uri_info);
 
         httpd_register_uri_handler(server, &uri_playlist_get);
