@@ -1,5 +1,5 @@
-#ifndef _LCD_H_
-#define _LCD_H_
+#ifndef _LCD_PANELS_H_
+#define _LCD_PANELS_H_
 
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>

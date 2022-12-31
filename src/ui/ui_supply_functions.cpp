@@ -65,6 +65,7 @@ void cb_leaveDigitalClockScreen(lv_event_t *e)
 {
   lv_timer_del(ui_timer_DigitalClockTimer);                            // 删除秒针刷新定时器
   lv_timer_del(ui_timer_DigitalClockResinTimer);                       // 删除分针刷新定时器
+  lv_timer_del(ui_timer_DigitalClockWeatherTimer);                     // 删除天气数据刷新定时器
   lv_group_remove_all_objs(ui_group);                                  // 删除控制组内对象
   ui_MenuScreen_screen_init();                                         // 初始化下个要显示的屏幕
   lv_group_focus_obj(ui_MenuButton3);                                  // 聚焦在时钟按钮上

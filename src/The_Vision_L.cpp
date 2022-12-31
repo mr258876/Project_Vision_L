@@ -24,7 +24,7 @@
 #include <LinkedList.h>
 #include <Preferences.h>
 
-#include "LCD.h"
+#include "LCDPanels.h"
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 
@@ -355,6 +355,8 @@ void loop()
   printf("---------------------------------------------\r\n\n");
 
   vTaskDelay(pdMS_TO_TICKS(2000));
+#else
+  vTaskDelete(NULL);
 #endif
 }
 
@@ -570,7 +572,7 @@ void hardwareSetup(void *parameter)
       while (!update_info.result)
       {
         xSemaphoreTake(LVGLMutex, portMAX_DELAY);
-        lv_label_set_text_fmt(ui_StartupLabel1, lang[curr_lang][6], (int)(100.0 *update_info.writtenBytes / (update_info.totalBytes + 1))); //"正在升级(%d%%)..."
+        lv_label_set_text_fmt(ui_StartupLabel1, lang[curr_lang][6], (int)(100.0 * update_info.writtenBytes / (update_info.totalBytes + 1))); //"正在升级(%d%%)..."
         xSemaphoreGive(LVGLMutex);
         vTaskDelay(pdMS_TO_TICKS(100));
       }

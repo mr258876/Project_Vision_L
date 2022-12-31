@@ -1,4 +1,4 @@
-#include "system/LCD.h"
+#include "system/LCDPanels.h"
 
 lgfx::Panel_GC9A01 _panel_gc9a01;
 lgfx::Panel_ST7789 _panel_st7789;

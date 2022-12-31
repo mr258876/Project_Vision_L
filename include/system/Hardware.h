@@ -2,7 +2,7 @@
 #define _HARDWARE_H_
 
 #include <Arduino.h>
-#include "LCD.h"
+#include "LCDPanels.h"
 
 struct Pinout
 {
