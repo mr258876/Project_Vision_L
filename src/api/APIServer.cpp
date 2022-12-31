@@ -317,7 +317,8 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
     {
         return httpd_resp_set_type(req, "image/jpeg");
     }
-    else if (IS_FILE_EXT(filename, ".png")) {
+    else if (IS_FILE_EXT(filename, ".png"))
+    {
         return httpd_resp_set_type(req, "image/png");
     }
     else if (IS_FILE_EXT(filename, ".ico"))
@@ -423,7 +424,7 @@ static esp_err_t root_handler(httpd_req_t *req)
 /* 神之眼实用程序 */
 static esp_err_t utility_handler(httpd_req_t *req)
 {
-    char file_path[strlen(req->uri)+16];
+    char file_path[strlen(req->uri) + 16];
     sprintf(file_path, "/s/The Vision L%s", req->uri);
 
     xSemaphoreTake(SDMutex, portMAX_DELAY);
@@ -438,7 +439,8 @@ static esp_err_t utility_handler(httpd_req_t *req)
     }
 
     FILE *fd = fopen(file_path, "r");
-    if (!fd) {
+    if (!fd)
+    {
         ESP_LOGE("utility_handler", "Failed to read existing file : %s", file_path);
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
@@ -625,6 +627,11 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
 
     for (const char *fp : files)
     {
+        if ((!IS_FILE_EXT(fp, ".mjpeg")) && (!IS_FILE_EXT(fp, ".jpg")) && (!IS_FILE_EXT(fp, ".jpeg")))
+        {
+            continue;
+        }
+
         lv_fs_res_t _input_op_result;
         lv_fs_file_t _input;
         _input_op_result = lv_fs_open(&_input, fp, LV_FS_MODE_RD);
