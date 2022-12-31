@@ -101,18 +101,30 @@ if (ask == true) {
 }
 ```
 
-### 自定义元素顺序(自定义视频文件及顺序)
+### 自定义元素顺序(播放列表)
 - 打开SD卡根目录`playFiles.json`，并设定视频/图片文件顺序及路径。路径需要以盘符'S'开头。文件格式参考如下：
 ```
 {
     "files": [
         "S:/The_Vision_L/Pyro.mjpeg",
         "S:/水.mjpeg",
+        "S:/风.jpg"
+    ]
+}
+```
+- 您可以在播放列表中放入任意数量的视频/图片，视频长度不受限制。您甚至可以在播放列表中放入多个指向同一视频/图片的项重复播放。
+```
+{
+    "files": [
+        "S:/水.mjpeg",
         "S:/风.jpg",
+        "S:/风.jpg",
+        "S:/水.mjpeg"
     ]
 }
 ```
 - 注意：图片格式需为JPG/JPEG，尺寸240\*240且小于12KB，视频格式需为MJPEG，尺寸240\*240且每帧小于12KB。
+- 注意：JSON语法中不能出现多余逗号。当您确认输入路径无误但仍无法配置播放列表时请检查是否在列表结尾有多余逗号。
 - 您可以在[mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos)找到元素视频文件。
 
 ### 天气城市配置
@@ -202,7 +214,7 @@ Features planned for next major release:
 ```
 - `device_guid` is optional. It should be a random generated guid without dash line, 32 characters in total. The vision will generate one if left blank.
 
-### Customizing element order (custom video file and order)
+### Customizing element order (Playlist)
 - Open `playFiles.json`in SD card root directory, then set the path and sequence of videos and pictures. The paths need include driver letter 'S'. Example shown as below:
 ```
 {
@@ -213,7 +225,19 @@ Features planned for next major release:
     ]
 }
 ```
+- You can put as many videos/pictures as you want in your playlist. You can even put multiple paths pointing to the same video/picture in your playlist to play repeatedly.
+```
+{
+    "files": [
+        "S:/水.mjpeg",
+        "S:/风.jpg",
+        "S:/风.jpg",
+        "S:/水.mjpeg"
+    ]
+}
+```
 - Note: The format of pictures should be JPG/JPEG, with size 240px\*240px, file size less than 12KB; videos should be MJPEG, size 240px\*240px, less than 12 KB for each frame.
+- Note: Extra commas are not acceptable in JSON syntax. When you are sure about the paths but still getting errors, check whether there is any extra comma at the end of the list.
 - You could find the element videos at [mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos).
 
 ### Weather location configuration
