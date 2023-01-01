@@ -85,6 +85,13 @@ httpd_uri_t uri_playlist_post = {
     .handler = playlist_post_handler,
     .user_ctx = NULL};
 
+/* OPTIONS /playlist 的 URI 处理结构 */
+httpd_uri_t uri_playlist_options = {
+    .uri = "/api/v1/playlist",
+    .method = HTTP_OPTIONS,
+    .handler = api_options_handler,
+    .user_ctx = NULL};
+
 /* GET /playlist/current 的 URI 处理结构 */
 httpd_uri_t uri_playlist_current_get = {
     .uri = "/api/v1/playlist/current",
@@ -1746,6 +1753,7 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_playlist_get);
         httpd_register_uri_handler(server, &uri_playlist_post);
+        httpd_register_uri_handler(server, &uri_playlist_options);
         httpd_register_uri_handler(server, &uri_playlist_current_get);
 
         httpd_register_uri_handler(server, &uri_file_listdir);
