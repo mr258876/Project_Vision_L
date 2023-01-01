@@ -98,6 +98,39 @@ RESPONSE:
 }
 ~~~
 
+### GET /api/v1/playlist/current
+#### Brief
+该函数用于获取/设置当前播放文件编号。
+
+This function is used to get/set current playback file.
+
+#### Param
+value: 要设置的文件(0-255)，应小于播放列表大小。获取值时uri中不要带有查询参数。
+
+value: File to set(0-255), should be smaller than playlist size. DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/playlist/current?value=0
+
+RESPONSE:
+{
+    "currFileId":0
+}
+~~~
+
 ## 文件管理 / File Management
 ### GET /api/v1/file
 #### Brief

@@ -15,6 +15,8 @@ httpd_handle_t s;
 //////////////////////////////
 
 static esp_err_t root_handler(httpd_req_t *req);
+static esp_err_t api_options_handler(httpd_req_t *req);
+
 static esp_err_t utility_handler(httpd_req_t *req);
 static esp_err_t info_handler(httpd_req_t *req);
 
@@ -137,6 +139,13 @@ httpd_uri_t uri_hoyolab_conf_post = {
     .uri = "/api/v1/hoyolab/conf",
     .method = HTTP_POST,
     .handler = hoyolab_conf_post_handler,
+    .user_ctx = NULL};
+
+/* OPTIONS /hoyolab/conf 的 URI 处理结构 */
+httpd_uri_t uri_hoyolab_conf_options = {
+    .uri = "/api/v1/hoyolab/conf",
+    .method = HTTP_OPTIONS,
+    .handler = api_options_handler,
     .user_ctx = NULL};
 
 /* GET /hoyolab/resin_sync 的 URI 处理结构 */
@@ -434,6 +443,18 @@ static esp_err_t root_handler(httpd_req_t *req)
     httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
     httpd_resp_set_hdr(req, "Location", redirect_link); // Redirect to page on github
     httpd_resp_send(req, redirect_html, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* OPTIONS handler */
+/* 响应ajax请求预检 */
+static esp_err_t api_options_handler(httpd_req_t *req)
+{   
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Access-Control-AllOw-Methods", "GET, POST, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
+    httpd_resp_send(req, "", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -1735,6 +1756,7 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_hoyolab_conf_get);
         httpd_register_uri_handler(server, &uri_hoyolab_conf_post);
+        httpd_register_uri_handler(server, &uri_hoyolab_conf_options);
         httpd_register_uri_handler(server, &uri_hoyolab_resin_sync_get);
 
         httpd_register_uri_handler(server, &uri_setting_auto_bright_get);
