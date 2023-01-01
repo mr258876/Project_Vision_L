@@ -30,6 +30,7 @@ static esp_err_t file_makedir_handler(httpd_req_t *req);
 
 static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req);
 static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req);
+static esp_err_t hoyolab_resin_sync_get_handler(httpd_req_t *req);
 
 static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req);
 static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req);
@@ -39,6 +40,7 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req);
 static esp_err_t setting_timezone_get_handler(httpd_req_t *req);
 
 static esp_err_t weather_city_get_handler(httpd_req_t *req);
+static esp_err_t weather_sync_get_handler(httpd_req_t *req);
 
 //////////////////////////////
 //
@@ -137,6 +139,13 @@ httpd_uri_t uri_hoyolab_conf_post = {
     .handler = hoyolab_conf_post_handler,
     .user_ctx = NULL};
 
+/* GET /hoyolab/resin_sync 的 URI 处理结构 */
+httpd_uri_t uri_hoyolab_resin_sync_get = {
+    .uri = "/api/v1/hoyolab/resin_sync",
+    .method = HTTP_GET,
+    .handler = hoyolab_resin_sync_get_handler,
+    .user_ctx = NULL};
+
 /* GET /setting/auto_bright 的 URI 处理结构 */
 httpd_uri_t uri_setting_auto_bright_get = {
     .uri = "/api/v1/setting/auto_bright",
@@ -184,6 +193,13 @@ httpd_uri_t uri_weather_city_get = {
     .uri = "/api/v1/weather/city",
     .method = HTTP_GET,
     .handler = weather_city_get_handler,
+    .user_ctx = NULL};
+
+/* GET /weather/sync 的 URI 处理结构 */
+httpd_uri_t uri_weather_sync_get = {
+    .uri = "/api/v1/weather/sync",
+    .method = HTTP_GET,
+    .handler = weather_sync_get_handler,
     .user_ctx = NULL};
 
 //////////////////////////////
@@ -1350,6 +1366,18 @@ static esp_err_t hoyolab_conf_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 更新树脂 */
+/* 注意：此为阻塞函数 */
+static esp_err_t hoyolab_resin_sync_get_handler(httpd_req_t *req)
+{
+    hyc.syncDailyNote(&nd);
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* 获取/设置自动亮度开关 */
 /* @param value: 要设置的值，通过url传参(true, false) */
 static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
@@ -1649,6 +1677,18 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 更新天气 */
+/* 注意：此为阻塞函数 */
+static esp_err_t weather_sync_get_handler(httpd_req_t *req)
+{
+    wp->getCurrentWeather(&weather);
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 //////////////////////////////
 //
 //  全局函数实现
@@ -1695,6 +1735,7 @@ void startAPIServer()
 
         httpd_register_uri_handler(server, &uri_hoyolab_conf_get);
         httpd_register_uri_handler(server, &uri_hoyolab_conf_post);
+        httpd_register_uri_handler(server, &uri_hoyolab_resin_sync_get);
 
         httpd_register_uri_handler(server, &uri_setting_auto_bright_get);
         httpd_register_uri_handler(server, &uri_setting_auto_rotate_get);
@@ -1704,6 +1745,7 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_setting_timezone_get);
 
         httpd_register_uri_handler(server, &uri_weather_city_get);
+        httpd_register_uri_handler(server, &uri_weather_sync_get);
     }
     /* 如果服务器启动失败，返回的句柄是 NULL */
     s = server;
@@ -1716,5 +1758,7 @@ void endAPIServer()
     {
         /* 停止 httpd server */
         httpd_stop(s);
+        /* 将句柄置空 */
+        s = NULL;
     }
 }
