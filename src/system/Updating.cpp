@@ -176,6 +176,12 @@ void checkUpdate()
         ESP_LOGE("checkUpdate", "deserializeJson() failed:%s", error.c_str());
         return;
     }
+    else
+    {
+        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        remove("/s/Update.json");
+        xSemaphoreGive(SDMutex);
+    }
 
     JsonArray files = doc["files"];
     if (files.size() == 0)
@@ -187,7 +193,7 @@ void checkUpdate()
     for (size_t i = 0; i < files.size(); i++)
     {
         char url[strlen(getFileDownloadPrefix()) + strlen(files[i][0]) + 1];
-        const char* download_path = files[i][0];
+        const char *download_path = files[i][0];
         sprintf(url, "%s%s", getFileDownloadPrefix(), download_path);
         download_err = download_err | downloadGithubFile(url, files[i][1]);
         if (download_err)
@@ -206,6 +212,6 @@ void checkUpdate()
         }
         return;
     }
-    
+
     esp_restart();
 }
