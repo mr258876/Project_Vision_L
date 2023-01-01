@@ -192,8 +192,8 @@ void checkUpdate()
     uint download_err = 0;
     for (size_t i = 0; i < files.size(); i++)
     {
-        char url[strlen(getFileDownloadPrefix()) + strlen(files[i][0]) + 1];
         const char *download_path = files[i][0];
+        char url[strlen(getFileDownloadPrefix()) + strlen(download_path) + 1];
         sprintf(url, "%s%s", getFileDownloadPrefix(), download_path);
         download_err = download_err | downloadGithubFile(url, files[i][1]);
         if (download_err)
