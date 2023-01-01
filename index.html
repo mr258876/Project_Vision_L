@@ -575,7 +575,7 @@
         if (device_IP) {
             connectDevice();
         } else {
-            mdui.prompt("设备IP地址", "请指定设备IP地址", function (value) { $(location).prop("href", $(location).prop("href") + "?ip=" + value); }, function (value) { }, { confirmText: "确认", cancelText: "取消", modal: true, closeOnConfirm: false, confirmOnEnter: true, maxlength: 15 });
+            mdui.prompt("设备IP地址", "请指定设备IP地址", function (value) { $(location).prop("href", $(location).prop("href").replace("#mdui-dialog", "") + "?ip=" + value); }, function (value) { }, { confirmText: "确认", cancelText: "取消", modal: true, closeOnConfirm: false, confirmOnEnter: true, maxlength: 15 });
         }
     });
 </script>
