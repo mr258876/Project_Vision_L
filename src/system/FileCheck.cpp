@@ -59,7 +59,7 @@ static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
 
 static bool is_file_ext(const char *filename, const char *ext)
 {
-  return (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0);
+  return (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0);
 }
 
 //////////////////////////////
@@ -162,19 +162,17 @@ static uint loadPlayList()
   filePaths.clear();
   for (const char *fp : files)
   {
-    if ((!is_file_ext(fp, ".mjpeg")) && (!is_file_ext(fp, ".jpg")) && (!is_file_ext(fp, ".jpeg")))
+    if (is_file_ext(fp, ".mjpeg") || is_file_ext(fp, ".jpg") || is_file_ext(fp, ".jpeg"))
     {
-      continue;
+      lv_fs_res_t _input_op_result;
+      lv_fs_file_t _input;
+      _input_op_result = lv_fs_open(&_input, fp, LV_FS_MODE_RD);
+      if (_input_op_result == LV_FS_RES_OK)
+      {
+        filePaths.add(String(fp));
+      }
+      lv_fs_close(&_input);
     }
-
-    lv_fs_res_t _input_op_result;
-    lv_fs_file_t _input;
-    _input_op_result = lv_fs_open(&_input, fp, LV_FS_MODE_RD);
-    if (_input_op_result == LV_FS_RES_OK)
-    {
-      filePaths.add(String(fp));
-    }
-    lv_fs_close(&_input);
   }
 
   if (filePaths.size() < 1)
