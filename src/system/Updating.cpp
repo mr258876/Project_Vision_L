@@ -213,5 +213,5 @@ void checkUpdate()
         return;
     }
 
-    esp_restart();
+    esp_restart();  // 文件下载好后重启，重启检查更新文件无误后开始更新
 }

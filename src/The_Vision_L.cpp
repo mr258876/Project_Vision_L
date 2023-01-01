@@ -694,7 +694,7 @@ void hardwareSetup(void *parameter)
       fileErr = (fileErr & 0b11111100) | fixMissingFiles();
     }
 
-    if (setting_autoUpdate)
+    if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR))  // 没有SD卡无法自动更新
     {
       if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
       {
