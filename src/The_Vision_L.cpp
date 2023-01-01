@@ -267,13 +267,13 @@ void setup()
     {
       SD_MMC.setPins(po.SD_CLK, po.SD_CMD, po.SD_DAT0, po.SD_DAT1, po.SD_DAT2, po.SD_DAT3);
     }
-    SD_MMC.begin("/s", po.SD_use_1_bit);
+    SD_MMC.begin("/s", po.SD_use_1_bit, false, SDMMC_FREQ_HIGHSPEED);
     sdfs = &SD_MMC;
   }
   else
   {
     SPI.begin(po.SD_CLK, po.SD_DAT0, po.SD_CMD, po.SD_DAT3);
-    SD.begin(po.SD_DAT3, SPI, 20000000, "/s");
+    SD.begin(po.SD_DAT3, SPI, 40000000, "/s");
     sdfs = &SD;
   }
 
@@ -1311,11 +1311,7 @@ static void weatherSync(void *parameter)
 {
   if (connectWiFi())
   {
-    if (xSemaphoreTake(WeatherDataMutex, portMAX_DELAY) == pdTRUE)
-    {
-      wp->getCurrentWeather(&weather);
-      xSemaphoreGive(WeatherDataMutex);
-    }
+    wp->getCurrentWeather(&weather);
     disConnectWiFi();
   }
 }
