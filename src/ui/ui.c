@@ -469,6 +469,11 @@ void ui_event_SettingSideButton0(lv_event_t *e)
     lv_obj_t *target = lv_event_get_target(e);
     if (event_code == LV_EVENT_CLICKED)
     {
+        if (lv_obj_has_state(ui_SettingSideButton0, LV_STATE_PRESSED))
+        {
+            lv_group_focus_obj(ui_SettingPanel0SW1Switch1);
+        }
+
         _ui_state_modify(ui_SettingSideButton3, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
         _ui_state_modify(ui_SettingSideButton2, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
         _ui_state_modify(ui_SettingSideButton1, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
@@ -486,6 +491,11 @@ void ui_event_SettingSideButton1(lv_event_t *e)
     lv_obj_t *target = lv_event_get_target(e);
     if (event_code == LV_EVENT_CLICKED)
     {
+        if (lv_obj_has_state(ui_SettingSideButton1, LV_STATE_PRESSED))
+        {
+            lv_group_focus_obj(ui_SettingPanel1Button1Button);
+        }
+
         _ui_state_modify(ui_SettingSideButton3, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
         _ui_state_modify(ui_SettingSideButton2, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
         _ui_state_modify(ui_SettingSideButton1, LV_STATE_PRESSED, _UI_MODIFY_STATE_ADD);
@@ -503,6 +513,16 @@ void ui_event_SettingSideButton2(lv_event_t *e)
     lv_obj_t *target = lv_event_get_target(e);
     if (event_code == LV_EVENT_CLICKED)
     {
+        if (lv_obj_has_state(ui_SettingSideButton2, LV_STATE_PRESSED))
+        {
+            if (!lv_obj_has_state(ui_SettingPanel2SW1Switch1, LV_STATE_DISABLED))
+                lv_group_focus_obj(ui_SettingPanel2SW1Switch1);
+            else if (!lv_obj_has_state(ui_SettingPanel2SW2Switch1, LV_STATE_DISABLED))
+                lv_group_focus_obj(ui_SettingPanel2SW2Switch1);
+            else
+                lv_group_focus_obj(ui_SettingPanel2DP1Dropdown1);
+        }
+
         _ui_state_modify(ui_SettingSideButton3, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
         _ui_state_modify(ui_SettingSideButton2, LV_STATE_PRESSED, _UI_MODIFY_STATE_ADD);
         _ui_state_modify(ui_SettingSideButton1, LV_STATE_PRESSED, _UI_MODIFY_STATE_REMOVE);
