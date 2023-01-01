@@ -10,6 +10,7 @@ SemaphoreHandle_t LVGLMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t MjpegReadMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t NoteDataMutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t WeatherDataMutex = xSemaphoreCreateMutex();
 
 SemaphoreHandle_t WiFiConnectMutex = xSemaphoreCreateMutex();
 SemaphoreHandle_t APIStartupMutex = xSemaphoreCreateMutex();
@@ -29,3 +30,4 @@ TaskHandle_t wifiConfigHandle;
 
 esp_timer_handle_t resinCalcTimer;
 esp_timer_handle_t resinSyncTimer;
+esp_timer_handle_t weatherSyncTimer;

@@ -70,6 +70,7 @@ extern bool setting_soundMuted;
 extern uint8_t setting_soundVolume;
 
 extern unsigned long setting_resinSyncPeriod;
+extern unsigned long setting_weatherSyncPeriod;
 
 extern bool setting_useDigitalClock;
 

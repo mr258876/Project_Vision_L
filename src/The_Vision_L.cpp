@@ -125,6 +125,7 @@ static uint checkHardware();
 static bool getDailyNote(Notedata *nd, String *errMsg);
 static void resinCalc(void *parameter);
 static void resinSync(void *parameter);
+static void weatherSync(void *parameter);
 
 static void setAPIserver_async(void *parameter);
 
@@ -818,6 +819,13 @@ void hardwareSetup(void *parameter)
   ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
   ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, setting_resinSyncPeriod));
 
+  // 每15分钟同步一次天气数据
+  esp_timer_create_args_t weatherSync_timer_args = {
+      .callback = &weatherSync,
+      .name = "weatherSync"};
+  ESP_ERROR_CHECK(esp_timer_create(&weatherSync_timer_args, &weatherSyncTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(weatherSyncTimer, setting_weatherSyncPeriod));
+
   if (!(hwErr & VISION_HW_SD_ERR) && !((fileErr & VISION_FILE_PLAYLIST_ERR) || (fileErr & VISION_FILE_PLAYLIST_CRITICAL)))
   {
     // 若有SD卡且播放列表不为空则进行播放
@@ -1294,6 +1302,19 @@ static void resinSync(void *parameter)
     {
       hyc.syncDailyNote(&nd);
       xSemaphoreGive(NoteDataMutex);
+    }
+    disConnectWiFi();
+  }
+}
+
+static void weatherSync(void *parameter)
+{
+  if (connectWiFi())
+  {
+    if (xSemaphoreTake(WeatherDataMutex, portMAX_DELAY) == pdTRUE)
+    {
+      wp->getCurrentWeather(&weather);
+      xSemaphoreGive(WeatherDataMutex);
     }
     disConnectWiFi();
   }
