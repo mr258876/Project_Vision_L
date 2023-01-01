@@ -16,7 +16,8 @@
 
 enum Vision_FileCheck_result_t : uint8_t
 {
-    VISION_FILE_OK = 0,                     //  文件正常
+    VISION_FILE_NOT_CHECK = 255,            // 未测试
+    VISION_FILE_OK = 0,                     // 文件正常
     VISION_FILE_SYS_FILE_ERR = 0b1,         // 一般系统文件缺失
     VISION_FILE_SYS_FILE_CRITICAL = 0b10,   // 关键系统文件缺失
     VISION_FILE_PLAYLIST_ERR = 0b100,       // 播放列表部分文件缺失(无可播放文件)
@@ -25,6 +26,13 @@ enum Vision_FileCheck_result_t : uint8_t
 };
 
 typedef Vision_FileCheck_result_t (*Vision_FileCheck_cb_t)(bool filePassedCheck);
+
+struct Vision_FileCheck_t
+{
+    const char *localPath;         // local path with driver name
+    const char *downloadPath;      // without prefix
+    Vision_FileCheck_cb_t file_cb; // file callback
+};
 
 extern Vision_FileCheck_result_t fileCheckResults[];
 
@@ -49,10 +57,10 @@ enum Vision_FileCheck_download_res_t : uint8_t
     @param TLScert: certicifate for HTTPS
     @return reference to Vision_FileCheck_download_res_t
 */
-uint downloadFile(const char* url, const char* path_to_save, const char* TLScert = nullptr);
+uint downloadFile(const char *url, const char *path_to_save, const char *TLScert = nullptr);
 
-uint downloadGithubFile(const char* url, const char* path_to_save);
+uint downloadGithubFile(const char *url, const char *path_to_save);
 
-const char* getFileDownloadPrefix();
+const char *getFileDownloadPrefix();
 
 #endif

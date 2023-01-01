@@ -24,43 +24,17 @@ const char *fileDownloadPrefix[] = {
 
 const char *updateConfPath = "update.json";
 
-const char *fileDownloadPaths[] = {
-    "/fonts/ui_font_HanyiWenhei20.bin",
-    "/utility/index.html",
-    "/utility/css/mdui.min.css",
-    "/utility/js/mdui.min.js",
-    "/utility/js/jquery-3.6.3.min.js",
-    "/utility/icons/material-icons/MaterialIcons-Regular.ijmap",
-    "/utility/icons/material-icons/MaterialIcons-Regular.woff2",
-    "/utility/images/Liyue.png",
-    "/utility/images/Liyue_Extended.png",
-    "/utility/images/Mondstadt.png",
-};
-
-const char *fileCheckPaths[] = {
-    "/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin",
-    "/s/The Vision L/utility/index.html",
-    "/s/The Vision L/utility/css/mdui.min.css",
-    "/s/The Vision L/utility/js/mdui.min.js",
-    "/s/The Vision L/utility/js/jquery-3.6.3.min.js",
-    "/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.ijmap",
-    "/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.woff2",
-    "/s/The Vision L/utility/images/Liyue.png",
-    "/s/The Vision L/utility/images/Liyue_Extended.png",
-    "/s/The Vision L/utility/images/Mondstadt.png",
-};
-
-const Vision_FileCheck_cb_t fileCheckCallbacks[] = {
-    cb_ui_font_HanyiWenhei20,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
-    cb_general_sys_file,
+static const Vision_FileCheck_t fileCheckFiles[] = {
+    {"/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin", "/fonts/ui_font_HanyiWenhei20.bin", cb_ui_font_HanyiWenhei20},
+    {"/s/The Vision L/utility/index.html", "/utility/index.html", cb_general_sys_file},
+    {"/s/The Vision L/utility/css/mdui.min.css", "/utility/css/mdui.min.css", cb_general_sys_file},
+    {"/s/The Vision L/utility/js/mdui.min.js", "/utility/js/mdui.min.js", cb_general_sys_file},
+    {"/s/The Vision L/utility/js/jquery-3.6.3.min.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
+    {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.ijmap", "/utility/icons/material-icons/MaterialIcons-Regular.ijmap", cb_general_sys_file},
+    {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.woff2", "/utility/icons/material-icons/MaterialIcons-Regular.woff2", cb_general_sys_file},
+    {"/s/The Vision L/utility/images/Liyue.png", "/utility/images/Liyue.png", cb_general_sys_file},
+    {"/s/The Vision L/utility/images/Liyue_Extended.png", "/utility/images/Liyue_Extended.png", cb_general_sys_file},
+    {"/s/The Vision L/utility/images/Mondstadt.png", "/utility/images/Mondstadt.png", cb_general_sys_file},
 };
 
 Vision_FileCheck_result_t fileCheckResults[10];
@@ -83,7 +57,7 @@ static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
   }
 }
 
-static bool is_file_ext(const char* filename, const char* ext)
+static bool is_file_ext(const char *filename, const char *ext)
 {
   return (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0);
 }
@@ -132,11 +106,11 @@ uint checkSDFiles()
   Vision_FileCheck_result_t fileResult;
   for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
   {
-    FSMutex = get_FS_mutex(fileCheckPaths[i][1]);
+    FSMutex = get_FS_mutex(fileCheckFiles[i].localPath[1]);
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
     {
-      f = fopen(fileCheckPaths[i], "r");
-      fileResult = fileCheckCallbacks[i](f ? true : false);
+      f = fopen(fileCheckFiles[i].localPath, "r");
+      fileResult = fileCheckFiles[i].file_cb(f ? true : false);
       if (f)
         fclose(f);
       fileCheckResults[i] = fileResult;
@@ -192,7 +166,7 @@ static uint loadPlayList()
     {
       continue;
     }
-  
+
     lv_fs_res_t _input_op_result;
     lv_fs_file_t _input;
     _input_op_result = lv_fs_open(&_input, fp, LV_FS_MODE_RD);
@@ -490,16 +464,16 @@ uint fixMissingFiles()
     if (fileCheckResults[i])
     {
       /* 拼接url */
-      char url[strlen(getFileDownloadPrefix()) + strlen(fileCheckPaths[i]) + 1];
-      sprintf(url, "%s%s", getFileDownloadPrefix(), fileDownloadPaths[i]);
+      char url[strlen(getFileDownloadPrefix()) + strlen(fileCheckFiles[i].downloadPath) + 1];
+      sprintf(url, "%s%s", getFileDownloadPrefix(), fileCheckFiles[i].downloadPath);
 
-      if (downloadGithubFile(url, fileCheckPaths[i])) // <- DOWNLOAD_RES_OK=0
+      if (downloadGithubFile(url, fileCheckFiles[i].localPath)) // <- DOWNLOAD_RES_OK=0
       {
         res = res | fileCheckResults[i];
       }
       else
       {
-        fileCheckCallbacks[i](true);
+        fileCheckFiles[i].file_cb(true);
       }
     }
   }
