@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=0">
 
     <title>神之眼实用程序</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="stylesheet" href="./css/mdui.min.css" />
     <script src="./js/jquery-3.6.3.min.js"></script>
     <script type="module" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.esm.js"></script>
@@ -15,7 +17,8 @@
     class="mdui-appbar-with-toolbar mdui-bottom-nav-fixed mdui-theme-primary-teal mdui-theme-accent-orange mdui-theme-layout-auto">
     <header class="mdui-appbar mdui-appbar-fixed" id="appbar">
         <div class="mdui-toolbar mdui-color-theme">
-            <a href="javascript:;" class="mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons"></i></a>
+            <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-drawer="{target: '#drawer'}"><i
+                    class="mdui-icon material-icons">menu</i></a>
             <a href="javascript:;" class="mdui-typo-title">神之眼实用程序</a>
             <div class="mdui-toolbar-spacer"></div>
             <a href="https://github.com/mr258876/Project_Vision_L" class="mdui-btn mdui-btn-icon"
@@ -28,7 +31,7 @@
 
     <br />
 
-    <div class="mdui-container">
+    <div class="mdui-container" id="settings-container">
         <div class="mdui-typo" id="basic-info">
             <div class="mdui-row">
                 <div class="mdui-col-xs-12 mdui-typo-title">设备信息</div>
@@ -44,7 +47,7 @@
             </div>
         </div>
 
-        <hr />
+        <hr /><br />
 
         <div id="device-settings">
             <div class="mdui-row">
@@ -133,7 +136,7 @@
             </div>
         </div>
 
-        <hr />
+        <hr /><br />
 
         <div id="weather-config">
             <div class="mdui-row">
@@ -142,19 +145,34 @@
 
             <div class="mdui-row">
                 <ul class="mdui-col-xs-12 mdui-list">
-                    <li class="mdui-list-item mdui-ripple" style="overflow: visible;">
+                    <li class="mdui-list-item mdui-ripple">
                         <i class="mdui-list-item-icon mdui-icon material-icons">location_on</i>
-                        <div class="mdui-list-item-content">位置</div>
+                        <div class="mdui-list-item-content">城市名称</div>
                         <div>
                             <div class="mdui-textfield mdui-valign">
-                                <input class="mdui-textfield-input" type="text" placeholder="位置" autocomplete="off"
-                                    id="device-weather-loc-input" />
+                                <input class="mdui-textfield-input" type="text" placeholder="城市名称" autocomplete="off"
+                                    id="device-weather-loc-name-input" />
                             </div>
-                            <ul class="mdui-list mdui-color-white" id="city-select-ul"
-                                style="position: absolute; z-index: 1; height: 205px;width: auto;overflow-y: scroll;float: left;clear: both;"
-                                hidden>
-
-                            </ul>
+                        </div>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple">
+                        <i class="mdui-list-item-icon mdui-icon material-icons"></i>
+                        <div class="mdui-list-item-content">纬度</div>
+                        <div>
+                            <div class="mdui-textfield mdui-valign">
+                                <input class="mdui-textfield-input" type="text" placeholder="纬度" autocomplete="off"
+                                    id="device-weather-loc-lat-input" />
+                            </div>
+                        </div>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple">
+                        <i class="mdui-list-item-icon mdui-icon material-icons"></i>
+                        <div class="mdui-list-item-content">经度</div>
+                        <div>
+                            <div class="mdui-textfield mdui-valign">
+                                <input class="mdui-textfield-input" type="text" placeholder="经度" autocomplete="off"
+                                    id="device-weather-loc-lon-input" />
+                            </div>
                         </div>
                     </li>
                     <li class="mdui-list-item mdui-ripple">
@@ -165,13 +183,18 @@
                             <option value="1" selected>墨迹天气</option>
                         </select>
                     </li>
+                    <li class="mdui-list-item mdui-ripple">
+                        <div class="mdui-list-item-content"></div>
+                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
+                            id="update-weather-conf-btn">更新天气配置</button>
+                    </li>
                 </ul>
             </div>
         </div>
 
-        <hr />
+        <hr /><br />
 
-        <div id="hoyolab-config" hidden>
+        <div id="hoyolab-config">
             <div class="mdui-row">
                 <div class="mdui-col-xs-12 mdui-typo-title">米游社配置</div>
             </div>
@@ -182,26 +205,34 @@
                         <i class="mdui-list-item-icon mdui-icon material-icons">account_circle</i>
                         <div class="mdui-list-item-content">UID</div>
                         <div class="mdui-textfield">
-                            <input class="mdui-textfield-input" type="text" placeholder="UID" autocomplete="off" />
+                            <input class="mdui-textfield-input" type="text" placeholder="UID" autocomplete="off"
+                                id="hoyolab-uid-input" />
                         </div>
                     </li>
                     <li class="mdui-list-item mdui-ripple">
                         <i class="mdui-list-item-icon mdui-icon material-icons">verified_user</i>
                         <div class="mdui-list-item-content">Cookie</div>
                         <div class="mdui-textfield">
-                            <input class="mdui-textfield-input" type="text" rows="3" placeholder="Cookie" autocomplete="off">
+                            <input class="mdui-textfield-input" type="text" placeholder="Cookie" autocomplete="off"
+                                id="hoyolab-cookie-input" />
                         </div>
                     </li>
                     <li class="mdui-list-item mdui-ripple">
                         <i class="mdui-list-item-icon mdui-icon material-icons">android</i>
                         <div class="mdui-list-item-content">设备GUID</div>
                         <div class="mdui-textfield">
-                            <input class="mdui-textfield-input" type="text" placeholder="UID" autocomplete="off" />
+                            <input class="mdui-textfield-input" type="text" placeholder="GUID" autocomplete="off"
+                                id="hoyolab-guid-input" />
                         </div>
                     </li>
                     <li class="mdui-list-item mdui-ripple">
+                        <div class="mdui-list-item-content"><small
+                                class="mdui-typo-caption-opacity">出于安全策略，神之眼中储存的米游社配置将不会展示在该界面中</small></div>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple">
                         <div class="mdui-list-item-content"></div>
-                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple">更新米游社配置</button>
+                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
+                            id="update-hoyolab-conf-btn">更新米游社配置</button>
                     </li>
                 </ul>
             </div>
@@ -209,27 +240,65 @@
 
     </div>
 
-    <div class="mdui-bottom-nav mdui-bottom-nav-text-auto mdui-color-theme" style="z-index: 1;" hidden>
-        <a href="javascript:;" class="mdui-ripple mdui-bottom-nav-active">
+    <div class="mdui-container" id="playlist-container" hidden>
+        <div class="mdui-typo">
+            <div class="mdui-row">
+                <div class="mdui-col-xs-12 mdui-typo-title">播放列表</div>
+            </div>
+            <div class="mdui-row">
+                <p class="mdui-col-xs-12">播放列表中文件总数：<span id="playlist-file-total-span"></span></p>
+            </div>
+        </div>
+
+        <hr /><br />
+
+        <ul class="mdui-list" id="playlist-ul">
+            <li class="mdui-list-item mdui-ripple mdui-list-item-active" id="playlist-li-1">
+                <i class="mdui-list-item-icon mdui-icon material-icons">play_arrow</i>
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line">Multiline item</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line">You've got to get enough sleep. Other
+                        travelling salesmen live a life of luxury. You've got to get enough sleep. Other travelling
+                        salesmen live a life of luxury.</div>
+                </div>
+                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">content_copy</a>
+                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">delete</a>
+            </li>
+            <li class="mdui-list-item mdui-ripple" id="playlist-li-2">
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line">Multiline item</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line">You've got to get enough sleep. Other
+                        travelling salesmen live a life of luxury. You've got to get enough sleep. Other travelling
+                        salesmen live a life of luxury.</div>
+                </div>
+                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">content_copy</a>
+                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">delete</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="mdui-bottom-nav mdui-bottom-nav-text-auto mdui-color-theme" id="bottom-nav-div">
+        <a href="javascript:;" class="mdui-ripple mdui-bottom-nav-active" id="settings-a">
             <i class="mdui-icon material-icons">settings</i>
             <label>设备配置</label>
         </a>
-        <a href="javascript:;" class="mdui-ripple">
+        <a href="javascript:;" class="mdui-ripple" id="playlist-a">
             <i class="mdui-icon material-icons">playlist_play</i>
             <label>播放列表</label>
         </a>
-        <a href="javascript:;" class="mdui-ripple">
+        <a href="javascript:;" class="mdui-ripple" hidden>
             <i class="mdui-icon material-icons">folder_open</i>
             <label>文件管理</label>
         </a>
     </div>
 
-    <div class="mdui-dialog" id="connect-fail-dialog">
-        <div class="mdui-dialog-title">连接已断开</div>
-        <div class="mdui-dialog-content">设备在规定的时间内没有响应。请检查设备网络状态，然后重试。</div>
-        <div class="mdui-dialog-actions">
-            <button class="mdui-btn mdui-ripple" mdui-dialog-confirm>重新连接</button>
-        </div>
+    <div class="mdui-drawer mdui-drawer-close" id="drawer">
+        <ul class="mdui-list">
+            <li class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">info</i>
+                <div class="mdui-list-item-content" id="utility-about-div">关于实用程序</div>
+            </li>
+        </ul>
     </div>
 
     <script src="./js/mdui.min.js"></script>
@@ -239,9 +308,9 @@
     $.ajaxSettings.timeout = 5000;
 
     const API_PREFIX = "/api/v1";
-    const DEVICE_IMG = ["", "./images/Liyue_Extended.png", "", "./images/Mondstadt.png"];
+    const DEVICE_IMG = ["", "./images/Liyue_Extended.png", "./images/Liyue.png", "./images/Mondstadt.png"];
 
-    var device_IP = "10.16.216.129";
+    var device_IP;
 
     var device_name;
     var device_app_version;
@@ -253,6 +322,10 @@
     var device_auto_rotate;
     var device_language;
     var device_timezone;
+
+    var device_weatherCity;
+    var device_weatherLatitude;
+    var device_weatherLongitude;
 
     function hideProgressBar() {
         $("#progress-bar").prop("hidden", true);
@@ -304,8 +377,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -327,8 +399,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -350,8 +421,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -373,8 +443,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -396,8 +465,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -414,15 +482,39 @@
             device_weatherLongitude = data.longitude;
         })
             .done(function () {
-                $("#device-weather-loc-input").val(device_weatherCity);
+                $("#device-weather-loc-name-input").val(device_weatherCity);
+                $("#device-weather-loc-lat-input").val(device_weatherLatitude);
+                $("#device-weather-loc-lon-input").val(device_weatherLongitude);
             })
             .fail(function () {
                 mdui.snackbar({
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+
+    function postHoyolabConf(uid, cookie, guid) {
+        showProgressBar();
+        $.ajax({ type: "POST", contentType: "application/json", url: ("http" + device_IP + API_PREFIX + "/hoyolab/conf"), data: JSON.stringify({ "uid": uid, "cookie": cookie, "device_guid": guid }) })
+            .done(function () {
+                mdui.snackbar({
+                    message: '米游社配置已更新',
+                    position: 'top'
+                });
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -480,14 +572,24 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                var diag = new mdui.Dialog("#connect-fail-dialog", { overlay: true, history: false, modal: true, closeOnEsc: false, closeOnCancel: true, closeOnConfirm: true, destroyOnClosed: true });
-                diag.open();
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
                     hideProgressBar();
                 }
             );
+    }
+
+    // 调整底部导航栏颜色
+    function bottomNavColor() {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            $('#bottom-nav-div').removeClass('mdui-color-theme');
+            $('#bottom-nav-div').addClass('mdui-color-grey-900');
+        } else {
+            $('#bottom-nav-div').removeClass('mdui-color-grey-900');
+            $('#bottom-nav-div').addClass('mdui-color-theme');
+        }
     }
 
     //获取url中的参数
@@ -500,11 +602,6 @@
     ////////////////////
     // 按钮回调函数
     ////////////////////
-
-    // 连接失败对话框
-    $("#connect-fail-dialog").on("confirm.mdui.dialog", function () {
-        connectDevice();
-    });
 
     // 亮度滑块
     $("#brightness-slider").change(function () {
@@ -526,57 +623,55 @@
 
     // 时区
     $("#device-timezone-select").change(function () {
-        getTimezone($("#device-timezone-select").val())
+        getTimezone($("#device-timezone-select").val());
     });
 
-    // 天气城市输入框
-    $("#device-weather-loc-input").keyup(function (event) {
-        last = event.timeStamp;
-        setTimeout(() => {
-            if (last - event.timeStamp == 0 && $("#device-weather-loc-input").val()) {
-                showProgressBar();
-                $.getJSON("https://geocoding-api.open-meteo.com/v1/search?language=zh&name=" + $("#device-weather-loc-input").val(), function (data) {
-                    var cities = data.results;
-                    if (cities.length && cities.length > 0) {
-                        $("#city-select-ul").prop("hidden", false);
-                        $("#city-select-ul").html("");
-                        for (let index = 0; index < cities.length; index++) {
-                            const e = cities[index];
-                            $("#city-select-ul").append("<li class='mdui-list-item mdui-ripple'>" + e.name + "(" + e.admin1 + "," + e.admin2 + ")<span hidden>" + e.name + "," +e.latitude + "," + e.longitude + "</span></li>");
-                        }
-                        $("#city-select-ul > li").on("click", function (event) {
-                            let loc = $(event.target).children("span").html().split(",");
-                            getWeatherLocation(loc[0], loc[1], loc[2]);
-                        });
-                    }
-                })
-                    .fail(function () {
-                        mdui.snackbar({
-                            message: "拉取城市信息失败",
-                            position: 'top'
-                        });
-                    })
-                    .always(function () {
-                        hideProgressBar();
-                    });
-            }
-        }, 500);
+    // 更新天气配置按钮
+    $("#update-weather-conf-btn").click(function () {
+        getWeatherLocation($("#device-weather-loc-name-input").val(), $("#device-weather-loc-lat-input").val(), $("#device-weather-loc-lon-input").val());
     });
 
-    $(document).click(function (event) {
-        let tar = event.srcElement || event.target;
-        if (event.target.id != "city-select-ul") {
-            $("#city-select-ul").prop("hidden", true);
-        }
+    // 更新米游社配置按钮
+    $("#update-hoyolab-conf-btn").click(function () {
+        postHoyolabConf($("#hoyolab-uid-input").val(), $("#hoyolab-cookie-input").val(), $("#hoyolab-guid-input").val());
+    });
+
+    // 底部导航栏 - 设置菜单
+    $("#settings-a").click(function () {
+        $(".mdui-container").prop("hidden", true);
+        $("#settings-container").prop("hidden", false);
+    });
+    // 底部导航栏 - 播放列表
+    $("#playlist-a").click(function () {
+        $(".mdui-container").prop("hidden", true);
+        $("#playlist-container").prop("hidden", false);
+    });
+
+    // 底部导航栏 - 背景色
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        bottomNavColor();
+    });
+
+    $("#utility-about-div").click(function () {
+        mdui.alert("神之眼实用程序<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在Github上Star本项目！", "关于实用程序");
+    });
+
+    $("#playlist-ul").children("li").children("li > div").click(function () {
+        alert("click!");
     });
 
     $(document).ready(function () {
+        // 设置设备IP地址
         device_IP = getUrlParam("ip");
         if (device_IP) {
             connectDevice();
         } else {
             mdui.prompt("设备IP地址", "请指定设备IP地址", function (value) { $(location).prop("href", $(location).prop("href").replace("#mdui-dialog", "") + "?ip=" + value); }, function (value) { }, { confirmText: "确认", cancelText: "取消", modal: true, closeOnConfirm: false, confirmOnEnter: true, maxlength: 15 });
         }
+
+        bottomNavColor();
+
+        mdui.mutation();
     });
 </script>
 
