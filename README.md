@@ -59,7 +59,7 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 - 管理界面(远程控制/文件管理)🚧
 
 ## 神之眼实用程序
-自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置、天气城市配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码进入实用程序。
+自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置、天气城市配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码，或者访问设备ip地址进入实用程序。
 
 ## 使用方法
 ### L0.1版本
@@ -128,7 +128,7 @@ if (ask == true) {
 - 您可以在[mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos)找到元素视频文件。
 
 ### 天气城市配置
-- 打开SD卡根目录`Weather.json`，设定城市名称、纬度与经度(WGS84格式)、天气服务提供商。文件格式参考如下：
+- 打开SD卡根目录`Weather.json`，设定城市名称、纬度与经度、天气服务提供商。文件格式参考如下：
 ```
 {
     "city":"深圳",
@@ -241,7 +241,7 @@ Features planned for next major release:
 - You could find the element videos at [mr258876/Genshin-Vision-Videos](https://github.com/mr258876/Genshin-Vision-Videos).
 
 ### Weather location configuration
-- Open `Weather.json` in SD card root directory, set the city name, latitude & longitude (WGS84), and weather service provider. Example shown as below:
+- Open `Weather.json` in SD card root directory, set the city name, latitude & longitude, and weather service provider. Example shown as below:
 ```
 {
     "city":"Shenzhen",
