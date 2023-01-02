@@ -12,7 +12,7 @@
 #include "ui/ui.h"
 #include "ui/ui_multiLanguage.h"
 
-#define FILE_DOWNLOAD_RECV_BUFFER_SIZE 1024
+#define FILE_DOWNLOAD_RECV_BUFFER_SIZE 4096
 
 enum Vision_FileCheck_result_t : uint8_t
 {
