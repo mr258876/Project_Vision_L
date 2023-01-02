@@ -37,10 +37,12 @@ struct Vision_FileCheck_t
 extern Vision_FileCheck_result_t fileCheckResults[];
 
 uint checkSDFiles();
-uint fixMissingFiles();
+uint checkFileStatus();
+void tsk_fixMissingFiles(void *info);
 
 enum Vision_FileCheck_download_res_t : uint8_t
 {
+    DOWNLOAD_RES_DOWNLOADING = 255,
     DOWNLOAD_RES_OK = 0,
     DOWNLOAD_RES_FILE_OPEN_FAIL,
     DOWNLOAD_RES_OUT_OF_MEM,
@@ -50,6 +52,15 @@ enum Vision_FileCheck_download_res_t : uint8_t
     DOWNLOAD_RES_NOT_CHUNKED_ENCODING,
 };
 
+struct Vision_download_info_t
+{
+    uint current_file_no = 0;
+    uint total_file_count = 0;
+    size_t totalBytes = 0;
+    size_t writtenBytes = 0;
+    Vision_FileCheck_download_res_t result = DOWNLOAD_RES_DOWNLOADING;
+};
+
 /*
     @brief function to download a file
     @param url: file url
@@ -57,9 +68,9 @@ enum Vision_FileCheck_download_res_t : uint8_t
     @param TLScert: certicifate for HTTPS
     @return reference to Vision_FileCheck_download_res_t
 */
-uint downloadFile(const char *url, const char *path_to_save, const char *TLScert = nullptr);
+uint downloadFile(const char *url, const char *path_to_save, const char *TLScert = nullptr, Vision_download_info_t* info = nullptr);
 
-uint downloadGithubFile(const char *url, const char *path_to_save);
+uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t* info = nullptr);
 
 const char *getFileDownloadPrefix();
 

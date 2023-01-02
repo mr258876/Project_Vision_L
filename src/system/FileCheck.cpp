@@ -30,6 +30,8 @@ static const Vision_FileCheck_t fileCheckFiles[] = {
     {"/s/The Vision L/utility/css/mdui.min.css", "/utility/css/mdui.min.css", cb_general_sys_file},
     {"/s/The Vision L/utility/js/mdui.min.js", "/utility/js/mdui.min.js", cb_general_sys_file},
     {"/s/The Vision L/utility/js/jquery-3.6.3.min.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
+    {"/s/The Vision L/utility/js/jquery-sortable.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
+    {"/s/The Vision L/utility/js/Sortable.min.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
     {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.ijmap", "/utility/icons/material-icons/MaterialIcons-Regular.ijmap", cb_general_sys_file},
     {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.woff2", "/utility/icons/material-icons/MaterialIcons-Regular.woff2", cb_general_sys_file},
     {"/s/The Vision L/utility/images/Liyue.png", "/utility/images/Liyue.png", cb_general_sys_file},
@@ -119,6 +121,16 @@ uint checkSDFiles()
     xSemaphoreGive(*FSMutex);
   }
 
+  return err;
+}
+
+uint checkFileStatus()
+{
+  uint err = 0;
+  for (size_t i = 0; i < sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t); i++)
+  {
+    err = err | fileCheckResults[i];
+  }
   return err;
 }
 
@@ -330,7 +342,7 @@ static uint loadWeatherConfig()
 //  File downloader
 //
 //////////////////////////////
-uint downloadFile(const char *url, const char *path_to_save, const char *TLScert)
+uint downloadFile(const char *url, const char *path_to_save, const char *TLScert, Vision_download_info_t *info)
 {
   const char *HTTP_TAG = "downloadFile";
   String path0 = "";
@@ -406,6 +418,11 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
 
   int content_length = esp_http_client_fetch_headers(client);
   int read_len, write_len;
+  if (info)
+  {
+    info->totalBytes = content_length;
+    info->writtenBytes = 0;
+  }
   while (1)
   {
     read_len = esp_http_client_read(client, buffer, FILE_DOWNLOAD_RECV_BUFFER_SIZE);
@@ -442,6 +459,9 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
         return DOWNLOAD_RES_FILE_WRITE_FAIL;
       }
     }
+
+    if (info)
+      info->writtenBytes += write_len;
   }
 
   xSemaphoreTake(*FSMutex, portMAX_DELAY);
@@ -454,33 +474,46 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
   return DOWNLOAD_RES_OK;
 }
 
-uint fixMissingFiles()
+void tsk_fixMissingFiles(void *parameter)
 {
-  uint res = 0;
+  Vision_download_info_t *info = (Vision_download_info_t *)parameter;
+  info->result = DOWNLOAD_RES_DOWNLOADING;
+  // 统计要下载的文件个数
+  info->total_file_count = 0;
   for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
   {
     if (fileCheckResults[i])
     {
+      info->total_file_count += 1;
+    }
+  }
+
+  // 下载文件
+  info->current_file_no = 0;
+  for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
+  {
+    if (fileCheckResults[i])
+    {
+      info->current_file_no += 1;
+
       /* 拼接url */
       char url[strlen(getFileDownloadPrefix()) + strlen(fileCheckFiles[i].downloadPath) + 1];
       sprintf(url, "%s%s", getFileDownloadPrefix(), fileCheckFiles[i].downloadPath);
 
-      if (downloadGithubFile(url, fileCheckFiles[i].localPath)) // <- DOWNLOAD_RES_OK=0
-      {
-        res = res | fileCheckResults[i];
-      }
-      else
+      if (!downloadGithubFile(url, fileCheckFiles[i].localPath, info)) // <- DOWNLOAD_RES_OK=0
       {
         fileCheckFiles[i].file_cb(true);
       }
     }
   }
-  return res;
+
+  info->result = DOWNLOAD_RES_OK;
+  vTaskDelete(NULL);
 }
 
-uint downloadGithubFile(const char *url, const char *path_to_save)
+uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t* info)
 {
-  return downloadFile(url, path_to_save, GlobalSign_Root_CA);
+  return downloadFile(url, path_to_save, GlobalSign_Root_CA, info);
 }
 
 const char *getFileDownloadPrefix()

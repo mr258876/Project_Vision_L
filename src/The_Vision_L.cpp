@@ -686,15 +686,37 @@ void hardwareSetup(void *parameter)
     /* 下载缺失文件 */
     if (fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL)
     {
-      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      Vision_download_info_t info;
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       {
-        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][98]); // "正在下载文件..."
-        xSemaphoreGive(LVGLMutex);
+        lv_label_set_text_fmt(ui_StartupLabel2, lang[curr_lang][98], 0, 0); // "下载文件 %d/%d"
       }
-      fileErr = (fileErr & 0b11111100) | fixMissingFiles();
+      xSemaphoreGive(LVGLMutex);
+
+      xTaskCreatePinnedToCore(tsk_fixMissingFiles,
+                              "tsk_fixMissingFiles",
+                              4096,
+                              &info,
+                              2,
+                              NULL,
+                              0);
+
+      size_t last_writtenBytes = 0;
+      while (info.result == DOWNLOAD_RES_DOWNLOADING)
+      {
+        xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        {
+          lv_label_set_text_fmt(ui_StartupLabel2, lang[curr_lang][98], info.current_file_no, info.total_file_count);                                                                                // "下载文件 %d/%d"
+        }
+        xSemaphoreGive(LVGLMutex);
+        last_writtenBytes = info.writtenBytes;
+        vTaskDelay(pdMS_TO_TICKS(1000));
+      }
+
+      fileErr = checkFileStatus();
     }
 
-    if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR))  // 没有SD卡无法自动更新
+    if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR)) // 没有SD卡无法自动更新
     {
       if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
       {
