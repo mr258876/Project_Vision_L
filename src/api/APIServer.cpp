@@ -443,7 +443,7 @@ static esp_err_t root_handler(httpd_req_t *req)
 {
     char redirect_link[65];
     char redirect_html[165];
-    sprintf(redirect_link, "http://%s/utility/index.html?ip=%s", info_ipv4Address, info_ipv4Address);
+    sprintf(redirect_link, "http://%s/utility/index.html", info_ipv4Address);
     sprintf(redirect_html, "<html><h2>Please visit the management page here:</h2><br><a href=\"%s\">Project_Vision_L</a></html>", redirect_link);
 
     httpd_resp_set_status(req, "302	Found");
