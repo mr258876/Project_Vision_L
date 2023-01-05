@@ -9,6 +9,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="stylesheet" href="./css/mdui.min.css" />
     <script src="./js/jquery-3.6.3.min.js"></script>
+    <script src="./js/Sortable.min.js"></script>
+    <script src="./js/jquery-sortable.js"></script>
     <script type="module" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule="" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.js"></script>
 </head>
@@ -227,7 +229,7 @@
                     </li>
                     <li class="mdui-list-item mdui-ripple">
                         <div class="mdui-list-item-content"><small
-                                class="mdui-typo-caption-opacity">出于安全策略，神之眼中储存的米游社配置将不会展示在该界面中</small></div>
+                                class="mdui-typo-caption-opacity">由于安全策略，神之眼中储存的米游社配置将不会展示在该界面中</small></div>
                     </li>
                     <li class="mdui-list-item mdui-ripple">
                         <div class="mdui-list-item-content"></div>
@@ -246,33 +248,27 @@
                 <div class="mdui-col-xs-12 mdui-typo-title">播放列表</div>
             </div>
             <div class="mdui-row">
-                <p class="mdui-col-xs-12">播放列表中文件总数：<span id="playlist-file-total-span"></span></p>
+                <p class="mdui-col-xs-12">播放列表中文件总数：<span id="playlist-size-span"></span></p>
             </div>
         </div>
 
-        <hr /><br />
+        <hr />
+
+        <p><small class="mdui-typo-caption-opacity">您可以拖动列表左边的<i
+                    class="mdui-icon material-icons">drag_handle</i>对播放列表进行排序，点击播放列表对应项进行播放</small></p>
 
         <ul class="mdui-list" id="playlist-ul">
-            <li class="mdui-list-item mdui-ripple mdui-list-item-active" id="playlist-li-1">
-                <i class="mdui-list-item-icon mdui-icon material-icons">play_arrow</i>
-                <div class="mdui-list-item-content">
-                    <div class="mdui-list-item-title mdui-list-item-one-line">Multiline item</div>
-                    <div class="mdui-list-item-text mdui-list-item-one-line">You've got to get enough sleep. Other
-                        travelling salesmen live a life of luxury. You've got to get enough sleep. Other travelling
-                        salesmen live a life of luxury.</div>
-                </div>
-                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">content_copy</a>
-                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">delete</a>
-            </li>
             <li class="mdui-list-item mdui-ripple" id="playlist-li-2">
+                <i class="mdui-list-item-icon mdui-icon material-icons drag-handle">drag_handle</i>
                 <div class="mdui-list-item-content">
-                    <div class="mdui-list-item-title mdui-list-item-one-line">Multiline item</div>
-                    <div class="mdui-list-item-text mdui-list-item-one-line">You've got to get enough sleep. Other
-                        travelling salesmen live a life of luxury. You've got to get enough sleep. Other travelling
-                        salesmen live a life of luxury.</div>
+                    <div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-2-fn"></span><i
+                            class="mdui-icon material-icons" id="playlist-li-2-play-icon" hidden>play_arrow</i></div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-2-fp"></span></div>
                 </div>
-                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">content_copy</a>
-                <a href="javascript:;" class="mdui-list-item-icon mdui-icon material-icons">delete</a>
+                <button class="mdui-list-item-icon mdui-btn mdui-btn-icon mdui-btn-ripple"><i
+                        class="mdui-icon material-icons">content_copy</i></button>
+                <button class="mdui-list-item-icon mdui-btn mdui-btn-icon mdui-color-theme-accent mdui-btn-ripple"><i
+                        class="mdui-icon material-icons">delete</i></button>
             </li>
         </ul>
     </div>
@@ -286,7 +282,7 @@
             <i class="mdui-icon material-icons">playlist_play</i>
             <label>播放列表</label>
         </a>
-        <a href="javascript:;" class="mdui-ripple" hidden>
+        <a href="javascript:;" class="mdui-ripple" id="file-a" hidden>
             <i class="mdui-icon material-icons">folder_open</i>
             <label>文件管理</label>
         </a>
@@ -311,6 +307,7 @@
     const DEVICE_IMG = ["", "./images/Liyue_Extended.png", "./images/Liyue.png", "./images/Mondstadt.png"];
 
     var device_IP;
+    const IP_ADDRESS_EXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
 
     var device_name;
     var device_app_version;
@@ -327,6 +324,15 @@
     var device_weatherLatitude;
     var device_weatherLongitude;
 
+    var device_playlist;
+    var device_playlist_current;
+    const PLAYLIST_ID_EXP = RegExp("[0-9]+", "g");
+    const PLAYLIST_LI_BOM = '<li class="mdui-list-item mdui-ripple" id="playlist-li-{0}"><i class="mdui-list-item-icon mdui-icon material-icons drag-handle">drag_handle</i><div class="mdui-list-item-content"><div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-{0}-fn"></span><i class="mdui-icon material-icons" id="playlist-li-{0}-play-icon" hidden>play_arrow</i></div><div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-{0}-fp"></span></div></div><i class="mdui-list-item-icon mdui-icon material-icons playlist-copy">content_copy</i><i class="mdui-list-item-icon mdui-icon material-icons playlist-delete">delete</i></li>'
+
+    ////////////////////
+    //  helper函数
+    ////////////////////
+
     function hideProgressBar() {
         $("#progress-bar").prop("hidden", true);
     }
@@ -334,6 +340,20 @@
         $("#progress-bar").prop("hidden", false);
     }
 
+    String.prototype.format = String.prototype.f = function () {
+        var s = this,
+            i = arguments.length;
+
+        while (i--) {
+            s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arguments[i]);
+        }
+        return s;
+    };
+
+    ////////////////////
+    //  ajax函数
+    ////////////////////
+    /* 改变亮度图标 */
     function updateBrighenessIcon() {
         if (device_auto_bright) {
             $("#brightness-auto-check").prop("checked", true);
@@ -353,7 +373,7 @@
         }
         mdui.updateSliders();
     }
-
+    /* 改变旋转图标 */
     function updateRotationIcon() {
         if (device_auto_rotate) {
             $("#rotation-auto-check").prop("checked", true);
@@ -363,7 +383,7 @@
             $("#rotation-icon").html("screen_lock_rotation");
         }
     }
-
+    /* 获取/设置亮度 */
     function getBrightness(val) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/setting/brightness" + (val ? ("?value=" + Math.round(val * 2.55)) : ""), function (data) {
@@ -377,7 +397,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -385,7 +405,7 @@
                 }
             );
     }
-
+    /* 获取/设置自动亮度开关 */
     function getAutoBright(val) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_bright" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
@@ -399,7 +419,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -407,7 +427,7 @@
                 }
             );
     }
-
+    /* 获取/设置自动旋转开关 */
     function getAutoRotate(val) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_rotate" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
@@ -421,7 +441,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -429,7 +449,7 @@
                 }
             );
     }
-
+    /* 获取/设置语言 */
     function getLanguage(val) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/setting/language" + (val ? ("?value=" + val) : ""), function (data) {
@@ -443,7 +463,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -451,7 +471,7 @@
                 }
             );
     }
-
+    /* 获取/设置时区 */
     function getTimezone(val) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/setting/timezone" + (val ? ("?value=" + val.replace("+", "%2B")) : ""), function (data) {
@@ -465,7 +485,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -473,7 +493,7 @@
                 }
             );
     }
-
+    /* 获取/设置天气位置 */
     function getWeatherLocation(city, lat, lon) {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/weather/city" + ((city && lat && lon) ? ("?city=" + city + "&latitude=" + lat + "&longitude=" + lon) : ""), function (data) {
@@ -491,7 +511,7 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -499,10 +519,10 @@
                 }
             );
     }
-
+    /* 设置米游社配置 */
     function postHoyolabConf(uid, cookie, guid) {
         showProgressBar();
-        $.ajax({ type: "POST", contentType: "application/json", url: ("http" + device_IP + API_PREFIX + "/hoyolab/conf"), data: JSON.stringify({ "uid": uid, "cookie": cookie, "device_guid": guid }) })
+        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/hoyolab/conf"), data: JSON.stringify({ "uid": uid, "cookie": cookie, "device_guid": guid }), dataType: "json" })
             .done(function () {
                 mdui.snackbar({
                     message: '米游社配置已更新',
@@ -514,7 +534,130 @@
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 获取播放列表 */
+    function getPlaylist() {
+        showProgressBar();
+        $.getJSON("http://" + device_IP + API_PREFIX + "/playlist", function (data) {
+            device_playlist = data.files;
+        })
+            .done(function () {
+                displayPlaylist();
+                getCurrentPlaying();
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 设置播放列表 */
+    function postPlaylist(playlist) {
+        showProgressBar();
+        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/playlist"), data: JSON.stringify({ "files": device_playlist }), dataType: "json" })
+            .done(function () {
+                displayPlaylist();
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 展示播放列表 */
+    function displayPlaylist() {
+        $("#playlist-ul").children("li").children("li > div").off("click");
+
+        $("#playlist-size-span").html(device_playlist.length);
+        $("#playlist-ul").html("");
+
+        for (let i = 0; i < device_playlist.length; i++) {
+            $("#playlist-ul").append(PLAYLIST_LI_BOM.format(i));
+            $("#playlist-li-{0}-fp".format(i)).html(device_playlist[i]);
+            let splitList = device_playlist[i].split("/");
+            $("#playlist-li-{0}-fn".format(i)).html(splitList[splitList.length - 1]);
+        }
+
+        if (device_playlist_current) {
+            $("#playlist-ul").children("li").removeClass("mdui-list-item-active");
+            $("#playlist-ul").children("li").children("div").children("div").children("div > i").prop("hidden", true);
+            $("#playlist-li-{0}-play-icon".format(device_playlist_current)).prop("hidden", false);
+            $("#playlist-li-{0}".format(device_playlist_current)).addClass("mdui-list-item-active");
+        }
+
+        $("#playlist-ul").children("li").children("li > div").click(function (evt) {
+            getCurrentPlaying(PLAYLIST_ID_EXP.exec($(evt.target).parents("li").attr("id")));
+            PLAYLIST_ID_EXP.lastIndex = 0;
+        });
+        $("#playlist-ul").children("li").children("li > i.playlist-copy").click(function (evt) {
+            device_playlist.push(device_playlist[PLAYLIST_ID_EXP.exec($(evt.target).parents("li").attr("id"))]);
+            PLAYLIST_ID_EXP.lastIndex = 0;
+            postPlaylist(device_playlist);
+        });
+        $("#playlist-ul").children("li").children("li > i.playlist-delete").click(function (evt) {
+            device_playlist.splice(PLAYLIST_ID_EXP.exec($(evt.target).parents("li").attr("id")), 1);
+            PLAYLIST_ID_EXP.lastIndex = 0;
+            postPlaylist(device_playlist);
+        });
+
+        mdui.mutation();
+
+        // 创建拖拽排序列表
+        $("#playlist-ul").sortable('destroy');
+        $("#playlist-ul").sortable({
+            handle: ".drag-handle",
+            animation: 150,
+            fallbackTolerance: 4,
+            onEnd: function (evt) {
+                let fp = device_playlist[evt.oldIndex];
+                device_playlist.splice(evt.oldIndex, 1);
+                device_playlist.splice(evt.newIndex, 0, fp);
+                if (device_playlist_current == evt.oldIndex) {
+                    device_playlist_current = evt.newIndex;
+                }
+                postPlaylist(device_playlist);
+            },
+        });
+    }
+    /* 获取正在播放文件编号 */
+    function getCurrentPlaying(fileNo) {
+        showProgressBar();
+        $.getJSON("http://" + device_IP + API_PREFIX + "/playlist/current" + (fileNo ? ("?value=" + fileNo) : ""), function (data) {
+            device_playlist_current = data.currFileId;
+        })
+            .done(function () {
+                $("#playlist-ul").children("li").removeClass("mdui-list-item-active");
+                $("#playlist-ul").children("li").children("div").children("div").children("div > i").prop("hidden", true);
+                $("#playlist-li-{0}-play-icon".format(device_playlist_current)).prop("hidden", false);
+                $("#playlist-li-{0}".format(device_playlist_current)).addClass("mdui-list-item-active");
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -544,6 +687,10 @@
         getWeatherLocation();
     }
 
+    function getPlaylistVals() {
+        getPlaylist();
+    }
+
     function connectDevice() {
         showProgressBar();
         $.getJSON("http://" + device_IP + API_PREFIX + "/info", function (data) {
@@ -566,13 +713,14 @@
                 fitHWVersion();
                 getDeviceVals();
                 getWeatherVals();
+                getPlaylistVals();
             })
             .fail(function () {
                 mdui.snackbar({
                     message: '连接设备失败',
                     position: 'top'
                 });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText:"重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
             })
             .always(
                 function () {
@@ -592,46 +740,39 @@
         }
     }
 
-    //获取url中的参数
-    function getUrlParam(name) {
-        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
-        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
-        if (r != null) return unescape(r[2]); return null; //返回参数值
-    }
-
     ////////////////////
     // 按钮回调函数
     ////////////////////
 
-    // 亮度滑块
+    // 设置 - 亮度滑块
     $("#brightness-slider").change(function () {
         getBrightness($("#brightness-slider").val());
         updateBrighenessIcon();
     });
 
-    // 自动亮度开关
+    // 设置 - 自动亮度开关
     $("#brightness-auto-check").change(function () {
         getAutoBright($("#brightness-auto-check").is(":checked"));
         updateBrighenessIcon();
     });
 
-    // 自动旋转开关
+    // 设置 - 自动旋转开关
     $("#rotation-auto-check").change(function () {
         getAutoRotate($("#rotation-auto-check").is(":checked"));
         updateEotationIcon();
     });
 
-    // 时区
+    // 设置 - 时区
     $("#device-timezone-select").change(function () {
         getTimezone($("#device-timezone-select").val());
     });
 
-    // 更新天气配置按钮
+    // 设置 - 更新天气配置按钮
     $("#update-weather-conf-btn").click(function () {
         getWeatherLocation($("#device-weather-loc-name-input").val(), $("#device-weather-loc-lat-input").val(), $("#device-weather-loc-lon-input").val());
     });
 
-    // 更新米游社配置按钮
+    // 设置 - 更新米游社配置按钮
     $("#update-hoyolab-conf-btn").click(function () {
         postHoyolabConf($("#hoyolab-uid-input").val(), $("#hoyolab-cookie-input").val(), $("#hoyolab-guid-input").val());
     });
@@ -652,18 +793,29 @@
         bottomNavColor();
     });
 
+    // 侧栏 - 关于
     $("#utility-about-div").click(function () {
         mdui.alert("神之眼实用程序<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在Github上Star本项目！", "关于实用程序");
     });
 
-    $("#playlist-ul").children("li").children("li > div").click(function () {
-        alert("click!");
-    });
+    ////////////////////
+    //  其他
+    ////////////////////
+
+    //获取url中的参数
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
 
     $(document).ready(function () {
         // 设置设备IP地址
         device_IP = getUrlParam("ip");
         if (device_IP) {
+            connectDevice();
+        } else if ($(location).prop("host").match(IP_ADDRESS_EXP)) {
+            device_IP = $(location).prop("host");
             connectDevice();
         } else {
             mdui.prompt("设备IP地址", "请指定设备IP地址", function (value) { $(location).prop("href", $(location).prop("href").replace("#mdui-dialog", "") + "?ip=" + value); }, function (value) { }, { confirmText: "确认", cancelText: "取消", modal: true, closeOnConfirm: false, confirmOnEnter: true, maxlength: 15 });
