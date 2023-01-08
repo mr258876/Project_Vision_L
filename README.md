@@ -38,6 +38,8 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 
 该项目为硬件项目[璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)的对应固件。
 
+项目已同步至[Gitee](https://gitee.com/mr258876/Project_Vision_L/)。
+
 固件目前支持以下几种硬件：
 - [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
 - [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (实验性)
