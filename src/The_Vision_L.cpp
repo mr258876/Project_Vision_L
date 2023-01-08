@@ -683,6 +683,17 @@ void hardwareSetup(void *parameter)
     }
     weatherErr = wp->getCurrentWeather(&weather);
 
+    /* 检查更新 */
+    if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR)) // 没有SD卡无法自动更新
+    {
+      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      {
+        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][110]); // "正在检查更新..."
+        xSemaphoreGive(LVGLMutex);
+      }
+      checkUpdate();
+    }
+
     /* 下载缺失文件 */
     if (fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL)
     {
@@ -706,7 +717,7 @@ void hardwareSetup(void *parameter)
       {
         xSemaphoreTake(LVGLMutex, portMAX_DELAY);
         {
-          lv_label_set_text_fmt(ui_StartupLabel2, lang[curr_lang][98], info.current_file_no, info.total_file_count);                                                                                // "下载文件 %d/%d"
+          lv_label_set_text_fmt(ui_StartupLabel2, lang[curr_lang][98], info.current_file_no, info.total_file_count); // "下载文件 %d/%d"
         }
         xSemaphoreGive(LVGLMutex);
         last_writtenBytes = info.writtenBytes;
@@ -714,16 +725,6 @@ void hardwareSetup(void *parameter)
       }
 
       fileErr = checkFileStatus();
-    }
-
-    if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR)) // 没有SD卡无法自动更新
-    {
-      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-      {
-        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][110]); // "正在检查更新..."
-        xSemaphoreGive(LVGLMutex);
-      }
-      checkUpdate();
     }
 
     /* 关闭Wifi */
