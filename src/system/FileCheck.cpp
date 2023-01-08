@@ -20,6 +20,7 @@ static Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
 //////////////////////////////
 const char *fileDownloadPrefix[] = {
     "https://mr258876.github.io/Project_Vision_L/resources/0.2.1",
+    "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.2.1",
 };
 
 const char *updateConfPath = "update.json";
@@ -518,9 +519,9 @@ uint downloadGithubFile(const char *url, const char *path_to_save, Vision_downlo
 
 const char *getFileDownloadPrefix()
 {
-  // if (curr_lang == 1)
-  // {
-  //   return fileDownloadPrefix[1];
-  // }
+  if (curr_lang == 1)
+  {
+    return fileDownloadPrefix[1];
+  }
   return fileDownloadPrefix[0];
 }

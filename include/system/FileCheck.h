@@ -1,5 +1,5 @@
-#ifndef _BOOTUP_H_
-#define _BOOTUP_H_
+#ifndef _FILECHECK_H_
+#define _FILECHECK_H_
 
 #include <Arduino.h>
 #include "rtos_externs.h"
