@@ -503,7 +503,7 @@ void tsk_fixMissingFiles(void *parameter)
 
       if (!downloadGithubFile(url, fileCheckFiles[i].localPath, info)) // <- DOWNLOAD_RES_OK=0
       {
-        fileCheckFiles[i].file_cb(true);
+        fileCheckResults[i] = fileCheckFiles[i].file_cb(true);
       }
     }
   }
