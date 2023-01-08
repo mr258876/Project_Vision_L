@@ -17,11 +17,10 @@ Do virtual gods hand out electronic visions?
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
 ```
-Adafruit BusIO  1.14.1
-ArduinoJson     6.19.4
+ArduinoJson     6.20.0
 KXTJ3-1057      0.0.1
-LovyanGFX       0.4.18
-LVGL            8.3.3
+LovyanGFX       0.5.0
+LVGL            8.3.4
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
@@ -171,6 +170,13 @@ if (ask == true) {
 #### 如何通过API控制神之眼？
 - 关于管理API的更多内容，请参阅[API参考手册](apiReference.md).
 
+### 编译注意事项
+如果您在编译过程中遇到库文件报错，请：
+- 确认支持库已安装，库路径已正确配置
+- 移除Arduino库管理器中的SD/SDMMC库
+- 移除Adafruit Zero DMA库
+随后重新编译。如果问题依然存在，您可以提起issue以获取帮助。
+
 ## English
 
 This is the firmware of hardware project [璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended).
@@ -283,3 +289,10 @@ Features planned for next major release:
 - Affected by the risk control policy of Hoyoverse, the API directly returns error code 1034 in some cases. Current solution is to use Hoyolab app on your phone and check your resin, then the resin function on the vision should behave normally.
 #### How to control the Vision through APIs?
 - Please reference to [API Refernece Manual](apiReference.md) for more details about the management APIs.
+
+### Compilation considerations
+If you encounter errors during compilation, please:
+- Confirm that the support library is installed and the library path is configured correctly
+- Remove SD/SDMMC libraries from Arduino Library Manager
+- Remove the Adafruit Zero DMA library
+Then try recompile. If problem still exists, bring up an issue for help.
