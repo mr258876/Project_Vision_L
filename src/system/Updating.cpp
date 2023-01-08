@@ -183,6 +183,38 @@ void checkUpdate()
         xSemaphoreGive(SDMutex);
     }
 
+    const char *ver = doc["ver"];
+    if (!ver)
+    {
+        // 无版本号直接跳过
+        return;
+    }
+    else
+    {
+        unsigned int new_identity_version;
+        unsigned int new_major_version;
+        unsigned int new_minor_version;
+
+        int ver_check_res = sscanf(ver, "L%u.%u.%u", &new_identity_version, &new_major_version, &new_minor_version);
+        if (ver_check_res < 3)
+        {
+            // 版本号不正确
+            return;
+        }
+        
+        unsigned int identity_version;
+        unsigned int major_version;
+        unsigned int minor_version;
+        sscanf(info_appVersion, "L%u.%u.%u", &identity_version, &major_version, &minor_version);
+        
+        if (identity_version >= new_identity_version && major_version >= new_major_version && minor_version >= new_minor_version)
+        {
+            // 版本号没有更新
+            return;
+        }
+        
+    }
+
     JsonArray files = doc["files"];
     if (files.size() == 0)
     {
@@ -213,5 +245,5 @@ void checkUpdate()
         return;
     }
 
-    esp_restart();  // 文件下载好后重启，重启检查更新文件无误后开始更新
+    esp_restart(); // 文件下载好后重启，重启检查更新文件无误后开始更新
 }
