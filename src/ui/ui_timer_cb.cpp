@@ -407,6 +407,7 @@ const void *weather_img_table[] = {
 /* 数字时钟天气显示刷新 */
 void cb_timer_DigitalClockWeatherTimer(lv_timer_t *timer)
 {
+    // 城市名称
     if (flag_ui_font_HanyiWenhei20)
     {
         if (wp->getCity().isEmpty())
@@ -422,6 +423,63 @@ void cb_timer_DigitalClockWeatherTimer(lv_timer_t *timer)
     else
     {
         lv_obj_add_flag(ui_DigitalClockWeatherCityLabel, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    // 空气质量颜色
+    switch (weather.aqiStandard)
+    {
+    case AIR_QUALITY_STANDARD_EUROPE:
+        switch (wp->airQuality_AQI(weather.aqiStandard, weather.aqi))
+        {
+        case AIR_QUALITY_GOOD:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x50F0E6), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_MODERATE:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x50CCAA), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_LIGHT_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xF0E641), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xFF5050), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_VERY_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x960032), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_HAZARDOUS:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x7D2181), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        default:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xCACACA), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        }
+        break;
+    default:
+        switch (wp->airQuality_AQI(weather.aqiStandard, weather.aqi))
+        {
+        case AIR_QUALITY_GOOD:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x40C057), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_MODERATE:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x82C91E), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_LIGHT_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xF76707), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xE03131), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_VERY_UNHEALTHY:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x841C3C), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        case AIR_QUALITY_HAZARDOUS:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x540822), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        default:
+            lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xCACACA), LV_PART_MAIN | LV_STATE_DEFAULT);
+            break;
+        }
+        break;
     }
 
     lv_img_set_src(ui_DigitalClockWeatherIcon, weather_img_table[(int)weather.weather]);

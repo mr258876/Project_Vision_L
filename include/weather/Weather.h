@@ -37,7 +37,8 @@ enum Weather_airQuality_t
     AIR_QUALITY_LIGHT_UNHEALTHY, // 轻度
     AIR_QUALITY_UNHEALTHY,       // 中度
     AIR_QUALITY_VERY_UNHEALTHY,  // 重度
-    AIR_QUALITY_HAZARDOUS        // 严重
+    AIR_QUALITY_HAZARDOUS,       // 严重
+    AIR_QUALITY_NO_DATA = 255
 };
 
 enum Weather_airQuality_standard_t
@@ -97,21 +98,25 @@ public:
         switch (standard)
         {
         case AIR_QUALITY_STANDARD_EUROPE:
-            if (aqi < 26)
+            if (aqi < 21)
             {
                 return AIR_QUALITY_GOOD;
             }
-            else if (aqi < 51)
+            else if (aqi < 41)
             {
                 return AIR_QUALITY_MODERATE;
             }
-            else if (aqi < 76)
+            else if (aqi < 61)
             {
                 return AIR_QUALITY_LIGHT_UNHEALTHY;
             }
-            else if (aqi < 101)
+            else if (aqi < 81)
             {
                 return AIR_QUALITY_UNHEALTHY;
+            }
+            else if (aqi < 101)
+            {
+                return AIR_QUALITY_VERY_UNHEALTHY;
             }
             else
             {
@@ -145,7 +150,7 @@ public:
             }
             break;
         }
-        return AIR_QUALITY_MODERATE;
+        return AIR_QUALITY_NO_DATA;
     };
 };
 

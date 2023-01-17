@@ -1882,7 +1882,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_y(ui_DigitalClockWeatherAirPanel, lv_pct(30));
     lv_obj_set_align(ui_DigitalClockWeatherAirPanel, LV_ALIGN_CENTER);
     lv_obj_clear_flag(ui_DigitalClockWeatherAirPanel, LV_OBJ_FLAG_SCROLLABLE); /// Flags
-    lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0x67BD63), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_DigitalClockWeatherAirPanel, lv_color_hex(0xCACACA), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockWeatherAirPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_DigitalClockWeatherAirPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
