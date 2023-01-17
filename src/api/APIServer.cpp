@@ -1686,7 +1686,7 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         }
 
         /* 检查输入值 */
-        if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180) && (sscanf(value4, "%d", &provider) == 1 && lon >= 0 && lon <= 1))
+        if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180) && (sscanf(value4, "%d", &provider) == 1 && provider >= 0 && provider <= 1))
         {
             setting_weatherProvider = provider;
             switch (provider)
