@@ -1704,7 +1704,7 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
             prefs.putString("weatherCity", wp->getCity());
             prefs.putFloat("weatherLat", lat);
             prefs.putFloat("weatherLon", lon);
-            prefs.putFloat("weatherProvider", provider);
+            prefs.putInt("weatherProvider", provider);
         }
         else
         {
