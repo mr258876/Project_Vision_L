@@ -556,16 +556,17 @@ RESPONSE:
 ## 天气配置 / Weather Configurations
 ### GET /api/v1/weather/city
 #### Brief
-该函数用于获取或设置城市。
+该函数用于获取或设置城市及天气源。
 
-This function is to get or set city for weather service.
+This function is to get or set city and weather provider for weather service.
 
 #### Param
-|param|description|
-|---|---|
-|city|城市名称 / city name
-|latitude|纬度 / latitude float, [-90 ~ 90]|
-|langitude|经度 / langitude float, [-180 ~ 180]|
+|param|description|format|
+|---|---|---|
+|city|城市名称 / city name|string|
+|latitude|纬度 / latitude|float, [-90 ~ 90]|
+|langitude|经度 / langitude|float, [-180 ~ 180]|
+|provider|天气提供商 / weather provider|int, 0 = OpenMeteo, 1 = 墨迹天气|
 
 #### Return
 当前设置值，或更新后的设置值（若有）。
@@ -587,6 +588,7 @@ RESPONSE:
 {
     "city":"深圳",
     "latitude":22.545540,
-    "longitude":114.068298
+    "longitude":114.068298,
+    "provider":1
 }
 ~~~
