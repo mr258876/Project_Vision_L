@@ -42,8 +42,8 @@
 #include "weather/MojiTianqi.h"
 #include "weather/OpenMeteo.h"
 
-#include "sound/DACOutput.h"
-#include "sound/WAVFileReader.h"
+// #include "sound/DACOutput.h"
+// #include "sound/WAVFileReader.h"
 
 // Freertos
 #include <rtc_wdt.h>
@@ -112,8 +112,8 @@ KXTJ3 acc(0x0E);
 int rotation = 0;
 
 /* Audio */
-SampleSource *wav;
-DACOutput *aOut;
+// SampleSource *wav;
+// DACOutput *aOut;
 
 ////////////////////////
 //
@@ -208,11 +208,11 @@ void setup()
   pwrButton = new OneButton(po.PWR_BTN, true);
 
   // Audio Output
-  if (po.AUDIO_OUT)
-  {
-    aOut = new DACOutput();
-    aOut->init(po.AUDIO_OUT);
-  }
+  // if (po.AUDIO_OUT)
+  // {
+  //   aOut = new DACOutput();
+  //   aOut->init(po.AUDIO_OUT);
+  // }
 
   // SPI Mutex
   if (po.LCD_shared_spi)
