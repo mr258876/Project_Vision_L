@@ -29,11 +29,12 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
         .url = url.c_str(),
         .cert_pem = ISRG_Root_X1,
         .method = HTTP_METHOD_GET,
-        .buffer_size_tx = 64,
+        .buffer_size = 1024,
         .keep_alive_enable = false,
     };
 
     char *buffer = (char *)malloc(WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
+    memset(buffer, 0, WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
     if (buffer == NULL)
     {
         ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
@@ -59,21 +60,42 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
 
     int content_length = esp_http_client_fetch_headers(client);
     // ESP_LOGI(HTTP_TAG, "Content Length:%d", content_length);
-    int total_read_len = 0, read_len;
-    if (total_read_len < content_length && content_length <= WEATHER_HTTP_RECV_BUFFER_SIZE)
+    if (esp_http_client_is_chunked_response(client))
     {
-        read_len = esp_http_client_read(client, buffer, content_length);
-        if (read_len <= 0)
+        int read_len;
+        while (1)
         {
-            ESP_LOGE(HTTP_TAG, "Error read data");
-            free(buffer);
-            return WEATHER_RESULT_HTTP_READ_FAIL;
+            read_len = esp_http_client_read(client, buffer, WEATHER_HTTP_RECV_BUFFER_SIZE);
+            if (read_len <= 0)
+            {
+                if (esp_http_client_is_complete_data_received(client))
+                {
+                    break;
+                }
+                ESP_LOGE(HTTP_TAG, "Error reading data");
+                free(buffer);
+                return WEATHER_RESULT_HTTP_READ_FAIL;
+            }
         }
-        buffer[read_len] = 0;
-        ESP_LOGD(HTTP_TAG, "read_len = %d", read_len);
     }
-
+    else
+    {
+        int read_len = 0;
+        if (0 < content_length && content_length <= WEATHER_HTTP_RECV_BUFFER_SIZE)
+        {
+            read_len = esp_http_client_read(client, buffer, content_length);
+            if (read_len <= 0)
+            {
+                ESP_LOGE(HTTP_TAG, "Error read data");
+                free(buffer);
+                return WEATHER_RESULT_HTTP_READ_FAIL;
+            }
+            buffer[read_len] = 0;
+            // ESP_LOGD(HTTP_TAG, "read_len = %d", read_len);
+        }
+    }
     esp_http_client_close(client);
+    esp_http_client_cleanup(client);
 
     StaticJsonDocument<16> filter;
     filter["current_weather"] = true;
@@ -96,9 +118,13 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
     const char *current_weather_time = current_weather["time"];           // "2023-01-15T14:00" <- Note: GMT time
 
     char current_weather_date[11];
-    strncpy(current_weather_date, current_weather_time, 10);
+    memset(current_weather_date, 0, sizeof(current_weather_date));
+    if (current_weather_time)
+    {
+        strncpy(current_weather_date, current_weather_time, 10);
+    }
 
-    weather->temp = current_weather_temperature;
+    weather->temp = (int)(current_weather_temperature + 0.5);
     weather->weather = weatherCodeConvert(current_weather_weathercode);
 
     filter.clear();
@@ -106,7 +132,7 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
 
     /* Air Quality */
 
-    url = "https://air-quality-api.open-meteo.com/v1/air-quality?hourly=us_aqi&timezone=auto&latitude=";
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality?hourly=us_aqi&timeformat=unixtime&latitude=";
     url.concat(latitude);
     url.concat("&longitude=");
     url.concat(longitude);
@@ -116,6 +142,8 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
     url.concat(current_weather_date);
 
     conf.url = url.c_str();
+
+    memset(buffer, 0, WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
 
     client = esp_http_client_init(&conf);
     if (!client)
@@ -135,22 +163,42 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
 
     content_length = esp_http_client_fetch_headers(client);
     // ESP_LOGI(HTTP_TAG, "Content Length:%d", content_length);
-    total_read_len = 0;
-    read_len = 0;
-    if (total_read_len < content_length && content_length <= WEATHER_HTTP_RECV_BUFFER_SIZE)
+    if (esp_http_client_is_chunked_response(client))
     {
-        read_len = esp_http_client_read(client, buffer, content_length);
-        if (read_len <= 0)
+        int read_len;
+        while (1)
         {
-            ESP_LOGE(HTTP_TAG, "Error read data");
-            free(buffer);
-            return WEATHER_RESULT_HTTP_READ_FAIL;
+            read_len = esp_http_client_read(client, buffer, WEATHER_HTTP_RECV_BUFFER_SIZE);
+            if (read_len <= 0)
+            {
+                if (esp_http_client_is_complete_data_received(client))
+                {
+                    break;
+                }
+                ESP_LOGE(HTTP_TAG, "Error reading data");
+                free(buffer);
+                return WEATHER_RESULT_HTTP_READ_FAIL;
+            }
         }
-        buffer[read_len] = 0;
-        ESP_LOGD(HTTP_TAG, "read_len = %d", read_len);
     }
-
+    else
+    {
+        int read_len = 0;
+        if (0 < content_length && content_length <= WEATHER_HTTP_RECV_BUFFER_SIZE)
+        {
+            read_len = esp_http_client_read(client, buffer, content_length);
+            if (read_len <= 0)
+            {
+                ESP_LOGE(HTTP_TAG, "Error read data");
+                free(buffer);
+                return WEATHER_RESULT_HTTP_READ_FAIL;
+            }
+            buffer[read_len] = 0;
+            // ESP_LOGD(HTTP_TAG, "read_len = %d", read_len);
+        }
+    }
     esp_http_client_close(client);
+    esp_http_client_cleanup(client);
 
     filter["hourly"] = true;
     error = deserializeJson(doc, buffer, WEATHER_HTTP_RECV_BUFFER_SIZE, DeserializationOption::Filter(filter));
@@ -181,7 +229,7 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
             hour_time += gmt_offset;
         else
             continue;
-        
+
         if (time(NULL) > hour_time || i == 0)
         {
             aqi = hourly_us_aqi[i];
