@@ -456,7 +456,7 @@ static esp_err_t root_handler(httpd_req_t *req)
 /* OPTIONS handler */
 /* 响应ajax请求预检 */
 static esp_err_t api_options_handler(httpd_req_t *req)
-{   
+{
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "Access-Control-AllOw-Methods", "GET, POST, OPTIONS");
@@ -1672,25 +1672,39 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
     char value1[64];
     char value2[64];
     char value3[64];
+    char value4[64];
     float lat, lon;
+    int provider;
 
     /* 获取url中参数 */
     if (!httpd_req_get_url_query_str(req, str, 128)) // <-- ESP_OK = 0
     {
         /* 提取输入值 */
-        if (httpd_query_key_value(str, "city", value1, 64) || httpd_query_key_value(str, "latitude", value2, 64) || httpd_query_key_value(str, "longitude", value3, 64)) // <-- ESP_OK = 0
+        if (httpd_query_key_value(str, "city", value1, 64) || httpd_query_key_value(str, "latitude", value2, 64) || httpd_query_key_value(str, "longitude", value3, 64) || httpd_query_key_value(str, "provider", value4, 64)) // <-- ESP_OK = 0
         {
             return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
         }
 
         /* 检查输入值 */
-        if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180))
+        if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180) && (sscanf(value4, "%d", &provider) == 1 && lon >= 0 && lon <= 1))
         {
+            setting_weatherProvider = provider;
+            switch (provider)
+            {
+            case 0:
+                wp = &OpenMeteo;
+                break;
+            default:
+                wp = &MojiTianqi;
+                break;
+            }
+
             wp->setCoordinate(lat, lon);
             wp->setCity(urldecode(value1).c_str());
             prefs.putString("weatherCity", wp->getCity());
             prefs.putFloat("weatherLat", lat);
             prefs.putFloat("weatherLon", lon);
+            prefs.putFloat("weatherProvider", provider);
         }
         else
         {
@@ -1698,7 +1712,7 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         }
     }
 
-    sprintf(str, "{\"city\":\"%s\",\"latitude\":%f,\"longitude\":%f}", wp->getCity().c_str(), wp->getLatitude(), wp->getLongitude());
+    sprintf(str, "{\"city\":\"%s\",\"latitude\":%f,\"longitude\":%f,\"provider\":%d}", wp->getCity().c_str(), wp->getLatitude(), wp->getLongitude(), setting_weatherProvider);
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);

@@ -436,7 +436,7 @@ static void loadSettings()
   switch (weatherProviderNumber)
   {
   case 0:
-    // wp = &OpenMeteo;
+    wp = &OpenMeteo;
     break;
   default:
     wp = &MojiTianqi;
