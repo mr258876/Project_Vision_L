@@ -48,6 +48,7 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
     }
 
     char *buffer = (char *)malloc(WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
+    memset(buffer, 0, WEATHER_HTTP_RECV_BUFFER_SIZE + 1);
     if (buffer == NULL)
     {
         ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
