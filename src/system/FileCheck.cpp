@@ -472,6 +472,8 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
   esp_http_client_close(client);
   esp_http_client_cleanup(client);
 
+  free(buffer);
+
   return DOWNLOAD_RES_OK;
 }
 

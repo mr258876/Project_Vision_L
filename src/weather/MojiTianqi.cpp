@@ -136,6 +136,7 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
     setCity(data_list_0_city);
 
     doc.clear();
+    free(buffer);
 
     return WEATHER_RESULT_OK;
 }
