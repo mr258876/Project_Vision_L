@@ -767,6 +767,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
     // 解决跨域请求报错
     int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
     char host[host_str_len + 1];
+    memset(host, 0, host_str_len + 1);
     if (host_str_len)
     {
         httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
@@ -780,16 +781,18 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
         return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
 
-    char str[query_length];
-    char path[query_length];
+    char str[query_length + 1];
+    char path[query_length + 1];
+    memset(str, 0, query_length + 1);
+    memset(path, 0, query_length + 1);
 
     /* 获取url中参数 */
-    if (httpd_req_get_url_query_str(req, str, query_length)) // <-- ESP_OK = 0
+    if (httpd_req_get_url_query_str(req, str, query_length + 1)) // <-- ESP_OK = 0
     {
         return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
     }
     /* 提取路径 */
-    if (httpd_query_key_value(str, "path", path, query_length)) // <-- ESP_OK = 0
+    if (httpd_query_key_value(str, "path", path, query_length + 1)) // <-- ESP_OK = 0
     {
         return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
     }
