@@ -242,9 +242,9 @@ path: 文件夹路径，以url形式传参。需要包含挂载路径。
 path: Directory path, passed in url. Mount point should be included.
 
 #### Response
-JSON封装的文件列表，文件夹以'/'开头。
+JSON封装的文件列表，包含文件名、文件大小及最后修改时间。文件夹以'/'开头。
 
-File list in JSON, directories starts witl '/'.
+File list in JSON, includes file name, size, and last modification time. Directories starts witl '/'.
 
 | Description | Code |
 | --- | --- |
@@ -260,14 +260,12 @@ GET /api/v1/file/listdir?path=/s/
 RESPONSE:
 {
     "files":[
-        "/System Volume Information",
-        "Hoyolab.json",
-        "hk4e_zh-cn.ttf",
-        "/The Vision L",
-        "Anemo.mjpeg",
-        "Cryo.mjpeg",
-        "风.mjpeg",
-        "Hoyolab_1.json"
+        ["/The Vision L",0,1672554818],
+        ["Anemo.mjpeg",21092500,1661271210],
+        ["Cryo.mjpeg",14406262,1661270150],
+        ["NRE.wav",265300,1648278648],
+        ["playFiles.json",243,1664634200],
+        ["岩.mjpeg",14581853,1661270304]
     ]
 }
 ~~~

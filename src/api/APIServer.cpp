@@ -820,6 +820,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
     DynamicJsonDocument doc(4096);
     JsonArray files = doc.createNestedArray("files");
     dirent *f_dirent;
+    struct stat f_stat;
     /* 将文件名添加至列表 */
     while (1)
     {
@@ -834,15 +835,34 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
             break;
         }
 
+        StaticJsonDocument<256 + sizeof(size_t) + sizeof(time_t)> d;
+        JsonArray f = d.to<JsonArray>();
         if (f_dirent->d_type == DT_REG)
         {
-            files.add(f_dirent->d_name);
+            String file_path = String(path) + "/" + f_dirent->d_name;
+            xSemaphoreTake(*FSMutex, portMAX_DELAY);
+            {
+                stat(file_path.c_str(), &f_stat);
+            }
+            xSemaphoreGive(*FSMutex);
+            f.add(f_dirent->d_name);
+            f.add(f_stat.st_size);
+            f.add(f_stat.st_mtime);
+            files.add(f);
         }
         else if (f_dirent->d_type == DT_DIR)
         {
             // Is directiory
             String fn = String("/") + f_dirent->d_name;
-            files.add(fn);
+            xSemaphoreTake(*FSMutex, portMAX_DELAY);
+            {
+                stat((String(path) + fn ).c_str(), &f_stat);
+            }
+            xSemaphoreGive(*FSMutex);
+            f.add(fn);
+            f.add(f_stat.st_size);
+            f.add(f_stat.st_mtime);
+            files.add(f);
         }
     }
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
