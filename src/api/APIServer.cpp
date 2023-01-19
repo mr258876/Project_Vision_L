@@ -1353,7 +1353,7 @@ static esp_err_t file_makedir_handler(httpd_req_t *req)
         res = mkdir(path, 0777);
     }
     xSemaphoreGive(*FSMutex);
-    if (res == 0)
+    if (res != 0)
     {
         ESP_LOGE("file_makedir_handler", "Unable to create folder!");
         return return_err(req, "{\"response\":\"Error create folder!\",\"code\":-8}");
