@@ -28,6 +28,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req);
 static esp_err_t file_get_handler(httpd_req_t *req);
 static esp_err_t file_post_handler(httpd_req_t *req);
 static esp_err_t file_delete_handler(httpd_req_t *req);
+static esp_err_t file_options_handler(httpd_req_t *req);
 static esp_err_t file_makedir_handler(httpd_req_t *req);
 
 static esp_err_t hoyolab_conf_get_handler(httpd_req_t *req);
@@ -127,11 +128,25 @@ httpd_uri_t uri_file_delete = {
     .handler = file_delete_handler,
     .user_ctx = NULL};
 
+/* OPTIONS /file 的 URI 处理结构 */
+httpd_uri_t uri_file_options = {
+    .uri = "/api/v1/file",
+    .method = HTTP_OPTIONS,
+    .handler = file_options_handler,
+    .user_ctx = NULL};
+
 /* POST /file/makedir 的 URI 处理结构 */
 httpd_uri_t uri_file_makedir = {
     .uri = "/api/v1/file/makedir",
     .method = HTTP_POST,
     .handler = file_makedir_handler,
+    .user_ctx = NULL};
+
+/* OPTIONS /file 的 URI 处理结构 */
+httpd_uri_t uri_file_makedir_options = {
+    .uri = "/api/v1/file/makedir",
+    .method = HTTP_OPTIONS,
+    .handler = file_options_handler,
     .user_ctx = NULL};
 
 /* GET /hoyolab/conf 的 URI 处理结构 */
@@ -1263,6 +1278,18 @@ static esp_err_t file_delete_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* file OPTIONS handler */
+/* 响应ajax请求预检 */
+static esp_err_t file_options_handler(httpd_req_t *req)
+{
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Access-Control-AllOw-Methods", "GET, POST, DELETE, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
+    httpd_resp_send(req, "", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* 新建文件夹 */
 /* @param path: 文件路径，通过url传参 */
 static esp_err_t file_makedir_handler(httpd_req_t *req)
@@ -1781,7 +1808,7 @@ void startAPIServer()
     }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 24;
+    config.max_uri_handlers = 32;
     config.stack_size = 6144;
 
     /* Use the URI wildcard matching function in order to
@@ -1809,7 +1836,9 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_file_get);
         httpd_register_uri_handler(server, &uri_file_post);
         httpd_register_uri_handler(server, &uri_file_delete);
+        httpd_register_uri_handler(server, &uri_file_options);
         httpd_register_uri_handler(server, &uri_file_makedir);
+        httpd_register_uri_handler(server, &uri_file_makedir_options);
 
         httpd_register_uri_handler(server, &uri_hoyolab_conf_get);
         httpd_register_uri_handler(server, &uri_hoyolab_conf_post);
