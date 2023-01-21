@@ -296,6 +296,7 @@ void cb_timer_DigitalClockTimer(lv_timer_t *timer)
             lv_label_set_text_fmt(ui_DigitalClockWeekdayLabelShadow, "%s\n%s", lang[curr_lang][75 + lastWeekday], lang[curr_lang][75 + timeinfo.tm_wday]);
             aniDigitalClockLinear_Animation(ui_DigitalClockWeekdayLabel, 0);
             aniDigitalClockLinear_Animation(ui_DigitalClockWeekdayLabelShadow, 0);
+            lastWeekday = timeinfo.tm_wday;
         }
 
         /* Date */
