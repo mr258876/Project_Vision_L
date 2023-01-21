@@ -56,8 +56,8 @@ uint8_t setting_screenBrightness = 127;
 bool setting_soundMuted = false;
 uint8_t setting_soundVolume = 75;
 
-unsigned long setting_resinSyncPeriod = 900000000;
-unsigned long setting_weatherSyncPeriod = 900000000;
+unsigned long setting_resinSyncPeriod = 1800000000;
+unsigned long setting_weatherSyncPeriod = 1800000000;
 
 bool setting_useDigitalClock = false;
 

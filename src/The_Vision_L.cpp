@@ -395,7 +395,7 @@ static void loadSettings()
   setting_soundMuted = prefs.getBool("soundMuted", false);
   setting_soundVolume = prefs.getUInt("soundVolume", 75);
 
-  setting_resinSyncPeriod = prefs.getULong("resinSyncPeriod", 900000000);
+  setting_resinSyncPeriod = prefs.getULong("resinSyncPeriod", 1800000000);
 
   setting_useDigitalClock = prefs.getBool("useDigitalClock", false);
 
