@@ -28,6 +28,8 @@ static esp_err_t file_listdir_handler(httpd_req_t *req);
 static esp_err_t file_get_handler(httpd_req_t *req);
 static esp_err_t file_post_handler(httpd_req_t *req);
 static esp_err_t file_delete_handler(httpd_req_t *req);
+static esp_err_t file_move_handler(httpd_req_t *req);
+static esp_err_t file_copy_handler(httpd_req_t *req);
 static esp_err_t file_options_handler(httpd_req_t *req);
 static esp_err_t file_makedir_handler(httpd_req_t *req);
 
@@ -128,6 +130,20 @@ httpd_uri_t uri_file_delete = {
     .handler = file_delete_handler,
     .user_ctx = NULL};
 
+/* MOVE /file/file 的 URI 处理结构 */
+httpd_uri_t uri_file_move = {
+    .uri = "/api/v1/file",
+    .method = HTTP_MOVE,
+    .handler = file_move_handler,
+    .user_ctx = NULL};
+
+/* COPY /file/file 的 URI 处理结构 */
+httpd_uri_t uri_file_copy = {
+    .uri = "/api/v1/file",
+    .method = HTTP_COPY,
+    .handler = file_copy_handler,
+    .user_ctx = NULL};
+
 /* OPTIONS /file 的 URI 处理结构 */
 httpd_uri_t uri_file_options = {
     .uri = "/api/v1/file",
@@ -146,7 +162,7 @@ httpd_uri_t uri_file_makedir = {
 httpd_uri_t uri_file_makedir_options = {
     .uri = "/api/v1/file/makedir",
     .method = HTTP_OPTIONS,
-    .handler = file_options_handler,
+    .handler = api_options_handler,
     .user_ctx = NULL};
 
 /* GET /hoyolab/conf 的 URI 处理结构 */
@@ -644,7 +660,7 @@ static esp_err_t playlist_post_handler(httpd_req_t *req)
         httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
     }
 
-    char post_ctx[1024];
+    char post_ctx[1024 + 1];
 
     /* 如果内容长度大于缓冲区则截断 */
     size_t recv_size = min(req->content_len, sizeof(post_ctx));
@@ -871,7 +887,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
             String fn = String("/") + f_dirent->d_name;
             xSemaphoreTake(*FSMutex, portMAX_DELAY);
             {
-                stat((String(path) + fn ).c_str(), &f_stat);
+                stat((String(path) + fn).c_str(), &f_stat);
             }
             xSemaphoreGive(*FSMutex);
             f.add(fn);
@@ -1278,13 +1294,205 @@ static esp_err_t file_delete_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 移动/重命名文件 */
+/* @param path1: 原文件路径，通过url传参 */
+/* @param path2: 新文件路径，通过url传参 */
+static esp_err_t file_move_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    memset(host, 0, host_str_len + 1);
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length + 1];
+    char path1[query_length + 1];
+    char path2[query_length + 1];
+    memset(str, 0, query_length + 1);
+    memset(path1, 0, query_length + 1);
+    memset(path2, 0, query_length + 1);
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, query_length + 1)) // <-- ESP_OK = 0
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path1", path1, query_length + 1) || httpd_query_key_value(str, "path2", path2, query_length + 1)) // <-- ESP_OK = 0
+    {
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path1[1]);
+    if (!FSMutex)
+    {
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
+    }
+
+    /* 检测文件状态 */
+    strcpy(path1, urldecode(path1).c_str());
+    strcpy(path2, urldecode(path2).c_str());
+    struct stat file_stat;
+    int stat_res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        stat_res = stat(path1, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (stat_res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File not exist\",\"code\":-6}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    int op_res = 0;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        op_res = rename(path1, path2);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (op_res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File not exist\",\"code\":-6}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 复制文件 */
+/* @param path1: 原文件路径，通过url传参 */
+/* @param path2: 新文件路径，通过url传参 */
+static esp_err_t file_copy_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    memset(host, 0, host_str_len + 1);
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    /* 获取查询字符串长度 */
+    int query_length = httpd_req_get_url_query_len(req);
+    if (!query_length)
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+
+    char str[query_length + 1];
+    char path1[query_length + 1];
+    char path2[query_length + 1];
+    memset(str, 0, query_length + 1);
+    memset(path1, 0, query_length + 1);
+    memset(path2, 0, query_length + 1);
+
+    /* 获取url中参数 */
+    if (httpd_req_get_url_query_str(req, str, query_length + 1)) // <-- ESP_OK = 0
+    {
+        return return_err(req, "{\"response\":\"Invalid query\",\"code\":-1}");
+    }
+    /* 提取路径 */
+    if (httpd_query_key_value(str, "path1", path1, query_length + 1) || httpd_query_key_value(str, "path2", path2, query_length + 1)) // <-- ESP_OK = 0
+    {
+        return return_err(req, "{\"response\":\"Invalid path\",\"code\":-2}");
+    }
+
+    /* 根据驱动器号获取互斥量 */
+    SemaphoreHandle_t *FSMutex = get_FS_mutex(path1[1]);
+    if (!FSMutex)
+    {
+        return return_err(req, "{\"response\":\"No such volume\",\"code\":-5}");
+    }
+
+    /* 检测文件状态 */
+    strcpy(path1, urldecode(path1).c_str());
+    strcpy(path2, urldecode(path2).c_str());
+    struct stat file_stat;
+    int stat_res;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        stat_res = stat(path1, &file_stat);
+    }
+    xSemaphoreGive(*FSMutex);
+    if (stat_res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"File not exist\",\"code\":-6}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    int op_res = 0;
+    xSemaphoreTake(*FSMutex, portMAX_DELAY);
+    {
+        FILE *f1, *f2;
+        f1 = fopen("a.png", "rb");
+        f2 = fopen("b.png", "wb");
+        uint8_t buf[64];
+        size_t read_bytes = 0;
+        size_t write_bytes = 0;
+        while (feof(f1))
+        {
+            read_bytes = fread(&buf, 16, 1, f1);
+            write_bytes = fwrite(&buf, read_bytes, 1, f2);
+
+            if (read_bytes != write_bytes)
+            {
+                op_res = -1;
+                break;
+            }
+        }
+        fclose(f1);
+        fclose(f2);
+        if (op_res == -1)
+        {
+            remove(path2);
+        }
+    }
+    xSemaphoreGive(*FSMutex);
+    if (stat_res == -1)
+    {
+        httpd_resp_set_status(req, HTTPD_404);
+        httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+        httpd_resp_send(req, "{\"response\":\"Unable to copy file\",\"code\":-8}", HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"response\":\"success\",\"code\":0}", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* file OPTIONS handler */
 /* 响应ajax请求预检 */
 static esp_err_t file_options_handler(httpd_req_t *req)
 {
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "Access-Control-AllOw-Methods", "GET, POST, DELETE, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, DELETE, MOVE, COPY, OPTIONS");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
     httpd_resp_send(req, "", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
@@ -1836,6 +2044,8 @@ void startAPIServer()
         httpd_register_uri_handler(server, &uri_file_get);
         httpd_register_uri_handler(server, &uri_file_post);
         httpd_register_uri_handler(server, &uri_file_delete);
+        httpd_register_uri_handler(server, &uri_file_move);
+        // httpd_register_uri_handler(server, &uri_file_copy);
         httpd_register_uri_handler(server, &uri_file_options);
         httpd_register_uri_handler(server, &uri_file_makedir);
         httpd_register_uri_handler(server, &uri_file_makedir_options);

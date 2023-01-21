@@ -230,6 +230,77 @@ RESPONSE:
 }
 ~~~
 
+### MOVE /api/v1/file
+#### Brief
+该函数用于移动或重命名文件/文件夹。
+
+This function is to move/rename file (directory).
+
+#### Param
+path1: 原文件路径，以url形式传参。需要包含挂载路径。
+
+path2: 新文件路径，以url形式传参。需要包含挂载路径。
+
+path1: Original file path, passed in url. Mount point should be included.
+
+path2: New file path, passed in url. Mount point should be included.
+
+#### Response
+| Description | Code |
+| --- | --- |
+| Success | 0 |
+| Missing parameter | -1 |
+| Parameter too long | -2 |
+| No such volume | -5 |
+| File not exist | -6 |
+
+#### Example
+~~~
+MOVE /api/v1/file?path1=/s/冰.mjpeg&path2=/s/Cryo.mjpeg
+
+RESPONSE:
+{
+    "response": "success",
+    "code": 0
+}
+~~~
+
+### COPY /api/v1/file
+#### Brief
+该函数用于复制文件。
+
+This function is to copy file.
+
+#### Param
+path1: 原文件路径，以url形式传参。需要包含挂载路径。
+
+path2: 新文件路径，以url形式传参。需要包含挂载路径。
+
+path1: Original file path, passed in url. Mount point should be included.
+
+path2: New file path, passed in url. Mount point should be included.
+
+#### Response
+| Description | Code |
+| --- | --- |
+| Success | 0 |
+| Missing parameter | -1 |
+| Parameter too long | -2 |
+| No such volume | -5 |
+| File not exist | -6 |
+| Unable to copy file | -8 |
+
+#### Example
+~~~
+COPY /api/v1/file?path1=/s/冰.mjpeg&path2=/s/冰(1).mjpeg
+
+RESPONSE:
+{
+    "response": "success",
+    "code": 0
+}
+~~~
+
 ### GET /api/v1/file/listdir
 #### Brief
 该函数用于读取文件夹。
