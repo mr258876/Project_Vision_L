@@ -2042,6 +2042,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_DigitalClockTimeLabelHourShadow, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelHourShadow, &ui_font_HanyiWenhei48ASCII,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_DigitalClockTimeLabelHourShadow, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelMinShadow = lv_label_create(ui_DigitalClockTimePanel);
     lv_obj_set_width(ui_DigitalClockTimeLabelMinShadow, LV_SIZE_CONTENT);  /// 1
@@ -2075,6 +2076,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_align(ui_DigitalClockTimeLabelHour, LV_ALIGN_TOP_RIGHT);
     lv_label_set_text(ui_DigitalClockTimeLabelHour, "24");
     lv_obj_set_style_text_font(ui_DigitalClockTimeLabelHour, &ui_font_HanyiWenhei48ASCII, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_DigitalClockTimeLabelHour, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockTimeLabelMin = lv_label_create(ui_DigitalClockTimePanel);
     lv_obj_set_width(ui_DigitalClockTimeLabelMin, LV_SIZE_CONTENT);  /// 1
