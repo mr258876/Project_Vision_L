@@ -668,16 +668,18 @@ void hardwareSetup(void *parameter)
     }
 
     /* 查询树脂 */
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    if (info_timeSynced)  // <- 未对时无法生成动态盐值
     {
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       lv_label_set_text(ui_StartupLabel2, lang[curr_lang][96]); // "查询树脂..."
       xSemaphoreGive(LVGLMutex);
     }
     getDailyNote(&nd, &errMsg);
 
     /* 查询天气 */
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    if (info_timeSynced)  // <- 未对时无法进入数字时钟界面
     {
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       lv_label_set_text(ui_StartupLabel2, lang[curr_lang][97]); // "查询天气..."
       xSemaphoreGive(LVGLMutex);
     }
