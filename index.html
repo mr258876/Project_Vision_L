@@ -1,8 +1,10 @@
+<!DOCTYPE html>
+
 <html>
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=0">
+    <meta name="viewport" content="height=device-height,width=device-width,initial-scale=1.0,user-scalable=0">
 
     <title>神之眼实用程序</title>
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -11,8 +13,14 @@
     <script src="./js/jquery-3.6.3.min.js"></script>
     <script src="./js/Sortable.min.js"></script>
     <script src="./js/jquery-sortable.js"></script>
-    <script type="module" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule="" src="https://unpkg.com/ionicons@latest/dist/ionicons/ionicons.js"></script>
+
+    <style>
+        /* 解决移动端对话框高度不对 */
+        html,
+        body {
+            height: 100%;
+        }
+    </style>
 </head>
 
 <body
@@ -21,10 +29,8 @@
         <div class="mdui-toolbar mdui-color-theme">
             <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-drawer="{target: '#drawer'}"><i
                     class="mdui-icon material-icons">menu</i></a>
-            <a href="javascript:;" class="mdui-typo-title">神之眼实用程序</a>
+            <a href="javascript:;" class="mdui-typo-title" id="title">神之眼实用程序</a>
             <div class="mdui-toolbar-spacer"></div>
-            <a href="https://github.com/mr258876/Project_Vision_L" class="mdui-btn mdui-btn-icon"
-                mdui-tooltip="{content: 'Github主页'}"><ion-icon class="mdui-icon" name="logo-github"></ion-icon></a>
         </div>
         <div class="mdui-progress" id="progress-bar" hidden>
             <div class="mdui-progress-indeterminate"></div>
@@ -81,12 +87,19 @@
                         <h4>区域和语言</h4>
                     </li>
                     <li class="mdui-list-item mdui-ripple" id="language-li">
-                        <i class="mdui-list-item-icon mdui-icon material-icons">language</i>
+                        <i class="mdui-list-item-icon mdui-icon material-icons">translate</i>
                         <div class="mdui-list-item-content">语言</div>
                         <select class="mdui-select" id="device-language-select">
                             <option value="0">English</option>
                             <option value="1">简体中文</option>
                         </select>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple" id="time-li" hidden>
+                        <i class="mdui-list-item-icon mdui-icon material-icons">access_time</i>
+                        <div class="mdui-list-item-content">当前时间<br /><span id="device-time">2023年1月17日19:51:35</span>
+                        </div>
+                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
+                            id="sync-browser-time-btn">同步本地时间</button>
                     </li>
                     <li class="mdui-list-item mdui-ripple" id="timezone-li">
                         <i class="mdui-list-item-icon mdui-icon material-icons">timelapse</i>
@@ -180,7 +193,7 @@
                     <li class="mdui-list-item mdui-ripple">
                         <i class="mdui-list-item-icon mdui-icon material-icons">language</i>
                         <div class="mdui-list-item-content">天气源</div>
-                        <select class="mdui-select" disabled>
+                        <select class="mdui-select" id="device-weather-provider-select">
                             <option value="0">Open-meteo</option>
                             <option value="1" selected>墨迹天气</option>
                         </select>
@@ -240,6 +253,25 @@
             </div>
         </div>
 
+        <hr /><br />
+
+        <div id="advanced-settings">
+            <div class="mdui-row">
+                <div class="mdui-col-xs-12 mdui-typo-title">高级选项</div>
+            </div>
+
+            <div class="mdui-row">
+                <ul class="mdui-col-xs-12 mdui-list">
+                    <li class="mdui-list-item mdui-ripple">
+                        <i class="mdui-list-item-icon mdui-icon material-icons">my_location</i>
+                        <div class="mdui-list-item-content">传感器调整</div>
+                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
+                            id="sensor-adj-menu-btn">前往传感器调整</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
     </div>
 
     <div class="mdui-container" id="playlist-container" hidden>
@@ -261,19 +293,120 @@
             <li class="mdui-list-item mdui-ripple" id="playlist-li-2">
                 <i class="mdui-list-item-icon mdui-icon material-icons drag-handle">drag_handle</i>
                 <div class="mdui-list-item-content">
-                    <div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-2-fn"></span><i
+                    <div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-2-fn">File</span><i
                             class="mdui-icon material-icons" id="playlist-li-2-play-icon" hidden>play_arrow</i></div>
-                    <div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-2-fp"></span></div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-2-fp">File
+                            path</span></div>
                 </div>
-                <button class="mdui-list-item-icon mdui-btn mdui-btn-icon mdui-btn-ripple"><i
-                        class="mdui-icon material-icons">content_copy</i></button>
-                <button class="mdui-list-item-icon mdui-btn mdui-btn-icon mdui-color-theme-accent mdui-btn-ripple"><i
-                        class="mdui-icon material-icons">delete</i></button>
+                <i class="mdui-list-item-icon mdui-icon material-icons playlist-copy">content_copy</i>
+                <i class="mdui-list-item-icon mdui-icon material-icons playlist-delete">delete</i>
             </li>
         </ul>
     </div>
 
-    <div class="mdui-bottom-nav mdui-bottom-nav-text-auto mdui-color-theme" id="bottom-nav-div">
+    <div class="mdui-container" id="file-container" hidden>
+        <div class="mdui-row">
+            <div class="mdui-col-xs-5">
+                <button class="mdui-btn mdui-btn-block mdui-color-theme" id="file-upload-btn"><i
+                        class="mdui-icon material-icons">file_upload</i>上传文件</button>
+            </div>
+            <div class="mdui-col-xs-5">
+                <button class="mdui-btn mdui-btn-block mdui-color-theme" id="file-new-folder-btn"><i
+                        class="mdui-icon material-icons">create_new_folder</i>新建文件夹</button>
+            </div>
+            <div class="mdui-col-xs-2">
+                <button class="mdui-btn mdui-btn-icon mdui-color-theme mdui-center"
+                    mdui-menu="{target: '#file-sort-menu'}" id="file-sort-btn"><i
+                        class="mdui-icon material-icons">sort</i></button>
+                <ul class="mdui-menu" id="file-sort-menu">
+                    <li class="mdui-menu-item">
+                        <a class="mdui-ripple file-sort-a" id="file-sort-method-0">名称</a>
+                    </li>
+                    <li class="mdui-menu-item">
+                        <a class="mdui-ripple file-sort-a" id="file-sort-method-1">名称（倒序）</a>
+                    </li>
+                    <li class="mdui-menu-item">
+                        <a class="mdui-ripple file-sort-a" id="file-sort-method-2">文件大小</a>
+                    </li>
+                    <li class="mdui-menu-item">
+                        <a class="mdui-ripple file-sort-a" id="file-sort-method-3">文件大小（倒序）</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <br />
+
+        <div class="mdui-tab mdui-tab-scrollable" id="file-path-div" style="padding-left: 0px;" mdui-tab>
+            <a class="mdui-ripple file-path-dir" id="file-path-a-1">SD卡</a>
+            <a style="min-width: 0px; padding: 0px;" disabled><i class="mdui-icon material-icons">chevron_right</i></a>
+            <a class="mdui-ripple file-path-dir" id="file-path-a-2">shopping</a>
+            <a style="min-width: 0px; padding: 0px;" disabled><i class="mdui-icon material-icons">chevron_right</i></a>
+            <a class="mdui-ripple file-path-dir" id="file-path-a-3">videos</a>
+        </div>
+
+        <ul class="mdui-list" id="file-ul">
+            <li class="mdui-list-item mdui-ripple" id="file-li-1">
+                <i class="mdui-list-item-icon mdui-icon material-icons">folder</i>
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line" id="file-li-1-fn">Folder</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line" id="file-li-1-description">2023年1月18日</div>
+                </div>
+                <i class="mdui-list-item-icon mdui-icon material-icons file-menu">more_vert</i>
+            </li>
+            <li class="mdui-list-item mdui-ripple" id="file-li-2">
+                <i class="mdui-list-item-icon mdui-icon material-icons">insert_drive_file</i>
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line" id="file-li-2-fn">File</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line" id="file-li-2-description">1 KB, 2023年1月18日
+                    </div>
+                </div>
+                <i class="mdui-list-item-icon mdui-icon material-icons file-menu">more_vert</i>
+            </li>
+            <li class="mdui-list-item mdui-ripple" id="file-li-3">
+                <i class="mdui-list-item-icon mdui-icon material-icons">ondemand_video</i>
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line" id="file-li-3-fn">Video</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line" id="file-li-3-description">1.5 MB,
+                        1970年1月1日</div>
+                </div>
+                <i class="mdui-list-item-icon mdui-icon material-icons file-menu">more_vert</i>
+                <!-- <ul class="mdui-menu" id="file-menu-ul">
+                    <li class="mdui-menu-item"><a href="javascript:;" id="file-menu-add-to-playlist-a">添加至播放列表</a></li>
+                    <li class="mdui-divider"></li>
+                    <li class="mdui-menu-item" disabled><a href="javascript:;" id="file-menu-copy-a">复制</a></li>
+                    <li class="mdui-menu-item" disabled><a href="javascript:;" id="file-menu-move-a">移动</a></li>
+                    <li class="mdui-menu-item" disabled><a href="javascript:;" id="file-menu-rename-a">重命名</a></li>
+                    <li class="mdui-divider"></li>
+                    <li class="mdui-menu-item"><a href="javascript:;" class="mdui-text-color-red"
+                            id="file-menu-delete-a">删除</a></li>
+                </ul> -->
+            </li>
+            <li class="mdui-list-item mdui-ripple" id="file-li-4">
+                <i class="mdui-list-item-icon mdui-icon material-icons">image</i>
+                <div class="mdui-list-item-content">
+                    <div class="mdui-list-item-title mdui-list-item-one-line" id="file-li-4-fn">Image</div>
+                    <div class="mdui-list-item-text mdui-list-item-one-line" id="file-li-4-description">15.76 MB,
+                        2022年12月3日</div>
+                </div>
+                <i class="mdui-list-item-icon mdui-icon material-icons file-menu">more_vert</i>
+            </li>
+        </ul>
+
+        <!-- <div class="mdui-fab-wrapper" style="bottom: 76px;" id="file-paste-div">
+            <button class="mdui-fab mdui-ripple mdui-color-theme" id="file-paste-btn">
+                <i class="mdui-icon material-icons">content_paste</i>
+            </button>
+            <div class="mdui-fab-dial mdui-fab-dial-show" style="height: auto;">
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-text-color-red" id="file-paste-cancel-btn">
+                    <i class="mdui-icon material-icons">close</i>
+                </button>
+            </div>
+        </div> -->
+    </div>
+
+    <div class="mdui-bottom-nav mdui-bottom-nav-text-auto mdui-bottom-nav-scroll-hide mdui-color-theme"
+        id="bottom-nav-div">
         <a href="javascript:;" class="mdui-ripple mdui-bottom-nav-active" id="settings-a">
             <i class="mdui-icon material-icons">settings</i>
             <label>设备配置</label>
@@ -282,7 +415,7 @@
             <i class="mdui-icon material-icons">playlist_play</i>
             <label>播放列表</label>
         </a>
-        <a href="javascript:;" class="mdui-ripple" id="file-a" hidden>
+        <a href="javascript:;" class="mdui-ripple" id="file-a">
             <i class="mdui-icon material-icons">folder_open</i>
             <label>文件管理</label>
         </a>
@@ -301,6 +434,8 @@
 </body>
 
 <script>
+    const UTILITY_VERSION = 20230125;
+
     $.ajaxSettings.timeout = 5000;
 
     const API_PREFIX = "/api/v1";
@@ -323,11 +458,27 @@
     var device_weatherCity;
     var device_weatherLatitude;
     var device_weatherLongitude;
+    var device_weatherProvider;
 
     var device_playlist;
     var device_playlist_current;
     const PLAYLIST_ID_EXP = RegExp("[0-9]+", "g");
-    const PLAYLIST_LI_BOM = '<li class="mdui-list-item mdui-ripple" id="playlist-li-{0}"><i class="mdui-list-item-icon mdui-icon material-icons drag-handle">drag_handle</i><div class="mdui-list-item-content"><div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-{0}-fn"></span><i class="mdui-icon material-icons" id="playlist-li-{0}-play-icon" hidden>play_arrow</i></div><div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-{0}-fp"></span></div></div><i class="mdui-list-item-icon mdui-icon material-icons playlist-copy">content_copy</i><i class="mdui-list-item-icon mdui-icon material-icons playlist-delete">delete</i></li>'
+    const PLAYLIST_LI_BOM = '<li class="mdui-list-item mdui-ripple" id="playlist-li-{0}"><i class="mdui-list-item-icon mdui-icon material-icons drag-handle">drag_handle</i><div class="mdui-list-item-content"><div class="mdui-list-item-title mdui-list-item-one-line"><span id="playlist-li-{0}-fn"></span><i class="mdui-icon material-icons" id="playlist-li-{0}-play-icon" hidden>play_arrow</i></div><div class="mdui-list-item-text mdui-list-item-one-line"><span id="playlist-li-{0}-fp"></span></div></div><i class="mdui-list-item-icon mdui-icon material-icons playlist-copy">content_copy</i><i class="mdui-list-item-icon mdui-icon material-icons playlist-delete">delete</i></li>';
+
+    var device_file_dir;
+    var device_file_dir_list;
+    var file_sort_method = 0;   // 0->A-Z, 1->Z-A, 2->size, 3->size desc 
+    var file_clipboard = [];
+    const FILE_ID_EXP = RegExp("[0-9]+", "g");
+    const FILE_LI_BOM = '<li class="mdui-list-item" id="file-li-{0}"><i class="mdui-list-item-icon mdui-icon material-icons">{1}</i><div class="mdui-list-item-content"><div class="mdui-list-item-title mdui-list-item-one-line" id="file-li-{0}-fn">{2}</div><div class="mdui-list-item-text mdui-list-item-one-line" id="file-li-{0}-description">{3}</div></div><i class="mdui-list-item-icon mdui-icon material-icons file-menu-i" style="border: 5px;">more_vert</i></li>';
+    const FILE_FOLDER_A_BOM = '<a class="mdui-ripple file-path-dir" id="file-path-a-{0}">{1}</a>';
+    const FILE_FOLDER_DEVIDER_A_BOM = '<a style="min-width: 0px; padding: 0px;" disabled><i class="mdui-icon material-icons">chevron_right</i></a>';
+    const FILE_MENU_BOM = '<ul class="mdui-menu" id="file-menu-ul"><li class="mdui-menu-item"><a href="javascript:;" id="file-menu-copy-a">复制</a></li><li class="mdui-menu-item"><a href="javascript:;" id="file-menu-move-a">移动</a></li><li class="mdui-menu-item"><a href="javascript:;" id="file-menu-rename-a">重命名</a></li><li class="mdui-divider"></li><li class="mdui-menu-item"><a href="javascript:;" class="mdui-text-color-red" id="file-menu-delete-a">删除</a></li></ul>';
+    const FILE_MENU_ADD_TO_PLAYLIST_BOM = '<li class="mdui-menu-item"><a href="javascript:;" id="file-menu-add-to-playlist-a">添加至播放列表</a></li><li class="mdui-divider"></li>';
+    const FILE_MENU_NEW_FOLDER_DIALOG_BOM = '<div class="mdui-dialog" id="file-new-folder-dialog"><div class="mdui-dialog-title">新建文件夹</div><div class="mdui-dialog-content"><div class="mdui-textfield" id="file-new-folder-dialog-textfield"><label class="mdui-textfield-label">新文件夹名</label><input class="mdui-textfield-input" type="text" id="file-new-folder-dialog-input" /><div class="mdui-textfield-error" id="file-new-folder-dialog-textfield-err">文件名格式错误。文件名中不能包含 ? * / \ < > : " |</div></div></div><div class="mdui-dialog-actions"><button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button><button class="mdui-btn mdui-ripple" mdui-dialog-confirm>确定</button></div></div>';
+    const FILE_MENU_RENAME_DIALOG_BOM = '<div class="mdui-dialog" id="file-rename-dialog"><div class="mdui-dialog-title">重命名</div><div class="mdui-dialog-content"><div class="mdui-textfield" id="file-rename-dialog-textfield"><label class="mdui-textfield-label">新文件名</label><input class="mdui-textfield-input" type="text" id="file-rename-dialog-input" /><div class="mdui-textfield-error" id="file-rename-dialog-textfield-err">文件名格式错误。文件名中不能包含 ? * / \ < > : " |</div></div></div><div class="mdui-dialog-actions"><button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button><button class="mdui-btn mdui-ripple" mdui-dialog-confirm>确定</button></div></div>';
+    const FILE_UPLOADING_DIALOG_BOM = '<div class="mdui-dialog" id="uploading-dialog"><div class="mdui-dialog-content mdui-row mdui-valign"><div class="mdui-col-xs-2"><div class="mdui-spinner"></div></div><div class="mdui-col-xs-10"><p>正在上传...<span id="upload-indicator"></span></p></div></div></div>';
+    const FILE_PASTE_BTN_BOM = '<div class="mdui-fab-wrapper" style="bottom: 76px;" id="file-paste-div"><button class="mdui-fab mdui-ripple mdui-color-theme" id="file-paste-btn"><i class="mdui-icon material-icons">content_paste</i></button><div class="mdui-fab-dial mdui-fab-dial-show" style="height: auto;"><button class="mdui-fab mdui-fab-mini mdui-ripple mdui-text-color-red" id="file-paste-cancel-btn"><i class="mdui-icon material-icons">close</i></button></div></div>';
 
     ////////////////////
     //  helper函数
@@ -494,17 +645,19 @@
             );
     }
     /* 获取/设置天气位置 */
-    function getWeatherLocation(city, lat, lon) {
+    function getWeatherLocation(city, lat, lon, provider) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/weather/city" + ((city && lat && lon) ? ("?city=" + city + "&latitude=" + lat + "&longitude=" + lon) : ""), function (data) {
+        $.getJSON("http://" + device_IP + API_PREFIX + "/weather/city" + ((city && lat && lon && provider) ? ("?city=" + city + "&latitude=" + lat + "&longitude=" + lon + "&provider=" + provider) : ""), function (data) {
             device_weatherCity = data.city;
             device_weatherLatitude = data.latitude;
             device_weatherLongitude = data.longitude;
+            device_weatherProvider = data.provider;
         })
             .done(function () {
                 $("#device-weather-loc-name-input").val(device_weatherCity);
                 $("#device-weather-loc-lat-input").val(device_weatherLatitude);
                 $("#device-weather-loc-lon-input").val(device_weatherLongitude);
+                $("#device-weather-provider-select").val(device_weatherProvider);
             })
             .fail(function () {
                 mdui.snackbar({
@@ -568,7 +721,11 @@
     /* 设置播放列表 */
     function postPlaylist(playlist) {
         showProgressBar();
-        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/playlist"), data: JSON.stringify({ "files": device_playlist }), dataType: "json" })
+        $.ajax({
+            type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/playlist"), data: JSON.stringify({ "files": device_playlist }), dataType: "json", success: function (data) {
+                device_playlist = data.files;
+            }
+        })
             .done(function () {
                 displayPlaylist();
             })
@@ -665,6 +822,403 @@
                 }
             );
     }
+    /* 添加至播放列表 */
+    function addToPlaylist(path) {
+        if (path.startsWith("/s")) {
+            path = path.replace("/s", "S:");   // <-api用c标准函数而视频播放用却了ported的lvgl_fs的石山代码
+        }
+        device_playlist.push(path);
+        postPlaylist(device_playlist);
+    }
+
+    /* 文件列表 */
+    function listDir(path) {
+        showProgressBar();
+        $.getJSON("http://" + device_IP + API_PREFIX + "/file/listdir?path=" + path, function (data) {
+            device_file_dir = path;
+            device_file_dir_list = data.files;
+            sortFileList(file_sort_method);
+        })
+            .done(function () {
+                displayFileList();
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 文件排序 */
+    function sortFileList(method) {
+        switch (method) {
+            case 0:
+                device_file_dir_list.sort(function (a, b) {
+                    return a[0].localeCompare(b[0]);
+                });
+                break;
+            case 1:
+                device_file_dir_list.sort(function (a, b) {
+                    return -a[0].localeCompare(b[0]);
+                });
+                break;
+            case 2:
+                device_file_dir_list.sort(function (a, b) {
+                    return a[1] - b[1];
+                });
+                break;
+            case 3:
+                device_file_dir_list.sort(function (a, b) {
+                    return b[1] - a[1];
+                });
+                break;
+            default:
+                break;
+        }
+    }
+    /* 展示文件列表 */
+    function displayFileList() {
+        let menu_bom;
+        let menu;
+
+        // 文件列表
+        $("#file-ul").html("");
+        for (let i = 0; i < device_file_dir_list.length; i++) {
+            const f = device_file_dir_list[i];
+            if (f[0].startsWith(".") || (device_file_dir == "/s" && f[0] == "/System Volume Information")) {
+                continue
+            }
+            $("#file-ul").append(FILE_LI_BOM.format(i, fileType(f[0]), (f[0].startsWith("/") ? f[0].substring(1, f[0].length) : f[0]), fileDesc(f[0], f[1], f[2])));
+        }
+
+        // 文件夹路径
+        $("#file-path-div").html("");
+        let path_list = device_file_dir.split("/");
+        for (let i = 1; i < path_list.length; i++) {
+            const dir = path_list[i];
+            if (i == 1) {
+                $("#file-path-div").append(FILE_FOLDER_A_BOM.format(i, "SD卡"));
+            } else if (dir) {
+                $("#file-path-div").append(FILE_FOLDER_DEVIDER_A_BOM);
+                $("#file-path-div").append(FILE_FOLDER_A_BOM.format(i, dir));
+            }
+        }
+        $("#file-path-div").scrollLeft($("#file-path-div").prop("scrollWidth"));
+        // 文件夹路径点击回调
+        $(".file-path-dir").click(evt => {
+            let path_list = device_file_dir.split("/");
+            let path = "";
+            let path_id = FILE_ID_EXP.exec($(evt.target).attr("id"));
+            FILE_ID_EXP.lastIndex = 0;
+
+            for (let i = 0; i <= path_id; i++) {
+                path += path_list[i] + "/"
+            }
+            path = path.endsWith("/") ? path.substring(0, path.length - 1) : path;
+
+            listDir(path);
+        });
+
+        // 点击文件回调
+        $("#file-ul").children("li").children("li > div").click(function (evt) {
+            if (menu) {
+                return; // 若菜单已打开则视为是关闭菜单的操作
+            }
+
+            let fn = device_file_dir_list[FILE_ID_EXP.exec($(evt.target).parents("li").attr("id"))][0];
+            FILE_ID_EXP.lastIndex = 0;
+            if (fn.startsWith("/")) {
+                listDir(device_file_dir + fn);
+            } else {
+                const a_ele = document.createElement('a');
+                a_ele.setAttribute('href', "http://" + device_IP + API_PREFIX + "/file?path=" + device_file_dir + "/" + fn);
+                a_ele.click();
+            }
+        });
+        // 打开文件菜单回调
+        $("#file-ul").children("li").children("li > i.file-menu-i").click(function (evt) {
+            if (menu) {
+                menu.close();   // 若已有菜单打开则先关闭
+            }
+            
+            let fn = device_file_dir_list[FILE_ID_EXP.exec($(evt.target).parents("li").attr("id"))][0];
+            FILE_ID_EXP.lastIndex = 0;
+            let menu_bom = $(FILE_MENU_BOM);
+
+            $(evt.target).parent().append(menu_bom);
+            menu = new mdui.Menu(evt.target, menu_bom);
+            menu.open();
+
+            // 若为mjpeg视频/jpg图片则显示添加至播放列表选项
+            if (fn.endsWith(".mjpeg") || fn.endsWith(".jpg") || fn.endsWith(".jpeg")) {
+                menu_bom.prepend(FILE_MENU_ADD_TO_PLAYLIST_BOM);
+            }
+
+            // 若为文件夹则隐藏复制选项（暂时）
+            if (fn.startsWith('/')) {
+                $('#file-menu-copy-a').prop("hidden", true);
+            }
+
+            $(menu_bom).one('closed.mdui.menu', () => {
+                menu_bom.remove();
+                delete menu;
+                menu = null;
+                delete menu_bom;
+                menu_bom = null;
+            });
+            $("#file-menu-add-to-playlist-a").one('click', () => {
+                menu.close();
+                addToPlaylist(device_file_dir + "/" + (fn.startsWith("/") ? fn.substring(1, fn.length) : fn));
+            });
+            $("#file-menu-copy-a").one('click', () => {
+                menu.close();
+                alert("copy!");
+            });
+            $("#file-menu-move-a").one('click', () => {
+                menu.close();
+                file_clipboard = [];
+                file_clipboard.push(device_file_dir + '/' + (fn.startsWith('/') ? fn.substring(1, fn.length) : fn));
+                $('#file-container').append(FILE_PASTE_BTN_BOM);
+                $('#file-paste-btn').one('click', () => {
+                    let paste_conflict_method = 0;
+                    file_clipboard.forEach(e => {
+                        let pl = e.split('/');
+                        if (!paste_conflict_method && (pl[pl.length - 1] in device_file_dir_list || ('/' + pl[pl.length - 1]) in device_file_dir_list)) {
+                            
+                        } else {
+                            mvDir(e, device_file_dir + '/' + pl[pl.length - 1]);
+                        }
+                    });
+                    file_clipboard = [];
+                    $('#file-paste-div').remove();
+                });
+                $('#file-paste-cancel-btn').one('click', () => {
+                    file_clipboard = [];
+                    $('#file-paste-div').remove();
+                });
+            });
+            $("#file-menu-rename-a").one('click', () => {
+                menu.close();
+                let dialog_bom = $(FILE_MENU_RENAME_DIALOG_BOM);
+                let dialog = new mdui.Dialog(dialog_bom, { closeOnConfirm: false, destroyOnClosed: true });
+                dialog.open();
+                $('#file-rename-dialog-input').val((fn.startsWith('/') ? fn.substring(1, fn.length) : fn));
+                mdui.$('#file-rename-dialog').on('confirm.mdui.dialog', () => {
+                    let new_fn = $('#file-rename-dialog-input').val();
+                    switch (checkFn(new_fn)) {
+                        case 1:
+                            $('#file-rename-dialog-textfield').addClass('mdui-textfield-invalid');
+                            $('#file-rename-dialog-textfield-err').html('文件名中不能包含 ? * / \ < > : " |');
+                            return;
+                        case 2:
+                            $('#file-rename-dialog-textfield').addClass('mdui-textfield-invalid');
+                            $('#file-rename-dialog-textfield-err').html('文件名不能以 . 开头');
+                            return;
+                        case 3:
+                            $('#file-rename-dialog-textfield').addClass('mdui-textfield-invalid');
+                            $('#file-rename-dialog-textfield-err').html('文件名不能为空');
+                            return;
+                    };
+                    mvDir(device_file_dir + "/" + (fn.startsWith("/") ? fn.substring(1, fn.length) : fn), device_file_dir + "/" + new_fn);
+                    dialog.close();
+                });
+            });
+            $("#file-menu-delete-a").one('click', () => {
+                menu.close();
+                rmDir(device_file_dir + "/" + (fn.startsWith("/") ? fn.substring(1, fn.length) : fn));
+            });
+        });
+    }
+    /* 返回文件类型对应图标名称 */
+    function fileType(fn) {
+        if (fn.startsWith("/")) {
+            return "folder";
+        } else if (fn.endsWith(".mjpeg")) {
+            return "ondemand_video";
+        } else if (fn.endsWith(".jpg") || fn.endsWith(".jpeg")) {
+            return "image";
+        } else {
+            return "insert_drive_file";
+        }
+    }
+    /* 返回文件描述 */
+    function fileDesc(fn, size, mtime) {
+        let d = "";
+        if (fn.startsWith("/")) {
+            d += "文件夹, ";
+        } else {
+            let unit = 0;
+            while (size > 1024) {
+                size = size / 1024;
+                unit += 1;
+            }
+            d += size.toFixed(2);
+            switch (unit) {
+                case 0:
+                    d += " B, "
+                    break;
+                case 1:
+                    d += " KB, "
+                    break;
+                case 2:
+                    d += " MB, "
+                    break;
+                default:
+                    d += " GB, "
+                    break;
+            }
+        }
+
+        let date = new Date(mtime * 1000);
+        d += date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日";
+        return d;
+    }
+    /* 检查文件名 */
+    function checkFn(fn) {
+        let reg = new RegExp('[\\\\/:*?"<>|]');
+        if (!fn) {
+            return 3;
+        }
+        if (reg.test(fn)) {
+            return 1;
+        }
+        if (fn.startsWith('.')) {
+            return 2;
+        }
+        return 0;
+    }
+    /* 删除文件/文件夹 */
+    function rmDir(path) {
+        showProgressBar();
+        $.ajax({ type: "DELETE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path=" + path) })
+            .done(function () {
+                listDir(device_file_dir);
+            })
+            .fail(function (jqXHR) {
+                switch (jqXHR.status) {
+                    case 404:
+                        mdui.snackbar({
+                            message: '错误：文件不存在',
+                            position: 'top'
+                        });
+                        listDir(device_file_dir);
+                        break;
+                    default:
+                        mdui.snackbar({
+                            message: '连接设备失败',
+                            position: 'top'
+                        });
+                        mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                        break;
+                };
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 移动/重命名文件/文件夹 */
+    function mvDir(path1, path2) {
+        showProgressBar();
+        $.ajax({ type: "MOVE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path1=" + path1 + "&path2=" + path2) })
+            .done(function () {
+                listDir(device_file_dir);
+            })
+            .fail(function (jqXHR) {
+                switch (jqXHR.status) {
+                    case 404:
+                        mdui.snackbar({
+                            message: '错误：文件不存在',
+                            position: 'top'
+                        });
+                        listDir(device_file_dir);
+                        break;
+                    default:
+                        mdui.snackbar({
+                            message: '连接设备失败',
+                            position: 'top'
+                        });
+                        mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                        break;
+                };
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 上传文件（无需完整路径） */
+    function uploadFile(file) {
+        showProgressBar();
+        let req = new XMLHttpRequest();
+
+        let dialog;
+        let lastLoaded = 0;
+        req.onloadstart = () => {
+            dialog = new mdui.Dialog($(FILE_UPLOADING_DIALOG_BOM), { history: false, modal: true, closeOnEsc: false, closeOnCancel: false, closeOnConfirm: false, destroyOnClosed: true });
+            dialog.open();
+            mdui.mutation();
+        };
+        req.upload.onprogress = (evt) => {
+            // 上传进度条
+            if (evt.lengthComputable) {
+                let percent = Math.ceil((evt.loaded / evt.total) * 100);
+                $('#upload-indicator').html(percent + "%");
+            }
+        };
+        req.onloadend = () => {
+            dialog.close();
+
+            mdui.snackbar({
+                message: '上传成功',
+                position: 'top'
+            });
+
+            listDir(device_file_dir);
+        };
+        req.onerror = () => {
+            dialog.close();
+
+            mdui.snackbar({
+                message: '上传失败',
+                position: 'top'
+            });
+
+            listDir(device_file_dir);
+        };
+
+        req.open("POST", ("http://" + device_IP + API_PREFIX + "/file?path=" + device_file_dir + "/" + file.name));
+        req.setRequestHeader("Content-Type", "application/octet-stream");
+        req.send(file);
+    }
+    /* 新建文件夹（无需完整路径） */
+    function makeDir(dir_name) {
+        showProgressBar();
+        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file/makedir?path=" + device_file_dir + "/" + dir_name) })
+            .done(function () {
+                listDir(device_file_dir);
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
 
     function fitHWVersion() {
         if (device_hw_version != 1) {
@@ -714,6 +1268,7 @@
                 getDeviceVals();
                 getWeatherVals();
                 getPlaylistVals();
+                listDir("/s");
             })
             .fail(function () {
                 mdui.snackbar({
@@ -769,7 +1324,7 @@
 
     // 设置 - 更新天气配置按钮
     $("#update-weather-conf-btn").click(function () {
-        getWeatherLocation($("#device-weather-loc-name-input").val(), $("#device-weather-loc-lat-input").val(), $("#device-weather-loc-lon-input").val());
+        getWeatherLocation($("#device-weather-loc-name-input").val(), $("#device-weather-loc-lat-input").val(), $("#device-weather-loc-lon-input").val(), $("#device-weather-provider-select").val());
     });
 
     // 设置 - 更新米游社配置按钮
@@ -777,15 +1332,68 @@
         postHoyolabConf($("#hoyolab-uid-input").val(), $("#hoyolab-cookie-input").val(), $("#hoyolab-guid-input").val());
     });
 
+    // 文件管理 - 上传文件
+    $("#file-upload-btn").click(function () {
+        let input_bom = $('<input type="file">')
+        input_bom.click();
+        input_bom.on('change', evt => {
+            const f = evt.target.files[0];
+            uploadFile(f);
+        });
+    });
+
+    // 文件管理 - 新建文件夹
+    $("#file-new-folder-btn").click(function () {
+        let dialog_bom = $(FILE_MENU_NEW_FOLDER_DIALOG_BOM);
+        let dialog = new mdui.Dialog(dialog_bom, { closeOnConfirm: false, destroyOnClosed: true });
+        dialog.open();
+        $('#file-new-folder-dialog-input').val('新建文件夹');
+        mdui.$('#file-new-folder-dialog').on('confirm.mdui.dialog', () => {
+            let new_fn = $('#file-new-folder-dialog-input').val();
+            switch (checkFn(new_fn)) {
+                case 1:
+                    $('#file-new-folder-dialog-textfield').addClass('mdui-textfield-invalid');
+                    $('#file-new-folder-dialog-textfield-err').html('文件名中不能包含 ? * / \ < > : " |');
+                    return;
+                case 2:
+                    $('#file-new-folder-dialog-textfield').addClass('mdui-textfield-invalid');
+                    $('#file-new-folder-dialog-textfield-err').html('文件名不能以 . 开头');
+                    return;
+                case 3:
+                    $('#file-new-folder-dialog-textfield').addClass('mdui-textfield-invalid');
+                    $('#file-new-folder-dialog-textfield-err').html('文件名不能为空');
+                    return;
+            };
+            makeDir(new_fn);
+            dialog.close();
+        });
+    });
+
+    // 文件管理 - 排序
+    $(".file-sort-a").click(function (evt) {
+        file_sort_method = parseInt(FILE_ID_EXP.exec($(evt.target).attr("id")));
+        FILE_ID_EXP.lastIndex = 0;
+        sortFileList(file_sort_method);
+        displayFileList();
+    });
+
     // 底部导航栏 - 设置菜单
     $("#settings-a").click(function () {
+        $("#title").html("神之眼实用程序");
         $(".mdui-container").prop("hidden", true);
         $("#settings-container").prop("hidden", false);
     });
     // 底部导航栏 - 播放列表
     $("#playlist-a").click(function () {
+        $("#title").html("播放列表");
         $(".mdui-container").prop("hidden", true);
         $("#playlist-container").prop("hidden", false);
+    });
+    // 底部导航栏 - 文件管理
+    $("#file-a").click(function () {
+        $("#title").html("文件管理");
+        $(".mdui-container").prop("hidden", true);
+        $("#file-container").prop("hidden", false);
     });
 
     // 底部导航栏 - 背景色
@@ -795,7 +1403,7 @@
 
     // 侧栏 - 关于
     $("#utility-about-div").click(function () {
-        mdui.alert("神之眼实用程序<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在Github上Star本项目！", "关于实用程序");
+        mdui.alert("神之眼实用程序<br/>版本：" + UTILITY_VERSION +"<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在<a href='https://github.com/mr258876/Project_Vision_L'>Github</a>上Star本项目！", "关于实用程序");
     });
 
     ////////////////////
