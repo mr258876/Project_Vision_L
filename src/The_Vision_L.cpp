@@ -698,7 +698,8 @@ void hardwareSetup(void *parameter)
     }
 
     /* 下载缺失文件 */
-    if ((fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL) && !(hwErr & VISION_HW_SD_ERR))
+    fileErr = fileErr | checkFileStatus();
+    if ((fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL || fileErr & VISION_FILE_STATIC_FILE_ERR) && !(hwErr & VISION_HW_SD_ERR))
     {
       Vision_download_info_t info;
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
@@ -781,6 +782,8 @@ void hardwareSetup(void *parameter)
       errMsg.concat(lang[curr_lang][101]); // "播放列表配置错误，请参阅帮助文档\n"
     if (fileErr & VISION_FILE_CONF_CRITICAL)
       errMsg.concat(lang[curr_lang][102]); // "配置文件错误，请参阅帮助文档\n"
+    if (fileErr & VISION_FILE_STATIC_FILE_ERR)
+      errMsg.concat(lang[curr_lang][99]); // "系统文件缺失，部分功能不可用\n"
 
     if (hasWifi)
       switch (weatherErr)

@@ -23,6 +23,7 @@ enum Vision_FileCheck_result_t : uint8_t
     VISION_FILE_PLAYLIST_ERR = 0b100,       // 播放列表部分文件缺失(无可播放文件)
     VISION_FILE_PLAYLIST_CRITICAL = 0b1000, // 播放列表关键文件缺失(播放列表配置文件无法解析)
     VISION_FILE_CONF_CRITICAL = 0b10000,    // 配置文件异常
+    VISION_FILE_STATIC_FILE_ERR = 0b100000, // 静态资源文件异常
 };
 
 typedef Vision_FileCheck_result_t (*Vision_FileCheck_cb_t)(bool filePassedCheck);

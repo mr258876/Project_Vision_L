@@ -32,12 +32,14 @@ const char *updateConfPath = "update.json";
 
 static const Vision_FileCheck_t constFileCheckList[] = {
     {"/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin", "/fonts/ui_font_HanyiWenhei20.bin", cb_ui_font_HanyiWenhei20},
-    {"/s/The Vision L/static_resources.json", "/static_resources.json", cb_general_sys_file},
+    {"/s/The Vision L/static_resources.json", "/static_resources.json", cb_static_resources_json},
 };
 
 LinkedList<Vision_FileCheck_t> staticFileDownloadList;
 
 Vision_FileCheck_result_t fileCheckResults[2];
+
+uint static_resources_err = 0;
 
 //////////////////////////////
 //
@@ -89,21 +91,24 @@ Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck)
 
 static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck)
 {
-  // 清除上一次检查添加的下载任务
-  for (size_t i = 0; i < staticFileDownloadList.size(); i++)
-  {
-    if (staticFileDownloadList.get(i).file_cb == cb_static_resources_file)
-    {
-      staticFileDownloadList.remove(i);
-      i -= 1;
-    }
-  }
-  // 检查资源文件
-  checkStaticResources();
-
-  // 此处返回值为json文件的状态
   if (filePassedCheck)
+  {
+    // 清除上一次检查添加的下载任务
+    for (size_t i = 0; i < staticFileDownloadList.size(); i++)
+    {
+      if (staticFileDownloadList.get(i).file_cb == cb_static_resources_file)
+      {
+        staticFileDownloadList.remove(i);
+        i -= 1;
+      }
+    }
+
+    // 检查资源文件
+    static_resources_err = checkStaticResources();
+
+    // 此处为json文件的状态
     return VISION_FILE_OK;
+  }
   return VISION_FILE_SYS_FILE_ERR;
 }
 
@@ -112,7 +117,7 @@ static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck)
   return cb_general_sys_file(filePassedCheck);
 }
 
-Vision_FileCheck_result_t cb_update_file(bool filePassedCheck)
+static Vision_FileCheck_result_t cb_update_file(bool filePassedCheck)
 {
   esp_restart();
   return VISION_FILE_OK;
@@ -143,14 +148,15 @@ uint checkSDFiles()
   {
     FSMutex = get_FS_mutex(constFileCheckList[i].localPath[1]);
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
-    {
-      stat_res = stat(constFileCheckList[i].localPath.c_str(), &stat_buf);
-      fileResult = constFileCheckList[i].file_cb((stat_res == 0) && (stat_buf.st_size > 0) && (S_ISREG(stat_buf.st_mode)));
-      fileCheckResults[i] = fileResult;
-      err = err | fileResult;
-    }
+    stat_res = stat(constFileCheckList[i].localPath.c_str(), &stat_buf);
     xSemaphoreGive(*FSMutex);
+
+    fileResult = constFileCheckList[i].file_cb((stat_res == 0) && (stat_buf.st_size > 0) && (S_ISREG(stat_buf.st_mode)));
+    fileCheckResults[i] = fileResult;
+    err = err | fileResult;
   }
+
+  err = err | static_resources_err;
 
   return err;
 }
@@ -526,7 +532,7 @@ void tsk_fixMissingFiles(void *parameter)
   info->current_file_no = 0;
   for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
   {
-    if (fileCheckResults[i])
+    if (fileCheckResults[i] & VISION_FILE_SYS_FILE_ERR || fileCheckResults[i] & VISION_FILE_SYS_FILE_CRITICAL)
     {
       info->current_file_no += 1;
 
@@ -572,7 +578,7 @@ const char *getFileDownloadPrefix()
 
 void updateFileDownload(const char *url, const char *path_to_save, bool reboot_when_finish)
 {
-  staticFileDownloadList.add({String(url), String(path_to_save), reboot_when_finish ? cb_update_file : cb_general_sys_file});
+  staticFileDownloadList.add({String(path_to_save), String(url), reboot_when_finish ? cb_update_file : cb_general_sys_file});
 }
 
 //////////////////////////////
@@ -595,7 +601,7 @@ static uint checkStaticResources()
 
   xSemaphoreTake(SDMutex, portMAX_DELAY);
   {
-    /* 读取播放文件列表 */
+    /* 读取文件列表 */
     f = fopen("/s" STATIC_FILE_CONF_PATH, "r");
     if (!f)
     {
@@ -613,12 +619,12 @@ static uint checkStaticResources()
   xSemaphoreGive(SDMutex);
 
   error = deserializeJson(doc, buf, STATIC_FILE_CONF_DEFAULT_LENGTH);
-  free(buf);
 
   if (error)
   {
     err = err | VISION_FILE_SYS_FILE_CRITICAL;
     doc.clear();
+    free(buf);
     return err;
   }
 
@@ -630,13 +636,14 @@ static uint checkStaticResources()
 
   JsonArray local_path = doc["local_path"];
   JsonArray download_path = doc["download_path"];
-  JsonArray file_size = doc["size"];
+  JsonArray file_size = doc["file_size"];
 
   if (local_path.size() != download_path.size() || download_path.size() != file_size.size())
   {
     // 文件格式错误
     err = err | VISION_FILE_SYS_FILE_CRITICAL;
     doc.clear();
+    free(buf);
     return err;
   }
 
@@ -649,28 +656,34 @@ static uint checkStaticResources()
     size_t sz = file_size[i];
 
     xSemaphoreTake(SDMutex, portMAX_DELAY);
-    stat_res = stat(local_path[i], &stat_buf);
+    stat_res = stat(lp, &stat_buf);
     xSemaphoreGive(SDMutex);
 
     // 文件缺失
     if (stat_res == -1)
     {
+      ESP_LOGE("checkStaticResources", "File missing: %s", lp);
+
       staticFileDownloadList.add({String(lp), String(dp), cb_static_resources_file});
-      err = err | VISION_FILE_SYS_FILE_ERR;
+      err = err | VISION_FILE_STATIC_FILE_ERR;
+      continue;
     }
 
     // 文件不同相同将文件添加至下载列表
-    if (S_ISDIR(stat_buf.st_mode) || stat_buf.st_size != sz)
+    if (!S_ISREG(stat_buf.st_mode) || stat_buf.st_size != sz)
     {
+      ESP_LOGE("checkStaticResources", "File invalid: %s", lp);
+
       xSemaphoreTake(SDMutex, portMAX_DELAY);
       remove(lp);
       xSemaphoreGive(SDMutex);
 
       staticFileDownloadList.add({String(lp), String(dp), cb_static_resources_file});
-      err = err | VISION_FILE_SYS_FILE_ERR;
+      err = err | VISION_FILE_STATIC_FILE_ERR;
     }
   }
 
   doc.clear();
+  free(buf);
   return err;
 }
