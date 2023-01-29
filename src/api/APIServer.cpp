@@ -368,6 +368,10 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
     {
         return httpd_resp_set_type(req, "application/font-woff2");
     }
+    else if (IS_FILE_EXT(filename, ".woff"))
+    {
+        return httpd_resp_set_type(req, "application/font-woff");
+    }
     else if (IS_FILE_EXT(filename, ".css"))
     {
         return httpd_resp_set_type(req, "text/css");
