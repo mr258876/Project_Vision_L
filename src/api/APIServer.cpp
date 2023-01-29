@@ -517,7 +517,7 @@ static esp_err_t utility_handler(httpd_req_t *req)
     if (file_res)
     {
         ESP_LOGE("utility_handler", "File not exist! path:%s", file_path);
-        httpd_resp_send_404(req);
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File not found");
         return ESP_FAIL;
     }
 
@@ -853,7 +853,7 @@ static esp_err_t file_listdir_handler(httpd_req_t *req)
     xSemaphoreGive(*FSMutex);
     if (!dir)
     {
-        return return_err(req, "{\"response\":\"Unable to open path\",\"code\":-3}");
+        return httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "{\"response\":\"Unable to open path\",\"code\":-3}");
     }
 
     DynamicJsonDocument doc(4096);
