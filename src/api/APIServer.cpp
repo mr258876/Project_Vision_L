@@ -1887,7 +1887,7 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
             prefs.putBool("language", curr_lang);
 
             // 若能获取到LVGL互斥量则刷新当前屏幕
-            if (xSemaphoreTake(LVGLMutex, 100) == pdTRUE)
+            if (xSemaphoreTake(LVGLMutex, pdMS_TO_TICKS(100)) == pdTRUE)
             {
                 lv_obj_invalidate(lv_scr_act());
                 xSemaphoreGive(LVGLMutex);
