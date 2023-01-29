@@ -81,5 +81,6 @@ extern int setting_weatherProvider;
 extern String setting_timeZone;
 
 extern bool setting_autoUpdate;
+extern unsigned int setting_updateChannel;
 
 #endif

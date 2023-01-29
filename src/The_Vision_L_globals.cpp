@@ -68,3 +68,4 @@ int setting_weatherProvider = -1;
 String setting_timeZone = "";
 
 bool setting_autoUpdate = false;
+unsigned int setting_updateChannel = 0;

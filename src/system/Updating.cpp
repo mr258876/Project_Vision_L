@@ -143,8 +143,18 @@ void tsk_performUpdate(void *parameter)
 
 void checkUpdate()
 {
-    char url[strlen(getFileDownloadPrefix()) + 13];
-    sprintf(url, "%s/Update.json", getFileDownloadPrefix());
+    char url[strlen(getFileDownloadPrefix()) + 33];
+    char *updateChannel;
+    switch (setting_updateChannel)
+    {
+    case 1:
+        updateChannel = OTA_BETA_CHANNEL_JSON_PATH;
+        break;
+    default:
+        updateChannel = OTA_STABLE_CHANNEL_JSON_PATH;
+        break;
+    }
+    sprintf(url, "%s%s", getFileDownloadPrefix(), updateChannel);
     if (downloadGithubFile(url, "/s/Update.json")) // <- DOWNLOAD_RES_OK=0
         return;
 
@@ -187,7 +197,7 @@ void checkUpdate()
     long static_resources_ver = doc["static_resources_ver"];
     if (static_resources_ver && static_resources_ver > info_static_resources_ver)
     {
-        fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;   
+        fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
     }
 
     /* 系统更新 */

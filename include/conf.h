@@ -61,5 +61,7 @@
 
 /* OTA update */
 #define OTA_BUFFER_SIZE 1024
+#define OTA_STABLE_CHANNEL_JSON_PATH "/update_stable.json"
+#define OTA_BETA_CHANNEL_JSON_PATH "/update_beta.json"
 
 #endif // _VISION_CONFIGURATIONS_H_

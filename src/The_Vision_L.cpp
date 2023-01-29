@@ -402,6 +402,7 @@ static void loadSettings()
   setting_timeZone = prefs.getString("timeZone", "");
 
   setting_autoUpdate = prefs.getBool("autoUpdate", true);
+  setting_updateChannel = prefs.getUInt("updateChannel", 0);
 
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
