@@ -1747,14 +1747,7 @@ static esp_err_t setting_auto_bright_get_handler(httpd_req_t *req)
         }
     }
 
-    if (setting_autoBright)
-    {
-        sprintf(str, "{\"setting_autoBright\":%s}", "true");
-    }
-    else
-    {
-        sprintf(str, "{\"setting_autoBright\":%s}", "false");
-    }
+    sprintf(str, "{\"setting_autoBright\":%s}", (setting_autoBright ? "true" : "false"));
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
@@ -1804,14 +1797,7 @@ static esp_err_t setting_auto_rotate_get_handler(httpd_req_t *req)
         }
     }
 
-    if (setting_useAccel)
-    {
-        sprintf(str, "{\"setting_useAccel\":%s}", "true");
-    }
-    else
-    {
-        sprintf(str, "{\"setting_useAccel\":%s}", "false");
-    }
+    sprintf(str, "{\"setting_useAccel\":%s}", (setting_useAccel ? "true" : "false"));
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
@@ -1899,6 +1885,13 @@ static esp_err_t setting_language_get_handler(httpd_req_t *req)
         {
             curr_lang = language;
             prefs.putBool("language", curr_lang);
+
+            // 若能获取到LVGL互斥量则刷新当前屏幕
+            if (xSemaphoreTake(LVGLMutex, 100) == pdTRUE)
+            {
+                lv_obj_invalidate(lv_scr_act());
+                xSemaphoreGive(LVGLMutex);
+            }
         }
         else
         {
@@ -1993,7 +1986,7 @@ static esp_err_t setting_auto_update_get_handler(httpd_req_t *req)
         }
     }
 
-    sprintf(str, "{\"autoUpdate\":%d}", setting_autoUpdate);
+    sprintf(str, "{\"setting_autoUpdate\":%s}", (setting_autoUpdate ? "true" : "false"));
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
@@ -2038,7 +2031,7 @@ static esp_err_t setting_update_channel_get_handler(httpd_req_t *req)
         }
     }
 
-    sprintf(str, "{\"updateChannel\":%d}", setting_updateChannel);
+    sprintf(str, "{\"setting_updateChannel\":%d}", setting_updateChannel);
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
