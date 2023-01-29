@@ -175,11 +175,11 @@ void checkUpdate()
         return;
     }
 
-    char buf[512];
-    fread(buf, 1, 512, f);
+    char buf[OTA_JSON_CONF_DEFAULT_LENGTH];
+    fread(buf, 1, OTA_JSON_CONF_DEFAULT_LENGTH, f);
 
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, buf, 512);
+    StaticJsonDocument<OTA_JSON_CONF_JSON_SIZE> doc;
+    DeserializationError error = deserializeJson(doc, buf, OTA_JSON_CONF_DEFAULT_LENGTH);
 
     if (error)
     {

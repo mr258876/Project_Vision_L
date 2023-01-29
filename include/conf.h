@@ -61,6 +61,8 @@
 
 /* OTA update */
 #define OTA_BUFFER_SIZE 1024
+#define OTA_JSON_CONF_DEFAULT_LENGTH 1024
+#define OTA_JSON_CONF_JSON_SIZE 1024
 #define OTA_STABLE_CHANNEL_JSON_PATH "/update_stable.json"
 #define OTA_BETA_CHANNEL_JSON_PATH "/update_beta.json"
 
