@@ -147,6 +147,24 @@
                             <option value="UTC-14">(GMT +14:00) 莱恩群岛，托克劳</option>
                         </select>
                     </li>
+                    <li class="mdui-list-item">
+                        <h4>系统更新</h4>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple" id="language-li">
+                        <i class="mdui-list-item-icon mdui-icon material-icons">system_update</i>
+                        <div class="mdui-list-item-content">自动更新</div>
+                        <label class="mdui-switch mdui-valign">
+                            <input type="checkbox" id="auto-update-check" /><i class="mdui-switch-icon"></i>
+                        </label>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple" id="language-li">
+                        <i class="mdui-list-item-icon mdui-icon material-icons"></i>
+                        <div class="mdui-list-item-content">更新渠道</div>
+                        <select class="mdui-select" id="device-update-channel-select">
+                            <option value="0">稳定版</option>
+                            <option value="1">测试版</option>
+                        </select>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -460,6 +478,8 @@
     var device_auto_rotate;
     var device_language;
     var device_timezone;
+    var device_auto_update;
+    var device_update_channel;
 
     var device_weatherCity;
     var device_weatherLatitude;
@@ -636,6 +656,50 @@
         })
             .done(function () {
                 $("#device-timezone-select").val(device_timezone);
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 获取/设置自动更新开关 */
+    function getAutoUpdate(val) {
+        showProgressBar();
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_update" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
+            device_auto_update = data.setting_autoUpdate;
+        })
+            .done(function () {
+                $("#auto-update-check").prop("checked", device_auto_update);
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 获取/设置自动更新渠道 */
+    function getUpdateChannel(val) {
+        showProgressBar();
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/update_channel" + (val ? ("?value=" + val) : ""), function (data) {
+            device_update_channel = data.setting_updateChannel;
+        })
+            .done(function () {
+                $("#device-update-channel-select").val(device_update_channel);
             })
             .fail(function () {
                 mdui.snackbar({
@@ -1251,6 +1315,8 @@
         getBrightness();
         getLanguage();
         getTimezone();
+        getAutoUpdate();
+        getUpdateChannel();
     }
 
     function getWeatherVals() {
@@ -1340,9 +1406,24 @@
         updateEotationIcon();
     });
 
+    // 设置 - 语言
+    $("#device-language-select").change(function () {
+        getLanguage($("#device-language-select").val());
+    });
+
     // 设置 - 时区
     $("#device-timezone-select").change(function () {
         getTimezone($("#device-timezone-select").val());
+    });
+
+    // 设置 - 自动更新开关
+    $("#auto-update-check").change(function () {
+        getAutoUpdate($("#auto-update-check").is(":checked"));
+    });
+
+    // 设置 - 自动更新渠道
+    $("#device-update-channel-select").change(function () {
+        getLanguage($("#device-update-channel-select").val());
     });
 
     // 设置 - 更新天气配置按钮
