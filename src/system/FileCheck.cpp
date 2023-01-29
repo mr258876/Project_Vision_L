@@ -10,8 +10,13 @@ static uint loadHoyolabConfig();
 static uint loadWeatherConfig();
 static uint loadConfig();
 
+static uint checkStaticResources();
+
 static Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_update_file(bool filePassedCheck);
 
 //////////////////////////////
 //
@@ -25,22 +30,14 @@ const char *fileDownloadPrefix[] = {
 
 const char *updateConfPath = "update.json";
 
-static const Vision_FileCheck_t fileCheckFiles[] = {
+static const Vision_FileCheck_t constFileCheckList[] = {
     {"/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin", "/fonts/ui_font_HanyiWenhei20.bin", cb_ui_font_HanyiWenhei20},
-    {"/s/The Vision L/utility/index.html", "/utility/index.html", cb_general_sys_file},
-    {"/s/The Vision L/utility/css/mdui.min.css", "/utility/css/mdui.min.css", cb_general_sys_file},
-    {"/s/The Vision L/utility/js/mdui.min.js", "/utility/js/mdui.min.js", cb_general_sys_file},
-    {"/s/The Vision L/utility/js/jquery-3.6.3.min.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
-    {"/s/The Vision L/utility/js/jquery-sortable.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
-    {"/s/The Vision L/utility/js/Sortable.min.js", "/utility/js/jquery-3.6.3.min.js", cb_general_sys_file},
-    {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.ijmap", "/utility/icons/material-icons/MaterialIcons-Regular.ijmap", cb_general_sys_file},
-    {"/s/The Vision L/utility/icons/material-icons/MaterialIcons-Regular.woff2", "/utility/icons/material-icons/MaterialIcons-Regular.woff2", cb_general_sys_file},
-    {"/s/The Vision L/utility/images/Liyue.png", "/utility/images/Liyue.png", cb_general_sys_file},
-    {"/s/The Vision L/utility/images/Liyue_Extended.png", "/utility/images/Liyue_Extended.png", cb_general_sys_file},
-    {"/s/The Vision L/utility/images/Mondstadt.png", "/utility/images/Mondstadt.png", cb_general_sys_file},
+    {"/s/The Vision L/static_resources.json", "/static_resources.json", cb_general_sys_file},
 };
 
-Vision_FileCheck_result_t fileCheckResults[10];
+LinkedList<Vision_FileCheck_t> staticFileDownloadList;
+
+Vision_FileCheck_result_t fileCheckResults[2];
 
 //////////////////////////////
 //
@@ -90,6 +87,37 @@ Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck)
   }
 }
 
+static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck)
+{
+  // 清除上一次检查添加的下载任务
+  for (size_t i = 0; i < staticFileDownloadList.size(); i++)
+  {
+    if (staticFileDownloadList.get(i).file_cb == cb_static_resources_file)
+    {
+      staticFileDownloadList.remove(i);
+      i -= 1;
+    }
+  }
+  // 检查资源文件
+  checkStaticResources();
+
+  // 此处返回值为json文件的状态
+  if (filePassedCheck)
+    return VISION_FILE_OK;
+  return VISION_FILE_SYS_FILE_ERR;
+}
+
+static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck)
+{
+  return cb_general_sys_file(filePassedCheck);
+}
+
+Vision_FileCheck_result_t cb_update_file(bool filePassedCheck)
+{
+  esp_restart();
+  return VISION_FILE_OK;
+}
+
 //////////////////////////////
 //
 //  Check Files & Load Config
@@ -99,23 +127,25 @@ uint checkSDFiles()
 {
   int err = VISION_FILE_OK;
 
+  // 加载配置文件
   err = err | loadPlayList();
   err = err | loadHoyolabConfig();
   err = err | loadWeatherConfig();
   // err = err | loadConfig();
 
+  // 此处检查写在 constFileCheckList 变量中的文件
+  // static_resources.json 中的文件
   SemaphoreHandle_t *FSMutex;
-  FILE *f;
+  struct stat stat_buf;
+  int stat_res = 0;
   Vision_FileCheck_result_t fileResult;
   for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
   {
-    FSMutex = get_FS_mutex(fileCheckFiles[i].localPath[1]);
+    FSMutex = get_FS_mutex(constFileCheckList[i].localPath[1]);
     xSemaphoreTake(*FSMutex, portMAX_DELAY);
     {
-      f = fopen(fileCheckFiles[i].localPath, "r");
-      fileResult = fileCheckFiles[i].file_cb(f ? true : false);
-      if (f)
-        fclose(f);
+      stat_res = stat(constFileCheckList[i].localPath.c_str(), &stat_buf);
+      fileResult = constFileCheckList[i].file_cb((stat_res == 0) && (stat_buf.st_size > 0) && (S_ISREG(stat_buf.st_mode)));
       fileCheckResults[i] = fileResult;
       err = err | fileResult;
     }
@@ -490,6 +520,7 @@ void tsk_fixMissingFiles(void *parameter)
       info->total_file_count += 1;
     }
   }
+  info->total_file_count += staticFileDownloadList.size();
 
   // 下载文件
   info->current_file_no = 0;
@@ -500,21 +531,32 @@ void tsk_fixMissingFiles(void *parameter)
       info->current_file_no += 1;
 
       /* 拼接url */
-      char url[strlen(getFileDownloadPrefix()) + strlen(fileCheckFiles[i].downloadPath) + 1];
-      sprintf(url, "%s%s", getFileDownloadPrefix(), fileCheckFiles[i].downloadPath);
+      char url[strlen(getFileDownloadPrefix()) + strlen(constFileCheckList[i].downloadPath.c_str()) + 1];
+      sprintf(url, "%s%s", getFileDownloadPrefix(), constFileCheckList[i].downloadPath.c_str());
 
-      if (!downloadGithubFile(url, fileCheckFiles[i].localPath, info)) // <- DOWNLOAD_RES_OK=0
+      if (!downloadGithubFile(url, constFileCheckList[i].localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
       {
-        fileCheckResults[i] = fileCheckFiles[i].file_cb(true);
+        fileCheckResults[i] = constFileCheckList[i].file_cb(true);
       }
     }
+  }
+
+  while (staticFileDownloadList.size() > 0)
+  {
+    Vision_FileCheck_t static_file = staticFileDownloadList.pop();
+    info->current_file_no += 1;
+
+    /* 拼接url */
+    char url[strlen(getFileDownloadPrefix()) + strlen(static_file.downloadPath.c_str()) + 1];
+    sprintf(url, "%s%s", getFileDownloadPrefix(), static_file.downloadPath.c_str());
+    downloadGithubFile(url, static_file.localPath.c_str(), info);
   }
 
   info->result = DOWNLOAD_RES_OK;
   vTaskDelete(NULL);
 }
 
-uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t* info)
+uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t *info)
 {
   return downloadFile(url, path_to_save, GlobalSign_Root_CA, info);
 }
@@ -526,4 +568,109 @@ const char *getFileDownloadPrefix()
     return fileDownloadPrefix[1];
   }
   return fileDownloadPrefix[0];
+}
+
+void updateFileDownload(const char *url, const char *path_to_save, bool reboot_when_finish)
+{
+  staticFileDownloadList.add({String(url), String(path_to_save), reboot_when_finish ? cb_update_file : cb_general_sys_file});
+}
+
+//////////////////////////////
+//
+//  Check Static Resources
+//
+//////////////////////////////
+static uint checkStaticResources()
+{
+  int err = VISION_FILE_OK;
+  FILE *f;
+  DynamicJsonDocument doc(STATIC_FILE_CONF_JSON_SIZE);
+  DeserializationError error;
+  char *buf = (char *)malloc(STATIC_FILE_CONF_DEFAULT_LENGTH);
+
+  if (!buf)
+  {
+    return VISION_FILE_NOT_CHECK;
+  }
+
+  xSemaphoreTake(SDMutex, portMAX_DELAY);
+  {
+    /* 读取播放文件列表 */
+    f = fopen("/s" STATIC_FILE_CONF_PATH, "r");
+    if (!f)
+    {
+      /* 若返回空指针则说明文件不存在，返回错误 */
+      fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
+      fclose(f);
+      xSemaphoreGive(SDMutex);
+      free(buf);
+      return VISION_FILE_SYS_FILE_CRITICAL;
+    }
+    /* 将文件内容读入缓存 */
+    fread(buf, STATIC_FILE_CONF_DEFAULT_LENGTH, 1, f);
+    fclose(f);
+  }
+  xSemaphoreGive(SDMutex);
+
+  error = deserializeJson(doc, buf, STATIC_FILE_CONF_DEFAULT_LENGTH);
+  free(buf);
+
+  if (error)
+  {
+    err = err | VISION_FILE_SYS_FILE_CRITICAL;
+    doc.clear();
+    return err;
+  }
+
+  long static_resources_version = doc["static_resources_version"];
+  if (static_resources_version)
+  {
+    info_static_resources_ver = static_resources_version;
+  }
+
+  JsonArray local_path = doc["local_path"];
+  JsonArray download_path = doc["download_path"];
+  JsonArray file_size = doc["size"];
+
+  if (local_path.size() != download_path.size() || download_path.size() != file_size.size())
+  {
+    // 文件格式错误
+    err = err | VISION_FILE_SYS_FILE_CRITICAL;
+    doc.clear();
+    return err;
+  }
+
+  struct stat stat_buf;
+  int stat_res = 0;
+  for (size_t i = 0; i < local_path.size(); i++)
+  {
+    const char *lp = local_path[i];
+    const char *dp = download_path[i];
+    size_t sz = file_size[i];
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    stat_res = stat(local_path[i], &stat_buf);
+    xSemaphoreGive(SDMutex);
+
+    // 文件缺失
+    if (stat_res == -1)
+    {
+      staticFileDownloadList.add({String(lp), String(dp), cb_static_resources_file});
+      err = err | VISION_FILE_SYS_FILE_ERR;
+    }
+
+    // 文件不同相同将文件添加至下载列表
+    if (S_ISDIR(stat_buf.st_mode) || stat_buf.st_size != sz)
+    {
+      xSemaphoreTake(SDMutex, portMAX_DELAY);
+      remove(lp);
+      xSemaphoreGive(SDMutex);
+
+      staticFileDownloadList.add({String(lp), String(dp), cb_static_resources_file});
+      err = err | VISION_FILE_SYS_FILE_ERR;
+    }
+  }
+
+  doc.clear();
+  return err;
 }

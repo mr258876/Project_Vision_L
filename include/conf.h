@@ -51,6 +51,11 @@
 #define WEATHER_CONF_DEFAULT_LENGTH 1024
 #define WEATHER_CONF_JSON_SIZE 1024
 
+/* Static file conf file */
+#define STATIC_FILE_CONF_PATH "/static_resources.json"
+#define STATIC_FILE_CONF_DEFAULT_LENGTH 8192
+#define STATIC_FILE_CONF_JSON_SIZE 8192
+
 /* Task Monitor */
 // #define USE_TASK_MONITOR
 

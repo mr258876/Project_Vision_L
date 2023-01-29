@@ -34,6 +34,8 @@ bool info_setAPIstart = false;
 int info_APIstatus = 0;
 char info_APIaddress[23] = "http://127.0.0.1";
 
+long info_static_resources_ver = 0;
+
 bool info_isSquareLCD = true;
 bool info_hasProx = false;
 bool info_hasAccel = false;

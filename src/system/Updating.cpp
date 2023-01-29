@@ -183,6 +183,14 @@ void checkUpdate()
         xSemaphoreGive(SDMutex);
     }
 
+    /* 资源文件更新 */
+    long static_resources_ver = doc["static_resources_ver"];
+    if (static_resources_ver && static_resources_ver > info_static_resources_ver)
+    {
+        fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;   
+    }
+
+    /* 系统更新 */
     const char *ver = doc["ver"];
     if (!ver)
     {
@@ -201,49 +209,33 @@ void checkUpdate()
             // 版本号不正确
             return;
         }
-        
+
         unsigned int identity_version;
         unsigned int major_version;
         unsigned int minor_version;
         sscanf(info_appVersion, "L%u.%u.%u", &identity_version, &major_version, &minor_version);
-        
-        if (identity_version >= new_identity_version && major_version >= new_major_version && minor_version >= new_minor_version)
+
+        if (identity_version != new_identity_version && major_version >= new_major_version && minor_version >= new_minor_version)
         {
             // 版本号没有更新
             return;
         }
-        
     }
 
-    JsonArray files = doc["files"];
-    if (files.size() == 0)
+    JsonArray local_path = doc["local_path"];
+    JsonArray download_path = doc["download_path"];
+    if (local_path.size() == 0 || download_path.size() == 0 || local_path.size() != download_path.size())
     {
         return;
     }
 
-    uint download_err = 0;
-    for (size_t i = 0; i < files.size(); i++)
+    for (size_t i = 0; i < local_path.size(); i++)
     {
-        const char *download_path = files[i][0];
-        char url[strlen(getFileDownloadPrefix()) + strlen(download_path) + 1];
-        sprintf(url, "%s%s", getFileDownloadPrefix(), download_path);
-        download_err = download_err | downloadGithubFile(url, files[i][1]);
-        if (download_err)
-        {
-            break;
-        }
-    }
+        const char *dp = download_path[i];
+        const char *lp = local_path[i];
 
-    if (download_err > 0)
-    {
-        for (size_t i = 0; i < files.size(); i++)
-        {
-            xSemaphoreTake(SDMutex, portMAX_DELAY);
-            remove(files[i][1]);
-            xSemaphoreGive(SDMutex);
-        }
-        return;
+        char url[strlen(getFileDownloadPrefix()) + strlen(dp) + 1];
+        sprintf(url, "%s%s", getFileDownloadPrefix(), dp);
+        updateFileDownload(url, lp, i == 0); // <-最后一个文件下载好后自动重启，重启检查更新文件无误后开始更新
     }
-
-    esp_restart(); // 文件下载好后重启，重启检查更新文件无误后开始更新
 }

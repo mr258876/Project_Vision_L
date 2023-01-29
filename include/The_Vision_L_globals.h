@@ -47,6 +47,8 @@ extern bool info_setAPIstart;
 extern int info_APIstatus;
 extern char info_APIaddress[23];
 
+extern long info_static_resources_ver;
+
 extern bool info_isSquareLCD;
 extern bool info_hasProx;
 extern bool info_hasAccel;

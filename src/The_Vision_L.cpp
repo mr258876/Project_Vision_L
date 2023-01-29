@@ -697,7 +697,7 @@ void hardwareSetup(void *parameter)
     }
 
     /* 下载缺失文件 */
-    if (fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL)
+    if ((fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL) && !(hwErr & VISION_HW_SD_ERR))
     {
       Vision_download_info_t info;
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
