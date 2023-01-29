@@ -474,7 +474,15 @@ static esp_err_t root_handler(httpd_req_t *req)
 {
     char redirect_link[65];
     char redirect_html[165];
-    sprintf(redirect_link, "http://%s/utility/index.html", info_ipv4Address);
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    int file_res = access("/s/The Vision L/utility/index.html", F_OK);
+    xSemaphoreGive(SDMutex);
+    if (file_res)
+        sprintf(redirect_link, "https://mr258876.github.io/Project_Vision_L/?ip=%s", info_ipv4Address); // 没有index.html跳转至github pages上的页面(chrome不能用但X5可以)
+    else
+        sprintf(redirect_link, "http://%s/utility/index.html", info_ipv4Address); // 有index.html则跳转至本地页面
+
     sprintf(redirect_html, "<html><h2>Please visit the management page here:</h2><br><a href=\"%s\">Project_Vision_L</a></html>", redirect_link);
 
     httpd_resp_set_status(req, "302	Found");
