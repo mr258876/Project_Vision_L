@@ -255,7 +255,7 @@
 
         <hr /><br />
 
-        <div id="advanced-settings">
+        <div id="advanced-settings" hidden>
             <div class="mdui-row">
                 <div class="mdui-col-xs-12 mdui-typo-title">高级选项</div>
             </div>
@@ -263,7 +263,13 @@
             <div class="mdui-row">
                 <ul class="mdui-col-xs-12 mdui-list">
                     <li class="mdui-list-item mdui-ripple">
-                        <i class="mdui-list-item-icon mdui-icon material-icons">my_location</i>
+                        <i class="mdui-list-item-icon mdui-icon material-icons">code</i>
+                        <div class="mdui-list-item-content">更新本地资源</div>
+                        <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
+                            id="sensor-adj-menu-btn">更新</button>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple">
+                        <i class="mdui-list-item-icon mdui-icon material-icons">code</i>
                         <div class="mdui-list-item-content">传感器调整</div>
                         <button class="mdui-btn mdui-color-theme-accent mdui-ripple"
                             id="sensor-adj-menu-btn">前往传感器调整</button>
@@ -537,7 +543,7 @@
     /* 获取/设置亮度 */
     function getBrightness(val) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/setting/brightness" + (val ? ("?value=" + Math.round(val * 2.55)) : ""), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/brightness" + (val ? ("?value=" + Math.round(val * 2.55)) : ""), function (data) {
             device_brightness = data.setting_screenBrightness;
         })
             .done(function () {
@@ -559,7 +565,7 @@
     /* 获取/设置自动亮度开关 */
     function getAutoBright(val) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_bright" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_bright" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
             device_auto_bright = data.setting_autoBright;
         })
             .done(function () {
@@ -581,7 +587,7 @@
     /* 获取/设置自动旋转开关 */
     function getAutoRotate(val) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_rotate" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/auto_rotate" + (val == undefined ? "" : (val ? "?value=true" : "?value=false")), function (data) {
             device_auto_rotate = data.setting_useAccel;
         })
             .done(function () {
@@ -603,7 +609,7 @@
     /* 获取/设置语言 */
     function getLanguage(val) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/setting/language" + (val ? ("?value=" + val) : ""), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/language" + (val ? ("?value=" + val) : ""), function (data) {
             device_language = data.curr_lang;
         })
             .done(function () {
@@ -625,7 +631,7 @@
     /* 获取/设置时区 */
     function getTimezone(val) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/setting/timezone" + (val ? ("?value=" + val.replace("+", "%2B")) : ""), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/timezone" + (val ? ("?value=" + val.replace("+", "%2B")) : ""), function (data) {
             device_timezone = data.setting_timeZone;
         })
             .done(function () {
@@ -647,7 +653,7 @@
     /* 获取/设置天气位置 */
     function getWeatherLocation(city, lat, lon, provider) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/weather/city" + ((city && lat && lon && provider) ? ("?city=" + city + "&latitude=" + lat + "&longitude=" + lon + "&provider=" + provider) : ""), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/weather/city" + ((city && lat && lon && provider) ? ("?city=" + city + "&latitude=" + lat + "&longitude=" + lon + "&provider=" + provider) : ""), function (data) {
             device_weatherCity = data.city;
             device_weatherLatitude = data.latitude;
             device_weatherLongitude = data.longitude;
@@ -675,7 +681,7 @@
     /* 设置米游社配置 */
     function postHoyolabConf(uid, cookie, guid) {
         showProgressBar();
-        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/hoyolab/conf"), data: JSON.stringify({ "uid": uid, "cookie": cookie, "device_guid": guid }), dataType: "json" })
+        return $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/hoyolab/conf"), data: JSON.stringify({ "uid": uid, "cookie": cookie, "device_guid": guid }), dataType: "json" })
             .done(function () {
                 mdui.snackbar({
                     message: '米游社配置已更新',
@@ -698,7 +704,7 @@
     /* 获取播放列表 */
     function getPlaylist() {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/playlist", function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/playlist", function (data) {
             device_playlist = data.files;
         })
             .done(function () {
@@ -721,7 +727,7 @@
     /* 设置播放列表 */
     function postPlaylist(playlist) {
         showProgressBar();
-        $.ajax({
+        return $.ajax({
             type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/playlist"), data: JSON.stringify({ "files": device_playlist }), dataType: "json", success: function (data) {
                 device_playlist = data.files;
             }
@@ -800,7 +806,7 @@
     /* 获取正在播放文件编号 */
     function getCurrentPlaying(fileNo) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/playlist/current" + (fileNo ? ("?value=" + fileNo) : ""), function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/playlist/current" + (fileNo ? ("?value=" + fileNo) : ""), function (data) {
             device_playlist_current = data.currFileId;
         })
             .done(function () {
@@ -834,7 +840,7 @@
     /* 文件列表 */
     function listDir(path) {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/file/listdir?path=" + path, function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/file/listdir?path=" + path, function (data) {
             device_file_dir = path;
             device_file_dir_list = data.files;
             sortFileList(file_sort_method);
@@ -842,12 +848,22 @@
             .done(function () {
                 displayFileList();
             })
-            .fail(function () {
-                mdui.snackbar({
-                    message: '连接设备失败',
-                    position: 'top'
-                });
-                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            .fail(function (jqXHR) {
+                switch (jqXHR.status) {
+                    case 404:
+                        mdui.snackbar({
+                            message: '错误：文件不存在',
+                            position: 'top'
+                        });
+                        break;
+                    default:
+                        mdui.snackbar({
+                            message: '连接设备失败',
+                            position: 'top'
+                        });
+                        mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+                        break;
+                };
             })
             .always(
                 function () {
@@ -946,7 +962,7 @@
             if (menu) {
                 menu.close();   // 若已有菜单打开则先关闭
             }
-            
+
             let fn = device_file_dir_list[FILE_ID_EXP.exec($(evt.target).parents("li").attr("id"))][0];
             FILE_ID_EXP.lastIndex = 0;
             let menu_bom = $(FILE_MENU_BOM);
@@ -990,7 +1006,7 @@
                     file_clipboard.forEach(e => {
                         let pl = e.split('/');
                         if (!paste_conflict_method && (pl[pl.length - 1] in device_file_dir_list || ('/' + pl[pl.length - 1]) in device_file_dir_list)) {
-                            
+
                         } else {
                             mvDir(e, device_file_dir + '/' + pl[pl.length - 1]);
                         }
@@ -1096,7 +1112,7 @@
     /* 删除文件/文件夹 */
     function rmDir(path) {
         showProgressBar();
-        $.ajax({ type: "DELETE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path=" + path) })
+        return $.ajax({ type: "DELETE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path=" + path) })
             .done(function () {
                 listDir(device_file_dir);
             })
@@ -1127,7 +1143,7 @@
     /* 移动/重命名文件/文件夹 */
     function mvDir(path1, path2) {
         showProgressBar();
-        $.ajax({ type: "MOVE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path1=" + path1 + "&path2=" + path2) })
+        return $.ajax({ type: "MOVE", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file?path1=" + path1 + "&path2=" + path2) })
             .done(function () {
                 listDir(device_file_dir);
             })
@@ -1202,7 +1218,7 @@
     /* 新建文件夹（无需完整路径） */
     function makeDir(dir_name) {
         showProgressBar();
-        $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file/makedir?path=" + device_file_dir + "/" + dir_name) })
+        return $.ajax({ type: "POST", contentType: "application/json", url: ("http://" + device_IP + API_PREFIX + "/file/makedir?path=" + device_file_dir + "/" + dir_name) })
             .done(function () {
                 listDir(device_file_dir);
             })
@@ -1245,9 +1261,10 @@
         getPlaylist();
     }
 
+    // 连接设备
     function connectDevice() {
         showProgressBar();
-        $.getJSON("http://" + device_IP + API_PREFIX + "/info", function (data) {
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/info", function (data) {
             device_name = data.device_name;
             device_app_version = data.app_version;
             device_hw_version = data.hw_version;
@@ -1267,8 +1284,14 @@
                 fitHWVersion();
                 getDeviceVals();
                 getWeatherVals();
-                getPlaylistVals();
-                listDir("/s");
+                listDir("/s").then(() => {
+                    getPlaylistVals();
+                }, () => {
+                    $('#playlist-a').attr('hidden', true);
+                    $('#file-a').attr('hidden', true);
+                    mdui.alert('SD卡不可用，部分功能已被禁用。', '注意');
+                });
+
             })
             .fail(function () {
                 mdui.snackbar({
@@ -1403,7 +1426,7 @@
 
     // 侧栏 - 关于
     $("#utility-about-div").click(function () {
-        mdui.alert("神之眼实用程序<br/>版本：" + UTILITY_VERSION +"<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在<a href='https://github.com/mr258876/Project_Vision_L'>Github</a>上Star本项目！", "关于实用程序");
+        mdui.alert("神之眼实用程序<br/>版本：" + UTILITY_VERSION + "<br/>@mr258876 2022-2023<br/><br/>如果您喜欢本项目，请在<a href='https://github.com/mr258876/Project_Vision_L'>Github</a>上Star本项目！", "关于实用程序");
     });
 
     ////////////////////
