@@ -43,6 +43,8 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
 static esp_err_t setting_volume_get_handler(httpd_req_t *req);
 static esp_err_t setting_language_get_handler(httpd_req_t *req);
 static esp_err_t setting_timezone_get_handler(httpd_req_t *req);
+static esp_err_t setting_auto_update_get_handler(httpd_req_t *req);
+static esp_err_t setting_update_channel_get_handler(httpd_req_t *req);
 
 static esp_err_t weather_city_get_handler(httpd_req_t *req);
 static esp_err_t weather_sync_get_handler(httpd_req_t *req);
@@ -233,6 +235,20 @@ httpd_uri_t uri_setting_timezone_get = {
     .uri = "/api/v1/setting/timezone",
     .method = HTTP_GET,
     .handler = setting_timezone_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/auto_update 的 URI 处理结构 */
+httpd_uri_t uri_setting_auto_update_get = {
+    .uri = "/api/v1/setting/auto_update",
+    .method = HTTP_GET,
+    .handler = setting_auto_update_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/update_channel 的 URI 处理结构 */
+httpd_uri_t uri_setting_update_channel_get = {
+    .uri = "/api/v1/setting/update_channel",
+    .method = HTTP_GET,
+    .handler = setting_update_channel_get_handler,
     .user_ctx = NULL};
 
 /* GET /weather/city 的 URI 处理结构 */
@@ -1935,6 +1951,100 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 获取/设置自动更新开关 */
+/* @param val: 要设置的值，通过url传参 */
+static esp_err_t setting_auto_update_get_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+
+        /* 检查输入值 */
+        if (strcmp(value, "true") == 0)
+        {
+            setting_autoUpdate = true;
+            prefs.putBool("autoUpdate", true);
+        }
+        else if (strcmp(value, "false") == 0)
+        {
+            setting_autoUpdate = false;
+            prefs.putBool("autoUpdate", false);
+        }
+        else
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+    }
+
+    sprintf(str, "{\"autoUpdate\":%d}", setting_autoUpdate);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 获取/设置自动更新渠道 */
+/* @param val: 要设置的值，通过url传参 */
+static esp_err_t setting_update_channel_get_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    char str[64];
+    char value[64];
+    int channel = setting_updateChannel;
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+
+        /* 检查输入值 */
+        if (sscanf(value, "%d", &channel) == 1 && channel >= 0 && channel < 2)
+        {
+            setting_updateChannel = channel;
+            prefs.putBool("updateChannel", setting_updateChannel);
+        }
+        else
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+    }
+
+    sprintf(str, "{\"updateChannel\":%d}", setting_updateChannel);
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* 获取/设置城市 */
 /* @param city: 要设置的城市名称，通过url传参 */
 /* @param latitude: 要设置的城市纬度，通过url传参 */
@@ -2073,6 +2183,8 @@ void startAPIServer()
         // httpd_register_uri_handler(server, &uri_setting_volume_get);
         httpd_register_uri_handler(server, &uri_setting_language_get);
         httpd_register_uri_handler(server, &uri_setting_timezone_get);
+        httpd_register_uri_handler(server, &uri_setting_auto_update_get);
+        httpd_register_uri_handler(server, &uri_setting_update_channel_get);
 
         httpd_register_uri_handler(server, &uri_weather_city_get);
         httpd_register_uri_handler(server, &uri_weather_sync_get);
