@@ -73,14 +73,14 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
 
 uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t *info = nullptr);
 
-const char *getFileDownloadPrefix();
+const char *getFileDownloadPrefix(int source = curr_lang);
 
 /*
     @brief function to add download task in staticFileDownloadList
-    @param url: file url
-    @param path_to_save: path to save file, starts with mount point("/s/...." or "/f/....")
+    @param lp: path to save file, starts with mount point("/s/...." or "/f/....")
+    @param dp: file download without prefix
     @param reboot_when_finish: whether to reboot after download success. Set true if this is the first file required for update. (staticFileDownloadList use pop(), which is LIFO)
 */
-void updateFileDownload(const char *url, const char *path_to_save, bool reboot_when_finish);
+void updateFileDownload(const char *lp, const char *dp, bool reboot_when_finish);
 
 #endif

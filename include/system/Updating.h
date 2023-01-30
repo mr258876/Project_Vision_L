@@ -25,4 +25,8 @@ struct Vision_update_info_t
 bool updateFileAvaliable();
 void tsk_performUpdate(void *parameter);
 
-void checkUpdate();
+/* 
+    @brief check whether there's any update
+    @return bool whether there's any update
+*/
+bool checkUpdate();

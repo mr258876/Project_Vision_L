@@ -687,6 +687,7 @@ void hardwareSetup(void *parameter)
     weatherErr = wp->getCurrentWeather(&weather);
 
     /* 检查更新 */
+    bool hasUpdate = false;
     if (setting_autoUpdate && !(hwErr & VISION_HW_SD_ERR)) // 没有SD卡无法自动更新
     {
       if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -694,12 +695,12 @@ void hardwareSetup(void *parameter)
         lv_label_set_text(ui_StartupLabel2, lang[curr_lang][110]); // "正在检查更新..."
         xSemaphoreGive(LVGLMutex);
       }
-      checkUpdate();
+      hasUpdate = checkUpdate();
     }
 
     /* 下载缺失文件 */
     fileErr = fileErr | checkFileStatus();
-    if ((fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL || fileErr & VISION_FILE_STATIC_FILE_ERR) && !(hwErr & VISION_HW_SD_ERR))
+    if ((fileErr & VISION_FILE_SYS_FILE_ERR || fileErr & VISION_FILE_SYS_FILE_CRITICAL || fileErr & VISION_FILE_STATIC_FILE_ERR || hasUpdate) && !(hwErr & VISION_HW_SD_ERR))
     {
       Vision_download_info_t info;
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);

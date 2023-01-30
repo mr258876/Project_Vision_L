@@ -141,8 +141,10 @@ void tsk_performUpdate(void *parameter)
     vTaskDelete(NULL);
 }
 
-void checkUpdate()
+bool checkUpdate()
 {
+    bool result = false;
+
     char url[strlen(getFileDownloadPrefix()) + 33];
     char *updateChannel;
     switch (setting_updateChannel)
@@ -156,7 +158,7 @@ void checkUpdate()
     }
     sprintf(url, "%s%s", getFileDownloadPrefix(), updateChannel);
     if (downloadGithubFile(url, "/s/Update.json")) // <- DOWNLOAD_RES_OK=0
-        return;
+        return result;
 
     FILE *f;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
@@ -172,11 +174,16 @@ void checkUpdate()
             fclose(f);
         }
         xSemaphoreGive(SDMutex);
-        return;
+        return result;
     }
 
     char buf[OTA_JSON_CONF_DEFAULT_LENGTH];
-    fread(buf, 1, OTA_JSON_CONF_DEFAULT_LENGTH, f);
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+        fread(buf, OTA_JSON_CONF_DEFAULT_LENGTH, 1, f);
+        fclose(f);
+    }
+    xSemaphoreGive(SDMutex);
 
     StaticJsonDocument<OTA_JSON_CONF_JSON_SIZE> doc;
     DeserializationError error = deserializeJson(doc, buf, OTA_JSON_CONF_DEFAULT_LENGTH);
@@ -184,7 +191,7 @@ void checkUpdate()
     if (error)
     {
         ESP_LOGE("checkUpdate", "deserializeJson() failed:%s", error.c_str());
-        return;
+        return result;
     }
     else
     {
@@ -198,6 +205,7 @@ void checkUpdate()
     if (static_resources_ver && static_resources_ver > info_static_resources_ver)
     {
         fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
+        result = true;
     }
 
     /* 系统更新 */
@@ -205,7 +213,7 @@ void checkUpdate()
     if (!ver)
     {
         // 无版本号直接跳过
-        return;
+        return result;
     }
     else
     {
@@ -217,7 +225,7 @@ void checkUpdate()
         if (ver_check_res < 3)
         {
             // 版本号不正确
-            return;
+            return result;
         }
 
         unsigned int identity_version;
@@ -228,7 +236,7 @@ void checkUpdate()
         if (identity_version != new_identity_version && major_version >= new_major_version && minor_version >= new_minor_version)
         {
             // 版本号没有更新
-            return;
+            return result;
         }
     }
 
@@ -236,7 +244,7 @@ void checkUpdate()
     JsonArray download_path = doc["download_path"];
     if (local_path.size() == 0 || download_path.size() == 0 || local_path.size() != download_path.size())
     {
-        return;
+        return result;
     }
 
     for (size_t i = 0; i < local_path.size(); i++)
@@ -244,8 +252,10 @@ void checkUpdate()
         const char *dp = download_path[i];
         const char *lp = local_path[i];
 
-        char url[strlen(getFileDownloadPrefix()) + strlen(dp) + 1];
-        sprintf(url, "%s%s", getFileDownloadPrefix(), dp);
-        updateFileDownload(url, lp, i == 0); // <-最后一个文件下载好后自动重启，重启检查更新文件无误后开始更新
+        if (dp && lp)
+            updateFileDownload(lp, dp, i == 0); // <-最后一个文件下载好后自动重启，重启检查更新文件无误后开始更新
+        result = true;
     }
+
+    return result;
 }

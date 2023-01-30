@@ -362,9 +362,6 @@ static int remove_files(const char *path)
     return res;
 }
 
-#define IS_FILE_EXT(filename, ext) \
-    (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
-
 /* 设置header中的content-type */
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename)
 {
@@ -2016,7 +2013,7 @@ static esp_err_t setting_update_channel_get_handler(httpd_req_t *req)
         if (sscanf(value, "%d", &channel) == 1 && channel >= 0 && channel < 2)
         {
             setting_updateChannel = channel;
-            prefs.putBool("updateChannel", setting_updateChannel);
+            prefs.putUInt("updateChannel", setting_updateChannel);
         }
         else
         {

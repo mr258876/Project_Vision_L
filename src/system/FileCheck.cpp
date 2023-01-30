@@ -12,11 +12,13 @@ static uint loadConfig();
 
 static uint checkStaticResources();
 
+static int getDownloadSource(const char *filename);
+
 static Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck);
-static Vision_FileCheck_result_t cb_update_file(bool filePassedCheck);
+static Vision_FileCheck_result_t cb_reboot_after_finish(bool filePassedCheck);
 
 //////////////////////////////
 //
@@ -62,6 +64,15 @@ static SemaphoreHandle_t *get_FS_mutex(char drv_letter)
 static bool is_file_ext(const char *filename, const char *ext)
 {
   return (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0);
+}
+
+static int getDownloadSource(const char *filename)
+{
+  if (IS_FILE_EXT(filename, ".bin"))
+  {
+    return 0;
+  }
+  return curr_lang;
 }
 
 //////////////////////////////
@@ -117,10 +128,17 @@ static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck)
   return cb_general_sys_file(filePassedCheck);
 }
 
-static Vision_FileCheck_result_t cb_update_file(bool filePassedCheck)
+static Vision_FileCheck_result_t cb_reboot_after_finish(bool filePassedCheck)
 {
-  esp_restart();
-  return VISION_FILE_OK;
+  if (filePassedCheck)
+  {
+    esp_restart();
+    return VISION_FILE_OK;
+  }
+  else
+  {
+    return VISION_FILE_SYS_FILE_ERR;
+  }
 }
 
 //////////////////////////////
@@ -385,11 +403,16 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
   String path0 = "";
   String path1 = path_to_save;
 
+  ESP_LOGI(HTTP_TAG, "start download: %s", path_to_save);
+
   FILE *f;
   /* 根据驱动器号获取互斥量 */
   SemaphoreHandle_t *FSMutex = get_FS_mutex(path_to_save[1]);
   if (!FSMutex)
+  {
+    ESP_LOGE(HTTP_TAG, "could not get mutex!");
     return -1;
+  }
 
   /* 创建多层文件夹 */
   path0 = path1.substring(0, 3);
@@ -407,11 +430,12 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
     path0.concat('/');
   }
 
+  ESP_LOGI(HTTP_TAG, "from url: %s", url);
+
   esp_http_client_config_t conf = {
       .url = url,
       .cert_pem = TLScert,
       .method = HTTP_METHOD_GET,
-      .keep_alive_enable = false,
   };
 
   esp_http_client_handle_t client = esp_http_client_init(&conf);
@@ -428,6 +452,8 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
     ESP_LOGE(HTTP_TAG, "Failed to open HTTP connection: %s", esp_err_to_name(http_err));
     return DOWNLOAD_RES_HTTP_OPEN_FAIL;
   }
+
+  int content_length = esp_http_client_fetch_headers(client);
 
   int status_code = esp_http_client_get_status_code(client);
   if (status_code >= 400)
@@ -453,7 +479,7 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
     return DOWNLOAD_RES_OUT_OF_MEM;
   }
 
-  int content_length = esp_http_client_fetch_headers(client);
+  /* 写入文件 */
   int read_len, write_len;
   if (info)
   {
@@ -537,8 +563,9 @@ void tsk_fixMissingFiles(void *parameter)
       info->current_file_no += 1;
 
       /* 拼接url */
-      char url[strlen(getFileDownloadPrefix()) + strlen(constFileCheckList[i].downloadPath.c_str()) + 1];
-      sprintf(url, "%s%s", getFileDownloadPrefix(), constFileCheckList[i].downloadPath.c_str());
+      /* 国内平台下载.bin需登录故指定从github下载 */
+      char url[strlen(getFileDownloadPrefix(getDownloadSource(constFileCheckList[i].downloadPath.c_str()))) + strlen(constFileCheckList[i].downloadPath.c_str()) + 1];
+      sprintf(url, "%s%s", getFileDownloadPrefix(getDownloadSource(constFileCheckList[i].downloadPath.c_str())), constFileCheckList[i].downloadPath.c_str());
 
       if (!downloadGithubFile(url, constFileCheckList[i].localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
       {
@@ -547,15 +574,21 @@ void tsk_fixMissingFiles(void *parameter)
     }
   }
 
+  Vision_FileCheck_t static_file;
   while (staticFileDownloadList.size() > 0)
   {
-    Vision_FileCheck_t static_file = staticFileDownloadList.pop();
+    static_file = staticFileDownloadList.pop();
     info->current_file_no += 1;
 
     /* 拼接url */
-    char url[strlen(getFileDownloadPrefix()) + strlen(static_file.downloadPath.c_str()) + 1];
-    sprintf(url, "%s%s", getFileDownloadPrefix(), static_file.downloadPath.c_str());
-    downloadGithubFile(url, static_file.localPath.c_str(), info);
+    /* 国内平台下载.bin需登录故指定从github下载 */
+    char url[strlen(getFileDownloadPrefix(getDownloadSource(static_file.downloadPath.c_str()))) + strlen(static_file.downloadPath.c_str()) + 1];
+    sprintf(url, "%s%s", getFileDownloadPrefix(getDownloadSource(static_file.downloadPath.c_str())), static_file.downloadPath.c_str());
+
+    if (!downloadGithubFile(url, static_file.localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
+    {
+      static_file.file_cb(true);
+    }
   }
 
   info->result = DOWNLOAD_RES_OK;
@@ -567,18 +600,18 @@ uint downloadGithubFile(const char *url, const char *path_to_save, Vision_downlo
   return downloadFile(url, path_to_save, GlobalSign_Root_CA, info);
 }
 
-const char *getFileDownloadPrefix()
+const char *getFileDownloadPrefix(int source)
 {
-  if (curr_lang == 1)
+  if (source == 1)
   {
     return fileDownloadPrefix[1];
   }
   return fileDownloadPrefix[0];
 }
 
-void updateFileDownload(const char *url, const char *path_to_save, bool reboot_when_finish)
+void updateFileDownload(const char *lp, const char *dp, bool reboot_when_finish)
 {
-  staticFileDownloadList.add({String(path_to_save), String(url), reboot_when_finish ? cb_update_file : cb_general_sys_file});
+  staticFileDownloadList.add({String(lp), String(dp), reboot_when_finish ? cb_reboot_after_finish : cb_general_sys_file});
 }
 
 //////////////////////////////

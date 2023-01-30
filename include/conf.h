@@ -66,4 +66,10 @@
 #define OTA_STABLE_CHANNEL_JSON_PATH "/update_stable.json"
 #define OTA_BETA_CHANNEL_JSON_PATH "/update_beta.json"
 
+///////////////////////////////////////
+
+/* file extension helper function */
+#define IS_FILE_EXT(filename, ext) \
+    (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
+
 #endif // _VISION_CONFIGURATIONS_H_
