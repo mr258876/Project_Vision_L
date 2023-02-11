@@ -17,10 +17,10 @@ Do virtual gods hand out electronic visions?
 ## 支持库 / Referenced Libraries
 - 以下库需要手动安装 / Following libraries require manual installation before compile
 ```
-ArduinoJson     6.20.0
+ArduinoJson     6.20.1
 KXTJ3-1057      0.0.1
-LovyanGFX       0.5.0
-LVGL            8.3.4
+LovyanGFX       1.1.2
+LVGL            8.3.5
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
