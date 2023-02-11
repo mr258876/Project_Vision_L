@@ -2,7 +2,7 @@
 
 void time_sync_notification_cb(struct timeval *tv)
 {
-    ESP_LOGI("Networking", "Time synced!");
+    ESP_LOGI("TimeManager", "Time synced!");
     info_timeSynced = true;
 }
 

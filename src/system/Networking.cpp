@@ -11,6 +11,7 @@ void wifiEvent_handler(WiFiEvent_t e)
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
         strcpy(info_ipv4Address, WiFi.localIP().toString().c_str());
+        syncTime_NTP_async();
         break;
     case SYSTEM_EVENT_STA_LOST_IP:
     case SYSTEM_EVENT_STA_DISCONNECTED:
