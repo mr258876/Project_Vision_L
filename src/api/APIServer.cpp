@@ -1972,6 +1972,7 @@ static esp_err_t setting_time_get_handler(httpd_req_t *req)
         {
             struct timeval tv = {t, 0};
             settimeofday(&tv, NULL);
+            info_timeSynced = true;
         }
         
     }
