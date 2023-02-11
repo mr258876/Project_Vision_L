@@ -739,7 +739,9 @@ This function is to get or set city and weather provider for weather service.
 |city|城市名称 / city name|string|
 |latitude|纬度 / latitude|float, [-90 ~ 90]|
 |langitude|经度 / langitude|float, [-180 ~ 180]|
-|provider|天气提供商 / weather provider|int, 0 = OpenMeteo, 1 = 墨迹天气|
+|provider|天气提供商 / weather provider|int, 0 = OpenMeteo|
+
+* 墨迹天气自2023粘2月10日起不可用。请将天气提供商值设为0. <br/> Mojitianqi is no longer avaliable since Feb 10, 2023. Please set provider to 0.
 
 #### Return
 当前设置值，或更新后的设置值（若有）。

@@ -25,7 +25,6 @@
 #include <Preferences.h>
 
 #include "LCDPanels.h"
-#define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 
 #include "mjpeg/MjpegClass.h"
@@ -428,7 +427,8 @@ static void loadSettings()
   setting_weatherProvider = prefs.getInt("weatherProvider", -1);
   int weatherProviderNumber;
   if (setting_weatherProvider == -1)
-    weatherProviderNumber = curr_lang;
+    // weatherProviderNumber = curr_lang;
+    weatherProviderNumber = 0;
   else
     weatherProviderNumber = setting_weatherProvider;
   String cityName = prefs.getString("weatherCity", "");
