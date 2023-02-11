@@ -51,13 +51,13 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 - 设置菜单✅
 - 多语言支持✅
 - 从米游社API获取树脂✅
+- 自动更新✅
+- 综合信息界面(数字时钟/天气/树脂数据)✅
+- 管理界面(调整设置/远程控制/文件管理)✅
 
 下个大版本中计划的功能：
-- 自动更新🚧
 - 蓝牙🚧
 - 恢复模式(应对ROM不足)🚧
-- 综合信息界面(数字时钟/天气/树脂数据)🚧
-- 管理界面(远程控制/文件管理)🚧
 
 ## 神之眼实用程序
 自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置、天气城市配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码，或者访问设备ip地址进入实用程序。
@@ -135,11 +135,11 @@ if (ask == true) {
     "city":"深圳",
     "latitude":22.547,
     "longitude":114.085947,
-    "provider":1
+    "provider":0
 }
 ```
 - 注意：仅`city`项为字符串格式。其他三项数值不要带上引号。
-- 目前天气服务提供商仅`墨迹天气`可选。请保持`provider`项为`1`。
+- 目前天气服务提供商仅`Openmeteo`可选。请保持`provider`项为`0`。
 - 您可以在[这里](http://www.jsons.cn/lngcode/)查询城市或区县对应坐标。将经度填入`longitude`项，纬度填入`latitude`项。
 
 ## 刷入固件
@@ -194,13 +194,13 @@ These following hardwares are also supported:
 - Setting menu ✅
 - Multi-language support ✅
 - Resin data syncing ✅
+- Auto update✅
+- Digital clock (with weather)✅
+- Management interface (with remote control & file management)✅
 
 Features planned for next major release:
-- Automatic update🚧
 - Bluetooth 🚧
 - Recovery mode (to solve ROM shortage) 🚧
-- Integrated information interface (includes digital clock & weather & resin data) 🚧
-- Management interface (remote control & file management) 🚧
 
 ## How to Use
 ### For version L0.1
@@ -259,7 +259,7 @@ Features planned for next major release:
 }
 ```
 - Note: Only `city` entry is in string. Do not quote the other three values.
-- Please keep `provider` as `1` for now.
+- Only `Openmeteo` avaliable as weather provider for now, please keep `provider` as `0`.
 - You can check the coordinates of your location [here](https://open-meteo.com/en/docs/geocoding-api).
 
 ## Flashing Firmware
