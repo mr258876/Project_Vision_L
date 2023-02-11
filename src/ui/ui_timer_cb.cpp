@@ -319,64 +319,53 @@ void cb_timer_DigitalClockResinTimer(lv_timer_t *timer)
 {
     if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
     {
-        lv_label_set_text_fmt(ui_DigitalClockResinLabelResin, "%d", nd.resinRemain);
-        lv_label_set_text_fmt(ui_DigitalClockResinLabelExpe, "%d/%d", nd.expeditionFinished, nd.expeditionOngoing);
-
-        if (nd.homecoinRemain < 1000)
-            lv_label_set_text_fmt(ui_DigitalClockResinLabelHomecoin, "%d", nd.homecoinRemain);
-        else
-            lv_label_set_text_fmt(ui_DigitalClockResinLabelHomecoin, "%.1fK", (nd.homecoinRemain / 1000.0));
-
-        if (nd.hasTransformer)
+        if (*((bool *)timer->user_data))
         {
-            if (nd.transformerRecoverTime > 86400)
+            // 使用timer->user_data存储显示状态
+            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Resin);
+            lv_label_set_text_fmt(ui_DigitalClockResinLabel1, "%d", nd.resinRemain);
+
+            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Homecoin);
+            if (nd.homecoinRemain < 1000)
+                lv_label_set_text_fmt(ui_DigitalClockResinLabel2, "%d", nd.homecoinRemain);
+            else
+                lv_label_set_text_fmt(ui_DigitalClockResinLabel2, "%.1fK", (nd.homecoinRemain / 1000.0));
+            
+            *((bool *)timer->user_data) = false;
+        }
+        else
+        {
+            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Expeditions);
+            lv_label_set_text_fmt(ui_DigitalClockResinLabel1, "%d/%d", nd.expeditionFinished, nd.expeditionOngoing);
+
+            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Transformer);
+            if (nd.hasTransformer)
             {
-                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][46], (int)(nd.transformerRecoverTime / 86400)); // "%d天"
-            }
-            else if (nd.transformerRecoverTime > 3600)
-            {
-                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][47], (int)(nd.transformerRecoverTime / 3600)); // "%d小时"
-            }
-            else if (nd.transformerRecoverTime > 60)
-            {
-                lv_label_set_text_fmt(ui_DigitalClockResinLabelTrans, lang[curr_lang][48], (int)(nd.transformerRecoverTime / 60)); // "%d分钟"
+                if (nd.transformerRecoverTime > 86400)
+                {
+                    lv_label_set_text_fmt(ui_DigitalClockResinLabel2, lang[curr_lang][46], (int)(nd.transformerRecoverTime / 86400)); // "%d天"
+                }
+                else if (nd.transformerRecoverTime > 3600)
+                {
+                    lv_label_set_text_fmt(ui_DigitalClockResinLabel2, lang[curr_lang][47], (int)(nd.transformerRecoverTime / 3600)); // "%d小时"
+                }
+                else if (nd.transformerRecoverTime > 60)
+                {
+                    lv_label_set_text_fmt(ui_DigitalClockResinLabel2, lang[curr_lang][48], (int)(nd.transformerRecoverTime / 60)); // "%d分钟"
+                }
+                else
+                {
+                    lv_label_set_text(ui_DigitalClockResinLabel2, lang[curr_lang][49]); // "已就绪"
+                }
             }
             else
             {
-                lv_label_set_text(ui_DigitalClockResinLabelTrans, lang[curr_lang][49]); // "已就绪"
+                lv_label_set_text(ui_DigitalClockResinLabel2, lang[curr_lang][50]); // "未解锁"
             }
-        }
-        else
-        {
-            lv_label_set_text(ui_DigitalClockResinLabelTrans, lang[curr_lang][50]); // "未解锁"
-        }
 
+            *((bool *)timer->user_data) = true;
+        }
         xSemaphoreGive(NoteDataMutex);
-    }
-
-    if (lv_obj_has_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN))
-    {
-        lv_obj_add_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN);
-
-        lv_obj_clear_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinLabelHomecoin, LV_OBJ_FLAG_HIDDEN);
-    }
-    else
-    {
-        lv_obj_clear_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN);
-
-        lv_obj_add_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinLabelResin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui_DigitalClockResinLabelHomecoin, LV_OBJ_FLAG_HIDDEN);
     }
 }
 

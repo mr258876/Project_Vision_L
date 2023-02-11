@@ -130,14 +130,10 @@ extern lv_obj_t * ui_DigitalClockWeatherIcon;
 extern lv_obj_t * ui_DigitalClockWeatherAirPanel;
 extern lv_obj_t * ui_DigitalClockWeatherAirLabel;
 extern lv_obj_t * ui_DigitalClockResinPanel;
-extern lv_obj_t * ui_DigitalClockResinIconResin;
-extern lv_obj_t * ui_DigitalClockResinLabelResin;
-extern lv_obj_t * ui_DigitalClockResinIconHomecoin;
-extern lv_obj_t * ui_DigitalClockResinLabelHomecoin;
-extern lv_obj_t * ui_DigitalClockResinIconExpe;
-extern lv_obj_t * ui_DigitalClockResinLabelExpe;
-extern lv_obj_t * ui_DigitalClockResinIconTrans;
-extern lv_obj_t * ui_DigitalClockResinLabelTrans;
+extern lv_obj_t * ui_DigitalClockResinIcon1;
+extern lv_obj_t * ui_DigitalClockResinLabel1;
+extern lv_obj_t * ui_DigitalClockResinIcon2;
+extern lv_obj_t * ui_DigitalClockResinLabel2;
 extern lv_obj_t * ui_DigitalClockPanel;
 extern lv_obj_t * ui_DigitalClockTimePanel;
 extern lv_obj_t * ui_DigitalClockTimeLabelHourShadow;
@@ -171,6 +167,7 @@ extern lv_timer_t *ui_timer_ScrDelTimer;
 extern bool flag_ui_font_HanyiWenhei20;
 
 extern bool flag_ui_DigitalClockNeedInit;
+extern bool flag_ui_DigitalClockDispResin;
 
 void cb_timer_ResinDispTimer(lv_timer_t *timer);
 void cb_timer_SettingDispTimer(lv_timer_t *timer);

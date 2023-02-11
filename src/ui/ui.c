@@ -129,14 +129,10 @@ lv_obj_t *ui_DigitalClockWeatherIcon;
 lv_obj_t *ui_DigitalClockWeatherAirPanel;
 lv_obj_t *ui_DigitalClockWeatherAirLabel;
 lv_obj_t *ui_DigitalClockResinPanel;
-lv_obj_t *ui_DigitalClockResinIconResin;
-lv_obj_t *ui_DigitalClockResinLabelResin;
-lv_obj_t *ui_DigitalClockResinIconHomecoin;
-lv_obj_t *ui_DigitalClockResinLabelHomecoin;
-lv_obj_t *ui_DigitalClockResinIconExpe;
-lv_obj_t *ui_DigitalClockResinLabelExpe;
-lv_obj_t *ui_DigitalClockResinIconTrans;
-lv_obj_t *ui_DigitalClockResinLabelTrans;
+lv_obj_t *ui_DigitalClockResinIcon1;
+lv_obj_t *ui_DigitalClockResinLabel1;
+lv_obj_t *ui_DigitalClockResinIcon2;
+lv_obj_t *ui_DigitalClockResinLabel2;
 lv_obj_t *ui_DigitalClockPanel;
 lv_obj_t *ui_DigitalClockTimePanel;
 lv_obj_t *ui_DigitalClockTimeLabelHourShadow;
@@ -168,6 +164,7 @@ lv_timer_t *ui_timer_ScrDelTimer;
 
 bool flag_ui_font_HanyiWenhei20 = false;
 bool flag_ui_DigitalClockNeedInit = true;
+bool flag_ui_DigitalClockDispResin = true;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -1825,8 +1822,8 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_bg_color(ui_DigitalClockScreen, lv_color_hex(0xE8D3BB), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_DigitalClockScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_color(ui_DigitalClockScreen, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_main_stop(ui_DigitalClockScreen, 64, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_grad_stop(ui_DigitalClockScreen, 160, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_main_stop(ui_DigitalClockScreen, 96, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_stop(ui_DigitalClockScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui_DigitalClockScreen, LV_GRAD_DIR_VER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockWeatherPanel = lv_obj_create(ui_DigitalClockScreen);
@@ -1907,98 +1904,47 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_obj_set_style_border_color(ui_DigitalClockResinPanel, lv_color_hex(0xDEC9B3), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_opa(ui_DigitalClockResinPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_DigitalClockResinIconResin = lv_img_create(ui_DigitalClockResinPanel);
-    lv_img_set_src(ui_DigitalClockResinIconResin, &ui_img_Resin);
-    lv_obj_set_width(ui_DigitalClockResinIconResin, LV_SIZE_CONTENT);  /// 40
-    lv_obj_set_height(ui_DigitalClockResinIconResin, LV_SIZE_CONTENT); /// 40
-    lv_obj_set_x(ui_DigitalClockResinIconResin, lv_pct(-40));
-    lv_obj_set_y(ui_DigitalClockResinIconResin, lv_pct(-25));
-    lv_obj_set_align(ui_DigitalClockResinIconResin, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIconResin, LV_OBJ_FLAG_SCROLLABLE); /// Flags
-    lv_img_set_zoom(ui_DigitalClockResinIconResin, 192);
+    ui_DigitalClockResinIcon1 = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Resin);
+    lv_obj_set_width(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT);   /// 40
+    lv_obj_set_height(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT);    /// 40
+    lv_obj_set_x(ui_DigitalClockResinIcon1, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIcon1, lv_pct(-25));
+    lv_obj_set_align(ui_DigitalClockResinIcon1, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_DigitalClockResinLabelResin = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabelResin, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabelResin, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabelResin, lv_pct(15));
-    lv_obj_set_y(ui_DigitalClockResinLabelResin, lv_pct(-25));
-    lv_obj_set_align(ui_DigitalClockResinLabelResin, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_DigitalClockResinLabelResin, "160");
-    lv_obj_set_style_text_color(ui_DigitalClockResinLabelResin, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelResin, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_DigitalClockResinLabelResin, &ui_font_HanyiWenhei20ZhHans,
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_DigitalClockResinLabel1 = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabel1, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabel1, lv_pct(-25));
+    lv_obj_set_align(ui_DigitalClockResinLabel1, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabel1, "160");
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabel1, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabel1, &ui_font_HanyiWenhei20ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_DigitalClockResinIconHomecoin = lv_img_create(ui_DigitalClockResinPanel);
-    lv_img_set_src(ui_DigitalClockResinIconHomecoin, &ui_img_Homecoin);
-    lv_obj_set_width(ui_DigitalClockResinIconHomecoin, LV_SIZE_CONTENT);  /// 40
-    lv_obj_set_height(ui_DigitalClockResinIconHomecoin, LV_SIZE_CONTENT); /// 40
-    lv_obj_set_x(ui_DigitalClockResinIconHomecoin, lv_pct(-40));
-    lv_obj_set_y(ui_DigitalClockResinIconHomecoin, lv_pct(25));
-    lv_obj_set_align(ui_DigitalClockResinIconHomecoin, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIconHomecoin, LV_OBJ_FLAG_SCROLLABLE); /// Flags
-    lv_img_set_zoom(ui_DigitalClockResinIconHomecoin, 192);
+    ui_DigitalClockResinIcon2 = lv_img_create(ui_DigitalClockResinPanel);
+    lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Homecoin);
+    lv_obj_set_width(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT);   /// 40
+    lv_obj_set_height(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT);    /// 40
+    lv_obj_set_x(ui_DigitalClockResinIcon2, lv_pct(-40));
+    lv_obj_set_y(ui_DigitalClockResinIcon2, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinIcon2, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
-    ui_DigitalClockResinLabelHomecoin = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabelHomecoin, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabelHomecoin, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabelHomecoin, lv_pct(15));
-    lv_obj_set_y(ui_DigitalClockResinLabelHomecoin, lv_pct(25));
-    lv_obj_set_align(ui_DigitalClockResinLabelHomecoin, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_DigitalClockResinLabelHomecoin, "2.4K");
-    lv_obj_set_style_text_color(ui_DigitalClockResinLabelHomecoin, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelHomecoin, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_DigitalClockResinLabelHomecoin, &ui_font_HanyiWenhei20ZhHans,
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_DigitalClockResinIconExpe = lv_img_create(ui_DigitalClockResinPanel);
-    lv_img_set_src(ui_DigitalClockResinIconExpe, &ui_img_Expeditions);
-    lv_obj_set_width(ui_DigitalClockResinIconExpe, LV_SIZE_CONTENT);  /// 40
-    lv_obj_set_height(ui_DigitalClockResinIconExpe, LV_SIZE_CONTENT); /// 40
-    lv_obj_set_x(ui_DigitalClockResinIconExpe, lv_pct(-40));
-    lv_obj_set_y(ui_DigitalClockResinIconExpe, lv_pct(-25));
-    lv_obj_set_align(ui_DigitalClockResinIconExpe, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST); /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIconExpe, LV_OBJ_FLAG_SCROLLABLE);                     /// Flags
-    lv_img_set_zoom(ui_DigitalClockResinIconExpe, 192);
-
-    ui_DigitalClockResinLabelExpe = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabelExpe, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabelExpe, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabelExpe, lv_pct(15));
-    lv_obj_set_y(ui_DigitalClockResinLabelExpe, lv_pct(-25));
-    lv_obj_set_align(ui_DigitalClockResinLabelExpe, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_DigitalClockResinLabelExpe, "0/5");
-    lv_obj_add_flag(ui_DigitalClockResinLabelExpe, LV_OBJ_FLAG_HIDDEN); /// Flags
-    lv_obj_set_style_text_color(ui_DigitalClockResinLabelExpe, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelExpe, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_DigitalClockResinLabelExpe, &ui_font_HanyiWenhei20ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_DigitalClockResinIconTrans = lv_img_create(ui_DigitalClockResinPanel);
-    lv_img_set_src(ui_DigitalClockResinIconTrans, &ui_img_Transformer);
-    lv_obj_set_width(ui_DigitalClockResinIconTrans, LV_SIZE_CONTENT);  /// 40
-    lv_obj_set_height(ui_DigitalClockResinIconTrans, LV_SIZE_CONTENT); /// 40
-    lv_obj_set_x(ui_DigitalClockResinIconTrans, lv_pct(-40));
-    lv_obj_set_y(ui_DigitalClockResinIconTrans, lv_pct(25));
-    lv_obj_set_align(ui_DigitalClockResinIconTrans, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST); /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIconTrans, LV_OBJ_FLAG_SCROLLABLE);                     /// Flags
-    lv_img_set_zoom(ui_DigitalClockResinIconTrans, 192);
-
-    ui_DigitalClockResinLabelTrans = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabelTrans, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabelTrans, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabelTrans, lv_pct(15));
-    lv_obj_set_y(ui_DigitalClockResinLabelTrans, lv_pct(25));
-    lv_obj_set_align(ui_DigitalClockResinLabelTrans, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_DigitalClockResinLabelTrans, "6 Day");
-    lv_obj_add_flag(ui_DigitalClockResinLabelTrans, LV_OBJ_FLAG_HIDDEN); /// Flags
-    lv_obj_set_style_text_color(ui_DigitalClockResinLabelTrans, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_DigitalClockResinLabelTrans, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_DigitalClockResinLabelTrans, &ui_font_HanyiWenhei20ZhHans,
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_DigitalClockResinLabel2 = lv_label_create(ui_DigitalClockResinPanel);
+    lv_obj_set_width(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_DigitalClockResinLabel2, lv_pct(15));
+    lv_obj_set_y(ui_DigitalClockResinLabel2, lv_pct(25));
+    lv_obj_set_align(ui_DigitalClockResinLabel2, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_DigitalClockResinLabel2, "2.4K");
+    lv_obj_set_style_text_color(ui_DigitalClockResinLabel2, lv_color_hex(0x7D5F45), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_DigitalClockResinLabel2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_DigitalClockResinLabel2, &ui_font_HanyiWenhei20ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_DigitalClockPanel = lv_obj_create(ui_DigitalClockScreen);
     lv_obj_set_width(ui_DigitalClockPanel, lv_pct(100));
@@ -2172,6 +2118,8 @@ void ui_DigitalClockScreen_screen_init(void)
     ui_timer_DigitalClockTimer->user_data = &flag_ui_DigitalClockNeedInit; // <- 其实可以用指针是否为null传递初始化状态，但是为了便于理解还是算了
     flag_ui_DigitalClockNeedInit = true;
     ui_timer_DigitalClockResinTimer = lv_timer_create(cb_timer_DigitalClockResinTimer, 15000, NULL);
+    ui_timer_DigitalClockResinTimer->user_data = &flag_ui_DigitalClockDispResin;
+    flag_ui_DigitalClockDispResin = true;
     ui_timer_DigitalClockWeatherTimer = lv_timer_create(cb_timer_DigitalClockWeatherTimer, 30000, NULL);
 
     lv_timer_ready(ui_timer_DigitalClockTimer);
