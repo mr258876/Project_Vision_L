@@ -622,6 +622,110 @@ RESPONSE:
 }
 ~~~
 
+### GET /api/v1/setting/time
+#### Brief
+该函数用于获取或设置设备时间。
+
+This function is to get or set time.
+
+#### Param
+value: 要设置的值，秒级时间戳。获取值时uri中不要带有查询参数。
+
+value: Value to set, timestamp in seconds. DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/time?value=1676102473
+
+RESPONSE:
+{
+    "device_time":1676102473
+}
+~~~
+
+### GET /api/v1/setting/auto_update
+#### Brief
+该函数用于获取或设置自动更新开关。
+
+This function is to get or set device autoupdate switch.
+
+#### Param
+value: 要设置的值，"true"或"false"中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of "true" or "false". DO NOT add any query params when getting this value.
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/auto_update?value=true
+
+RESPONSE:
+{
+    "setting_autoUpdate":1
+}
+~~~
+
+### GET /api/v1/setting/update_channel
+#### Brief
+该函数用于获取或设置设备自动更新渠道。
+
+This function is to get or set device autoupdate channel.
+
+#### Param
+value: 要设置的值，下方语言代码表中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of codes bwlow. DO NOT add any query params when getting this value.
+
+| Channel | Code |
+| --- | --- |
+| Stable 稳定版 | 0 |
+| Beta 测试版 | 1 |
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/update_channel?value=0
+
+RESPONSE:
+{
+    "setting_updateChannel":0
+}
+~~~
+
 ## 天气配置 / Weather Configurations
 ### GET /api/v1/weather/city
 #### Brief

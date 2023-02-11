@@ -43,6 +43,7 @@ static esp_err_t setting_brightness_get_handler(httpd_req_t *req);
 static esp_err_t setting_volume_get_handler(httpd_req_t *req);
 static esp_err_t setting_language_get_handler(httpd_req_t *req);
 static esp_err_t setting_timezone_get_handler(httpd_req_t *req);
+static esp_err_t setting_time_get_handler(httpd_req_t *req);
 static esp_err_t setting_auto_update_get_handler(httpd_req_t *req);
 static esp_err_t setting_update_channel_get_handler(httpd_req_t *req);
 
@@ -235,6 +236,13 @@ httpd_uri_t uri_setting_timezone_get = {
     .uri = "/api/v1/setting/timezone",
     .method = HTTP_GET,
     .handler = setting_timezone_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/time 的 URI 处理结构 */
+httpd_uri_t uri_setting_time_get = {
+    .uri = "/api/v1/setting/time",
+    .method = HTTP_GET,
+    .handler = setting_time_get_handler,
     .user_ctx = NULL};
 
 /* GET /setting/auto_update 的 URI 处理结构 */
@@ -1928,6 +1936,47 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req)
     }
 
     sprintf(str, "{\"setting_timeZone\":\"%s\"}", setting_timeZone.c_str());
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+/* 获取/设置设备时间 */
+/* @param val: 要设置的值，通过url传参 */
+static esp_err_t setting_time_get_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    int host_str_len = httpd_req_get_hdr_value_len(req, "Origin");
+    char host[host_str_len + 1];
+    if (host_str_len)
+    {
+        httpd_req_get_hdr_value_str(req, "Origin", host, host_str_len + 1);
+        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", host);
+    }
+
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+
+        time_t t;
+        if (sscanf(str, "%lu", &t) > 0)
+        {
+            struct timeval tv = {t, 0};
+            settimeofday(&tv, NULL);
+        }
+        
+    }
+
+    sprintf(str, "{\"device_time\":\"%lu\"}", time(NULL));
     httpd_resp_set_status(req, HTTPD_200);
     httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     httpd_resp_send(req, str, HTTPD_RESP_USE_STRLEN);
