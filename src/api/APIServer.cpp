@@ -2216,6 +2216,7 @@ void startAPIServer()
         // httpd_register_uri_handler(server, &uri_setting_volume_get);
         httpd_register_uri_handler(server, &uri_setting_language_get);
         httpd_register_uri_handler(server, &uri_setting_timezone_get);
+        httpd_register_uri_handler(server, &uri_setting_time_get);
         httpd_register_uri_handler(server, &uri_setting_auto_update_get);
         httpd_register_uri_handler(server, &uri_setting_update_channel_get);
 
