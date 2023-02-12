@@ -446,7 +446,7 @@ bool APDS9930::readProximity(uint16_t &val) {
 uint16_t APDS9930::readProximity() {
   uint16_t val = 0;
   readProximity(val);
-  return val / 4;
+  return val;
 }
 
 /*******************************************************************************

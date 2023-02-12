@@ -64,6 +64,7 @@ extern String setting_deviceName;
 
 extern bool setting_useAccel;
 extern bool setting_autoBright;
+extern uint16_t setting_proxThres;
 
 extern uint8_t setting_screenDirection;
 extern uint8_t setting_screenBrightness;

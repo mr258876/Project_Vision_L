@@ -51,6 +51,7 @@ String setting_deviceName = "";
 
 bool setting_useAccel = true;
 bool setting_autoBright = true;
+uint16_t setting_proxThres = 210;
 
 uint8_t setting_screenDirection = 0;
 uint8_t setting_screenBrightness = 127;

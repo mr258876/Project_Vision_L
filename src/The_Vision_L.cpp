@@ -424,17 +424,16 @@ static void loadSettings()
   }
 
   // get weather conf
-  setting_weatherProvider = prefs.getInt("weatherProvider", -1);
-  int weatherProviderNumber;
-  if (setting_weatherProvider == -1)
-    // weatherProviderNumber = curr_lang;
-    weatherProviderNumber = 0;
-  else
-    weatherProviderNumber = setting_weatherProvider;
+  setting_weatherProvider = 0;  // <- Mojitianqi not avaliable since Feb 10, 2023
+  // setting_weatherProvider = prefs.getInt("weatherProvider", -1);
+  // if (setting_weatherProvider == -1)
+  // {
+  //   setting_weatherProvider = curr_lang;
+  // }
   String cityName = prefs.getString("weatherCity", "");
   float latitude = prefs.getFloat("weatherLat", NULL);
   float longitude = prefs.getFloat("weatherLong", NULL);
-  switch (weatherProviderNumber)
+  switch (setting_weatherProvider)
   {
   case 0:
     wp = &OpenMeteo;
@@ -477,23 +476,27 @@ static uint checkHardware()
   if (po.I2C_SDA && po.I2C_SCL)
   {
     /* check proximity sensor */
-    if (apds.begin())
-      info_hasProx = true;
-    else
+    xSemaphoreTake(I2CMutex, portMAX_DELAY);
     {
-      info_hasProx = false;
-      err = (err | VISION_HW_PROX_ERR);
-      ESP_LOGE("checkHardware", "Prox sensor init failed!");
+      if (apds.begin())
+        info_hasProx = true;
+      else
+      {
+        info_hasProx = false;
+        err = (err | VISION_HW_PROX_ERR);
+        ESP_LOGE("checkHardware", "Prox sensor init failed!");
+      }
+      /* check accel meter */
+      if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
+        info_hasAccel = true;
+      else
+      {
+        info_hasAccel = false;
+        err = err | VISION_HW_ACCEL_ERR;
+        ESP_LOGE("checkHardware", "Accel Meter init failed!");
+      }
     }
-    /* check accel meter */
-    if (acc.begin(ACC_SAMPLE_RATE, ACC_RANGE) == 0)
-      info_hasAccel = true;
-    else
-    {
-      info_hasAccel = false;
-      err = err | VISION_HW_ACCEL_ERR;
-      ESP_LOGE("checkHardware", "Accel Meter init failed!");
-    }
+    xSemaphoreGive(I2CMutex);
   }
   else
   {
@@ -669,7 +672,7 @@ void hardwareSetup(void *parameter)
     }
 
     /* 查询树脂 */
-    if (info_timeSynced)  // <- 未对时无法生成动态盐值
+    if (info_timeSynced) // <- 未对时无法生成动态盐值
     {
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       lv_label_set_text(ui_StartupLabel2, lang[curr_lang][96]); // "查询树脂..."
@@ -678,7 +681,7 @@ void hardwareSetup(void *parameter)
     getDailyNote(&nd, &errMsg);
 
     /* 查询天气 */
-    if (info_timeSynced)  // <- 未对时无法进入数字时钟界面
+    if (info_timeSynced) // <- 未对时无法进入数字时钟界面
     {
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       lv_label_set_text(ui_StartupLabel2, lang[curr_lang][97]); // "查询天气..."
@@ -743,7 +746,7 @@ void hardwareSetup(void *parameter)
   {
     apds.enableColor(true);
     apds.enableProximity(true);
-    apds.setProximityInterruptThreshold(0, PROX_THRS);
+    apds.setProximityInterruptThreshold(0, setting_proxThres);
     apds.enableProximityInterrupt();
     pinMode(po.PROX_INT, INPUT_PULLUP);
     proxButton = new OneButton(po.PROX_INT, true);
@@ -1147,16 +1150,25 @@ static void screenAdjustLoop(void *parameter)
 
       if (!digitalRead(po.PROX_INT))
       {
-        if (apds.readProximity() < PROX_THRS)
+        xSemaphoreTake(I2CMutex, portMAX_DELAY);
         {
-          apds.clearInterrupt();
+          if (apds.readProximity() < setting_proxThres)
+          {
+            apds.clearInterrupt();
+          }
         }
+        xSemaphoreGive(I2CMutex);
       }
     }
 
     if (info_hasProx && setting_autoBright)
     {
-      apds.getColorData(&r, &g, &b, &c);
+      xSemaphoreTake(I2CMutex, portMAX_DELAY);
+      {
+        apds.getColorData(&r, &g, &b, &c);
+      }
+      xSemaphoreGive(I2CMutex);
+
       int light = (c / 2) > 191 ? 191 : (c / 2);
       light += 64;
       ledcWrite(1, light);
@@ -1168,8 +1180,13 @@ static void screenAdjustLoop(void *parameter)
 
     if (info_hasAccel && setting_useAccel)
     {
-      accX = acc.axisAccel(X);
-      accY = acc.axisAccel(Y);
+      xSemaphoreTake(I2CMutex, portMAX_DELAY);
+      {
+        accX = acc.axisAccel(X);
+        accY = acc.axisAccel(Y);
+      }
+      xSemaphoreGive(I2CMutex);
+
       int toRotate = rotation;
       if (accX >= ACC_THRES && accY >= ACC_THRES)
       {

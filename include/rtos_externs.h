@@ -12,6 +12,7 @@ extern SemaphoreHandle_t MjpegMutex;
 extern SemaphoreHandle_t MjpegReadMutex;
 extern SemaphoreHandle_t NoteDataMutex;
 
+extern SemaphoreHandle_t I2CMutex;
 extern SemaphoreHandle_t WiFiConnectMutex;
 extern SemaphoreHandle_t APIStartupMutex;
 
