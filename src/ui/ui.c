@@ -1917,7 +1917,7 @@ void ui_DigitalClockScreen_screen_init(void)
     ui_DigitalClockResinLabel1 = lv_label_create(ui_DigitalClockResinPanel);
     lv_obj_set_width(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabel1, lv_pct(15));
+    lv_obj_set_x(ui_DigitalClockResinLabel1, lv_pct(20));
     lv_obj_set_y(ui_DigitalClockResinLabel1, lv_pct(-25));
     lv_obj_set_align(ui_DigitalClockResinLabel1, LV_ALIGN_CENTER);
     lv_label_set_text(ui_DigitalClockResinLabel1, "160");
@@ -1938,7 +1938,7 @@ void ui_DigitalClockScreen_screen_init(void)
     ui_DigitalClockResinLabel2 = lv_label_create(ui_DigitalClockResinPanel);
     lv_obj_set_width(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_DigitalClockResinLabel2, lv_pct(15));
+    lv_obj_set_x(ui_DigitalClockResinLabel2, lv_pct(20));
     lv_obj_set_y(ui_DigitalClockResinLabel2, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockResinLabel2, LV_ALIGN_CENTER);
     lv_label_set_text(ui_DigitalClockResinLabel2, "2.4K");
