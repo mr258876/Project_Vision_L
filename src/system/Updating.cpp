@@ -233,7 +233,7 @@ bool checkUpdate()
         unsigned int minor_version;
         sscanf(info_appVersion, "L%u.%u.%u", &identity_version, &major_version, &minor_version);
 
-        if (identity_version != new_identity_version && major_version >= new_major_version && minor_version >= new_minor_version)
+        if (identity_version != new_identity_version || major_version >= new_major_version || minor_version >= new_minor_version)
         {
             // 版本号没有更新
             return result;
