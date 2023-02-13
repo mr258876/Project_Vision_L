@@ -432,7 +432,7 @@ static void loadSettings()
   // }
   String cityName = prefs.getString("weatherCity", "");
   float latitude = prefs.getFloat("weatherLat", NULL);
-  float longitude = prefs.getFloat("weatherLong", NULL);
+  float longitude = prefs.getFloat("weatherLon", NULL);
   switch (setting_weatherProvider)
   {
   case 0:
