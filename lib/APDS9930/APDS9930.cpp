@@ -199,10 +199,6 @@ bool APDS9930::enableLightSensor(bool interrupts) {
   return true;
 }
 
-bool APDS9930::enableColor(bool interrupts) {
-  return enableLightSensor(false);
-}
-
 /**
  * @brief Ends the light sensor on the APDS-9930
  *
@@ -250,10 +246,6 @@ bool APDS9930::enableProximitySensor(bool interrupts) {
   }
 
   return true;
-}
-
-bool APDS9930::enableProximity(bool interrupts) {
-  return enableProximitySensor(false);
 }
 
 /**
@@ -539,10 +531,6 @@ bool APDS9930::setProximityIntHighThreshold(uint16_t threshold) {
   }
 
   return true;
-}
-
-bool APDS9930::setProximityInterruptThreshold(uint16_t thresholdL, uint16_t thresholdH) {
-  return setProximityIntLowThreshold(thresholdL) && setProximityIntHighThreshold(thresholdH*4);
 }
 
 /**
@@ -979,10 +967,6 @@ bool APDS9930::setProximityIntEnable(uint8_t enable) {
   return true;
 }
 
-bool APDS9930::enableProximityInterrupt() {
-  return setProximityIntEnable(1);
-}
-
 /**
  * @brief Clears the ambient light interrupt
  *
@@ -1020,10 +1004,6 @@ bool APDS9930::clearAllInts() {
   }
 
   return true;
-}
-
-bool APDS9930::clearInterrupt() {
-  return clearAllInts();
 }
 
 /*******************************************************************************

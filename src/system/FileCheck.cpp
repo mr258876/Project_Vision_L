@@ -544,6 +544,7 @@ void tsk_fixMissingFiles(void *parameter)
   Vision_download_info_t *info = (Vision_download_info_t *)parameter;
   info->result = DOWNLOAD_RES_DOWNLOADING;
   // 统计要下载的文件个数
+  int listedFileCount = 0;
   info->total_file_count = 0;
   for (size_t i = 0; i < (sizeof(fileCheckResults) / sizeof(Vision_FileCheck_result_t)); i++)
   {
@@ -552,6 +553,7 @@ void tsk_fixMissingFiles(void *parameter)
       info->total_file_count += 1;
     }
   }
+  listedFileCount = info->total_file_count;
   info->total_file_count += staticFileDownloadList.size();
 
   // 下载文件
@@ -572,6 +574,8 @@ void tsk_fixMissingFiles(void *parameter)
         fileCheckResults[i] = constFileCheckList[i].file_cb(true);
       }
     }
+
+    info->total_file_count = listedFileCount + staticFileDownloadList.size(); // 重新计算需要下载的文件个数
   }
 
   Vision_FileCheck_t static_file;

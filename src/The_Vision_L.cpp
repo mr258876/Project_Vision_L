@@ -403,6 +403,8 @@ static void loadSettings()
   setting_autoUpdate = prefs.getBool("autoUpdate", true);
   setting_updateChannel = prefs.getUInt("updateChannel", 0);
 
+  setting_proxThres = prefs.getUInt("proxThres", 210);
+
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
   strcpy(info_appVersion, running_app_info->version);
@@ -424,7 +426,7 @@ static void loadSettings()
   }
 
   // get weather conf
-  setting_weatherProvider = 0;  // <- Mojitianqi not avaliable since Feb 10, 2023
+  setting_weatherProvider = 0; // <- Mojitianqi not avaliable since Feb 10, 2023
   // setting_weatherProvider = prefs.getInt("weatherProvider", -1);
   // if (setting_weatherProvider == -1)
   // {
@@ -479,7 +481,9 @@ static uint checkHardware()
     xSemaphoreTake(I2CMutex, portMAX_DELAY);
     {
       if (apds.begin())
+      {
         info_hasProx = true;
+      }
       else
       {
         info_hasProx = false;
@@ -744,10 +748,10 @@ void hardwareSetup(void *parameter)
 
   if (!(hwErr & VISION_HW_PROX_ERR))
   {
-    apds.enableColor(true);
-    apds.enableProximity(true);
-    apds.setProximityInterruptThreshold(0, setting_proxThres);
-    apds.enableProximityInterrupt();
+    apds.enableLightSensor(false);
+    apds.enableProximitySensor(true);
+    apds.setProximityIntLowThreshold(0);
+    apds.setProximityIntHighThreshold(setting_proxThres);
     pinMode(po.PROX_INT, INPUT_PULLUP);
     proxButton = new OneButton(po.PROX_INT, true);
     proxButton->attachDoubleClick(onChangeVideo);
@@ -845,14 +849,14 @@ void hardwareSetup(void *parameter)
   ESP_ERROR_CHECK(esp_timer_create(&resinCalc_timer_args, &resinCalcTimer));
   ESP_ERROR_CHECK(esp_timer_start_periodic(resinCalcTimer, 30000000));
 
-  // 每15分钟同步一次树脂数据
+  // 每30分钟同步一次树脂数据
   esp_timer_create_args_t resinSync_timer_args = {
       .callback = &resinSync,
       .name = "resinSync"};
   ESP_ERROR_CHECK(esp_timer_create(&resinSync_timer_args, &resinSyncTimer));
   ESP_ERROR_CHECK(esp_timer_start_periodic(resinSyncTimer, setting_resinSyncPeriod));
 
-  // 每15分钟同步一次天气数据
+  // 每30分钟同步一次天气数据
   esp_timer_create_args_t weatherSync_timer_args = {
       .callback = &weatherSync,
       .name = "weatherSync"};
@@ -1072,6 +1076,22 @@ void cb_setAPIserver(bool status)
                           0);                   // 执行任务核心
 }
 
+uint16_t cb_readProx()
+{
+  uint16_t val;
+  xSemaphoreTake(I2CMutex, portMAX_DELAY);
+  val = apds.readProximity();
+  xSemaphoreGive(I2CMutex);
+  return val;
+}
+
+void cb_setProxThres(uint16_t val)
+{
+  setting_proxThres = val;
+  prefs.putUInt("proxThres", val);
+  apds.setProximityIntHighThreshold(setting_proxThres);
+}
+
 void setAPIserver_async(void *parameter)
 {
   xSemaphoreTake(APIStartupMutex, portMAX_DELAY);
@@ -1154,7 +1174,7 @@ static void screenAdjustLoop(void *parameter)
         {
           if (apds.readProximity() < setting_proxThres)
           {
-            apds.clearInterrupt();
+            apds.clearProximityInt();;
           }
         }
         xSemaphoreGive(I2CMutex);
@@ -1409,12 +1429,12 @@ static void onSingleClick()
   {
     if (inEditMode)
     {
-      lv_group_send_data(ui_group, LV_KEY_RIGHT);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_RIGHT);
     }
     else
     {
-      lv_group_send_data(ui_group, LV_KEY_NEXT);
-      lv_group_focus_next(ui_group);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_NEXT);
+      lv_group_focus_next(lv_group_get_default());
     }
   }
   xSemaphoreGive(LVGLMutex);
@@ -1432,21 +1452,21 @@ static void onDoubleClick()
   {
     if (inEditMode)
     {
-      lv_group_send_data(ui_group, LV_KEY_ENTER);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_ENTER);
       inEditMode = false;
       xSemaphoreGive(LVGLMutex);
       return;
     }
-    else if (lv_obj_is_editable(lv_group_get_focused(ui_group)))
+    else if (lv_obj_is_editable(lv_group_get_focused(lv_group_get_default())))
     {
-      lv_group_send_data(ui_group, LV_KEY_ENTER);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_ENTER);
       inEditMode = true;
       xSemaphoreGive(LVGLMutex);
       return;
     }
     else
     {
-      lv_event_send(lv_group_get_focused(ui_group), LV_EVENT_CLICKED, NULL);
+      lv_event_send(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
     }
   }
   xSemaphoreGive(LVGLMutex);
@@ -1464,12 +1484,12 @@ static void onMultiClick()
   {
     if (inEditMode)
     {
-      lv_group_send_data(ui_group, LV_KEY_LEFT);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_LEFT);
     }
     else
     {
-      lv_group_send_data(ui_group, LV_KEY_PREV);
-      lv_group_focus_prev(ui_group);
+      lv_group_send_data(lv_group_get_default(), LV_KEY_PREV);
+      lv_group_focus_prev(lv_group_get_default());
     }
   }
   xSemaphoreGive(LVGLMutex);

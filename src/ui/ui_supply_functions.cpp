@@ -4,6 +4,7 @@
 
 #include "ui/ui.h"
 #include "ui/ui_multiLanguage.h"
+#include "ui/ui_supply_functions.h"
 
 void cleanObj(lv_obj_t *obj)
 {
@@ -181,6 +182,9 @@ void cb_loadSettingScreen(lv_event_t *e)
   ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_MenuScreen);
 }
 
+////////////////////////
+// 重新配网界面
+
 void cb_leaveWifiReconfigInfo()
 {
   cb_ui_InfoScreen_back = NULL;
@@ -230,6 +234,9 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
 
   cb_startWifiReConfigure(NULL);
 }
+
+////////////////////////
+// SD卡异常界面
 
 void cb_leaveSDErrorInfo()
 {
@@ -297,6 +304,9 @@ void cb_loadSDErrorInfo(lv_event_t *e)
   refreshScr(ui_InfoScreen);
 }
 
+////////////////////////
+// 播放列表异常界面
+
 void cb_leavePlaylistErrorInfo()
 {
   cb_ui_InfoScreen_back = NULL;
@@ -362,6 +372,120 @@ void cb_loadPlaylistErrorInfo(lv_event_t *e)
   lv_group_focus_freeze(ui_group, true);
   refreshScr(ui_InfoScreen);
 }
+
+////////////////////////
+// 距离传感器校准界面
+
+lv_group_t * ui_group_ProxCalibrationInfo;
+lv_timer_t * ui_timer_ProxCalibrationTimer;
+uint16_t proxReading = 0;
+
+void cb_leaveProxCalibrationInfo()
+{
+  lv_timer_del(ui_timer_ProxCalibrationTimer);
+  cb_ui_InfoScreen_back = NULL;
+  lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
+  lv_group_set_default(ui_group);
+  lv_group_del(ui_group_ProxCalibrationInfo);
+  lv_group_focus_obj(ui_SettingPanel2Button1Button);
+  refreshScr(ui_SettingScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+}
+
+void cb_timer_ProxCalibrationTimer(lv_timer_t *timer)
+{
+  proxReading = cb_readProx();
+  lv_label_set_text_fmt(((lv_obj_t *)timer->user_data), lang[curr_lang][114], proxReading);  // "距离读数：150"
+}
+
+void ui_event_ProxCal_Button(lv_event_t *e)
+{
+  lv_event_code_t event = lv_event_get_code(e);
+  lv_obj_t *ta = lv_event_get_target(e);
+  if (event == LV_EVENT_CLICKED)
+  {
+    cb_setProxThres(proxReading);
+    cb_leaveProxCalibrationInfo();
+  }
+}
+
+void cb_loadProxCalibrationInfo(lv_event_t *e)
+{
+  ui_InfoScreen_screen_init();
+
+  ui_group_ProxCalibrationInfo = lv_group_create();
+  lv_group_set_default(ui_group_ProxCalibrationInfo);
+  lv_group_add_obj(ui_group_ProxCalibrationInfo, ui_InfoTitleBackButton);
+
+  lv_label_set_text(ui_InfoTitleLabel, lang[curr_lang][28]); // "设置"
+
+  lv_obj_t *ui_InfoPanelLabel1 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel1, 180);
+  lv_obj_set_height(ui_InfoPanelLabel1, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel1, 15);
+  lv_obj_set_y(ui_InfoPanelLabel1, 0);
+  lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][112]); // 距离传感器校准
+  lv_obj_set_style_text_color(ui_InfoPanelLabel1, lv_color_hex(0xD3BC8E), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_InfoPanelLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel2 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel2, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel2, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel2, 20);
+  lv_obj_set_y(ui_InfoPanelLabel2, 20);
+  lv_obj_set_align(ui_InfoPanelLabel2, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel2, "距离读数：150");
+  lv_obj_set_style_text_font(ui_InfoPanelLabel2, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_InfoPanelLabel3 = lv_label_create(ui_InfoPanel);
+  lv_obj_set_width(ui_InfoPanelLabel3, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_InfoPanelLabel3, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_x(ui_InfoPanelLabel3, 20);
+  lv_obj_set_y(ui_InfoPanelLabel3, -20);
+  lv_obj_set_align(ui_InfoPanelLabel3, LV_ALIGN_LEFT_MID);
+  lv_label_set_text(ui_InfoPanelLabel3, lang[curr_lang][113]); // "Cover the sensor,\nthen click \"calibrate\"."
+  lv_obj_set_style_text_font(ui_InfoPanelLabel3, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *ui_ProxCal_Button = lv_btn_create(ui_InfoPanel);
+  lv_obj_set_width(ui_ProxCal_Button, 100);
+  lv_obj_set_height(ui_ProxCal_Button, 30);
+  lv_obj_set_x(ui_ProxCal_Button, 20);
+  lv_obj_set_y(ui_ProxCal_Button, 120);
+  lv_obj_add_flag(ui_ProxCal_Button, LV_OBJ_FLAG_SCROLL_ON_FOCUS); /// Flags
+  lv_obj_clear_flag(ui_ProxCal_Button, LV_OBJ_FLAG_SCROLLABLE);    /// Flags
+  lv_obj_set_style_radius(ui_ProxCal_Button, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(ui_ProxCal_Button, lv_color_hex(0xD8CDB9), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(ui_ProxCal_Button, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_outline_color(ui_ProxCal_Button, lv_color_hex(0xFFCC33), LV_PART_MAIN | LV_STATE_FOCUSED);
+  lv_obj_set_style_outline_opa(ui_ProxCal_Button, 255, LV_PART_MAIN | LV_STATE_FOCUSED);
+  lv_obj_set_style_outline_width(ui_ProxCal_Button, 4, LV_PART_MAIN | LV_STATE_FOCUSED);
+  lv_obj_set_style_outline_pad(ui_ProxCal_Button, 0, LV_PART_MAIN | LV_STATE_FOCUSED);
+
+  lv_obj_t *ui_ProxCal_Button_Label = lv_label_create(ui_ProxCal_Button);
+  lv_obj_set_width(ui_ProxCal_Button_Label, LV_SIZE_CONTENT);  /// 1
+  lv_obj_set_height(ui_ProxCal_Button_Label, LV_SIZE_CONTENT); /// 1
+  lv_obj_set_align(ui_ProxCal_Button_Label, LV_ALIGN_CENTER);
+  lv_label_set_text(ui_ProxCal_Button_Label, lang[curr_lang][115]); // "校准"
+  lv_obj_set_style_text_color(ui_ProxCal_Button_Label, lv_color_hex(0x495366), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_opa(ui_ProxCal_Button_Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_text_font(ui_ProxCal_Button_Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  ui_timer_ProxCalibrationTimer = lv_timer_create(cb_timer_ProxCalibrationTimer, 500, ui_InfoPanelLabel2);
+  lv_timer_ready(ui_timer_ProxCalibrationTimer);
+
+  lv_obj_add_event_cb(ui_ProxCal_Button, ui_event_ProxCal_Button, LV_EVENT_ALL, NULL);
+
+  cb_ui_InfoScreen_back = cb_leaveProxCalibrationInfo;
+
+  lv_scr_load_anim(ui_InfoScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
+
+  lv_group_focus_obj(ui_ProxCal_Button);
+  refreshScr(ui_InfoScreen);
+}
+
+////////////////////////
+// 初次配网界面
 
 void cb_loadWifiConfigInfoStartupScreen(lv_event_t *e)
 {

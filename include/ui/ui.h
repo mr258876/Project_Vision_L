@@ -62,6 +62,10 @@ extern lv_obj_t * ui_SettingPanel2SW2Switch1;
 extern lv_obj_t * ui_SettingPanel2DP1;
 extern lv_obj_t * ui_SettingPanel2DP1Label1;
 extern lv_obj_t * ui_SettingPanel2DP1Dropdown1;
+extern lv_obj_t * ui_SettingPanel2Button1;
+extern lv_obj_t * ui_SettingPanel2Button1Label1;
+extern lv_obj_t * ui_SettingPanel2Button1Button;
+extern lv_obj_t * ui_SettingPanel2Button1ButtonLabel;
 extern lv_obj_t * ui_SettingInfoPanelAbout;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel1;
 extern lv_obj_t * ui_SettingInfoPanelAboutLabel2;
@@ -201,6 +205,7 @@ void cb_loadVideoScreen(lv_event_t * e);
 void cb_loadWifiReconfigInfo(lv_event_t * e);
 void cb_loadSDErrorInfo(lv_event_t * e);
 void cb_loadPlaylistErrorInfo(lv_event_t * e);
+void cb_loadProxCalibrationInfo(lv_event_t * e);
 
 void cb_loadWifiConfigInfoStartupScreen(lv_event_t * e);
 
@@ -208,6 +213,7 @@ void cb_setAPIserver(bool val);
 void cb_setAutoBright(bool val);
 void cb_setUseAccel(bool val);
 void cb_setLanguage(uint16_t val);
+void cb_setProxThres(uint16_t val);
 
 void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay);
 

@@ -119,6 +119,10 @@ const char *zh_Hans[] = {
     "请检查播放列表，\n然后重试。",                                         // 109 Please check playlist, and retry.
     "正在检查更新...",                                                      // 110 Checking for update
     "%.1fKB/s",                                                             // 111 Downloading %.1fKB/s
+    "距离传感器校准",                                                       // 112 Proximity sensor calibration
+    "请盖住传感器，\n然后点击校准按钮",                                     // 113 Please cover the sensor, then click "Calibrate"
+    "距离读数：%d",                                                         // 114 Prox reading: %d
+    "校准",                                                                 // 115 Calibrate
 };
 
 const char *en_US[] = {
@@ -234,6 +238,10 @@ const char *en_US[] = {
     "Please\ncheck\nplaylist,\nand retry.",                                         // 109 Please check playlist, and retry.
     "Check update...",                                                              // 110 Checking for update...
     "%.1fKB/s",                                                                     // 111 Downloading %.1fKB/s
+    "Proximity sensor calibration",                                                 // 112 Proximity sensor calibration
+    "Please cover the sensor, then click \"Calibrate\""                             // 113 Please cover the sensor, then click "Calibrate"
+    "Prox reading: %d",                                                             // 114 Prox reading: %d
+    "Calibrate",                                                                    // 115 Calibrate
 };
 
 const char **lang[] = {

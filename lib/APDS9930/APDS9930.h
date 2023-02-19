@@ -166,10 +166,8 @@ public:
 
   /* Enable or disable specific sensors */
   bool enableLightSensor(bool interrupts = false);
-  bool enableColor(bool interrupts = false);
   bool disableLightSensor();
   bool enableProximitySensor(bool interrupts = false);
-  bool enableProximity(bool interrupts = false);
   bool disableProximitySensor();
 
   /* LED drive strength control */
@@ -198,13 +196,11 @@ public:
   bool setAmbientLightIntEnable(uint8_t enable);
   uint8_t getProximityIntEnable();
   bool setProximityIntEnable(uint8_t enable);
-  bool enableProximityInterrupt();
 
   /* Clear interrupts */
   bool clearAmbientLightInt();
   bool clearProximityInt();
   bool clearAllInts();
-  bool clearInterrupt();
 
   /* Proximity methods */
   bool readProximity(uint16_t &val);
@@ -226,7 +222,6 @@ public:
   bool setProximityIntLowThreshold(uint16_t threshold);
   uint16_t getProximityIntHighThreshold();
   bool setProximityIntHighThreshold(uint16_t threshold);
-  bool setProximityInterruptThreshold(uint16_t thresholdL, uint16_t thresholdH);
 
   /* Raw I2C Commands */
   bool wireWriteByte(uint8_t val);
