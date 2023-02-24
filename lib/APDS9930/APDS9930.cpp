@@ -342,6 +342,7 @@ float APDS9930::floatAmbientToLux(uint16_t Ch0, uint16_t Ch1) {
   float iac = max(Ch0 - ALS_B * Ch1, ALS_C * Ch0 - ALS_D * Ch1);
   if (iac < 0) iac = 0;
   float lpc = GA * DF / (ALSIT * x[getAmbientLightGain()]);
+  if (getALSGainLevel() == 1) lpc *= 6;
   return iac * lpc;
 }
 
@@ -351,6 +352,7 @@ unsigned long APDS9930::ulongAmbientToLux(uint16_t Ch0, uint16_t Ch1) {
   unsigned long iac = max(Ch0 - ALS_B * Ch1, ALS_C * Ch0 - ALS_D * Ch1);
   if (iac < 0) iac = 0;
   unsigned long lpc = GA * DF / (ALSIT * x[getAmbientLightGain()]);
+  if (getALSGainLevel() == 1) lpc *= 6;
   return iac * lpc;
 }
 
@@ -383,28 +385,6 @@ bool APDS9930::readCh1Light(uint16_t &val) {
     return false;
   }
   val += ((uint16_t)val_byte << 8);
-  return true;
-}
-
-bool APDS9930::getColorData(uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c) {
-  uint16_t Ch0;
-  uint16_t Ch1;
-
-  /* Read value from channel 0 */
-  if (!readCh0Light(Ch0)) {
-    return false;
-  }
-
-  /* Read value from channel 1 */
-  if (!readCh1Light(Ch1)) {
-    return false;
-  }
-
-  *r = 0;
-  *g = 0;
-  *b = 0;
-  *c = max(Ch0, Ch1);
-
   return true;
 }
 
@@ -715,7 +695,7 @@ bool APDS9930::setProximityDiode(uint8_t drive) {
  *
  * Value    Gain
  *   0        1x
- *   1        4x
+ *   1        8x
  *   2       16x
  *   3      120x
  *
@@ -740,7 +720,7 @@ uint8_t APDS9930::getAmbientLightGain() {
  *
  * Value    Gain
  *   0        1x
- *   1        4x
+ *   1        8x
  *   2       16x
  *   3       64x
  *
@@ -762,6 +742,68 @@ bool APDS9930::setAmbientLightGain(uint8_t drive) {
 
   /* Write register value back into CONTROL register */
   if (!wireWriteDataByte(APDS9930_CONTROL, val)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * @brief Sets the ALS gain level for the ambient light sensor (ALS).
+ * When asserted, the 1× and 8× ALS gain (AGAIN) modes are scaled by 0.16.
+ *
+ * Value    Gain
+ *   0        1x
+ *   1        4x
+ *   2       16x
+ *   3       64x
+ *
+ * @return the value of the ALS gain level. 0xFF on failure.
+ */
+uint8_t APDS9930::getALSGainLevel()
+{
+  uint8_t val = 0;
+
+  /* Read value from CONFIG register */
+  if (!wireReadDataByte(APDS9930_CONFIG, val)) {
+    return ERROR;
+  }
+
+  /* Shift and mask out ALS bit */
+  val &= 0b00000100;
+
+  return val;
+}
+
+/**
+ * @brief Sets the ALS gain level for the ambient light sensor (ALS).
+ * When asserted, the 1× and 8× ALS gain (AGAIN) modes are scaled by 0.16.
+ *
+ * Value    Gain
+ *   0        1x
+ *   1        4x
+ *   2       16x
+ *   3       64x
+ *
+ * @param[in] enable 1 to enable, 0 to turn off
+ * @return the value of the ALS gain level. 0xFF on failure.
+ */
+bool APDS9930::setALSGainLevel(uint8_t enable)
+{
+  uint8_t val = 0;
+
+  /* Read value from CONFIG register */
+  if (!wireReadDataByte(APDS9930_CONFIG, val)) {
+    return false;
+  }
+
+  /* Set bit in register to given value */
+  enable = (enable << 2);
+  val &= 0b11111011;
+  val |= enable;
+
+  /* Write register value back into CONFIG register */
+  if (!wireWriteDataByte(APDS9930_CONFIG, val)) {
     return false;
   }
 

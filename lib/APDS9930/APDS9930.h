@@ -11,6 +11,12 @@
  * APDS9930 object, call init(), and call the appropriate functions.
  */
 
+/*
+  @changelog
+
+  Add ALSGain setting - @mr258876 Feb 24,2023
+*/
+
 #ifndef APDS9930_H
 #define APDS9930_H
 
@@ -179,6 +185,8 @@ public:
   /* Gain control */
   uint8_t getAmbientLightGain();
   bool setAmbientLightGain(uint8_t gain);
+  uint8_t getALSGainLevel();
+  bool setALSGainLevel(uint8_t enable);
   uint8_t getProximityGain();
   bool setProximityGain(uint8_t gain);
   bool setProximityDiode(uint8_t drive);
@@ -213,7 +221,6 @@ public:
   unsigned long ulongAmbientToLux(uint16_t Ch0, uint16_t Ch1);
   bool readCh0Light(uint16_t &val);
   bool readCh1Light(uint16_t &val);
-  bool getColorData(uint16_t *r, uint16_t *g, uint16_t *b, uint16_t *c);
 
   //private:
 
