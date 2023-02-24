@@ -166,6 +166,16 @@ void cb_timer_SettingDispTimer(lv_timer_t *timer)
 
     // 硬件版本
     lv_label_set_text_fmt(ui_SettingInfoPanelAboutLabel4, lang[curr_lang][66], info_hwType); // "HW version:"
+
+    // 距离传感器校准菜单
+    if (info_hasAccel)
+    {
+        lv_obj_clear_flag(ui_SettingPanel2Button1, LV_OBJ_FLAG_HIDDEN);
+    }
+    else
+    {
+        lv_obj_add_flag(ui_SettingPanel2Button1, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
 /* 主题时钟秒针刷新 */
