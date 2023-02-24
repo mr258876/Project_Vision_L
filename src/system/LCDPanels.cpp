@@ -1,20 +1,17 @@
 #include "system/LCDPanels.h"
 
-lgfx::Panel_GC9A01 _panel_gc9a01;
-lgfx::Panel_ST7789 _panel_st7789;
+lgfx::Panel_LCD *_panel;
 lgfx::Bus_SPI _bus_instance;
 
 void LCDinit(LGFX_Device *gfx, LCD_panel_t lcd_type, spi_host_device_t spi_host, uint8_t LCD_DC, uint8_t LCD_RST, uint8_t LCD_CS, uint8_t LCD_CLK, uint8_t LCD_MOSI, uint8_t LCD_MISO, bool isSharedSPI, uint32_t LCD_clock_speed)
 {
-    lgfx::Panel_LCD *_panel;
-
     switch (lcd_type)
     {
     case LCD_ST7789:
-        _panel = &_panel_st7789;
+        _panel = new lgfx::Panel_ST7789();
         break;
     default:
-        _panel = &_panel_gc9a01;
+        _panel = new lgfx::Panel_GC9A01();
         break;
     }
 
@@ -70,4 +67,22 @@ void LCDinit(LGFX_Device *gfx, LCD_panel_t lcd_type, spi_host_device_t spi_host,
     }
 
     gfx->setPanel(_panel);
+}
+
+int brightness_nit_level_curve_ST7789(float nit)
+{
+    float lev = (nit - 1.067061) / 1.979675;    // 506.93 nit max by measure
+    int res = round(lev);
+    res = (res < 1 ? 1 : res);
+    res = (res > 255 ? 255 : res);
+    return res;
+}
+
+int brightness_nit_level_curve_GC9A01(float nit)
+{
+    float lev = nit / 1.568627; // typical 400 nit
+    int res = round(lev);
+    res = (res < 1 ? 1 : res);
+    res = (res > 255 ? 255 : res);
+    return res;
 }

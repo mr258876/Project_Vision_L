@@ -13,4 +13,7 @@ typedef enum
 
 void LCDinit(LGFX_Device *gfx, LCD_panel_t lcd_type, spi_host_device_t spi_host, uint8_t LCD_DC, uint8_t LCD_RST, uint8_t LCD_CS, uint8_t LCD_CLK, uint8_t LCD_MOSI, uint8_t LCD_MISO, bool isSharedSPI, uint32_t LCD_clock_speed);
 
+int brightness_nit_level_curve_ST7789(float nit);
+int brightness_nit_level_curve_GC9A01(float nit);
+
 #endif

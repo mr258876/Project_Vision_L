@@ -26,11 +26,14 @@
 
 #include "LCDPanels.h"
 #include <LovyanGFX.hpp>
+#include "BrightnessController.h"
 
 #include "mjpeg/MjpegClass.h"
 
 #include <Wire.h>
 #include <APDS9930.h>
+#undef DEFAULT_ATIME
+#define DEFAULT_ATIME 0xDB  // <- 将亮度传感器采样时间改为100ms
 
 #include <OneButton.h>
 #include <kxtj3-1057.h>
@@ -102,8 +105,8 @@ bool mjpegInited = false;
 
 /* Proximity sensor Object */
 APDS9930 apds;
-uint16_t r, g, b, c;
 OneButton *proxButton = NULL;
+BrightnessController brightControl;
 
 /* Accelmeter Object */
 #define LOW_POWER
@@ -254,6 +257,19 @@ void setup()
   ledcAttachPin(po.LCD_BL, 1);            // assign TFT_BL pin to channel 2
   ledcSetup(1, 48000, 8);                 // 48 kHz PWM, 8-bit resolution
   ledcWrite(1, setting_screenBrightness); // brightness 0 - 255
+  switch (po.LCD_panel)
+  {
+  case LCD_ST7789:
+    brightControl.setMaxScreenNit(500);
+    brightControl.setDisplayNit_BrightnessLevelFunction(brightness_nit_level_curve_ST7789);
+    break;
+  case LCD_GC9A01:
+    brightControl.setMaxScreenNit(400);
+    brightControl.setDisplayNit_BrightnessLevelFunction(brightness_nit_level_curve_ST7789);
+    break;
+  default:
+    break;
+  }
 
   // SD card init
   if (po.SD_use_sdmmc)
@@ -1157,6 +1173,8 @@ static void screenAdjustLoop(void *parameter)
 {
   float accX = 0;
   float accY = 0;
+
+  float ambientLightLux = 0;
   while (1)
   {
     pwrButton->tick();
@@ -1174,7 +1192,7 @@ static void screenAdjustLoop(void *parameter)
         {
           if (apds.readProximity() < setting_proxThres)
           {
-            apds.clearProximityInt();;
+            apds.clearProximityInt();
           }
         }
         xSemaphoreGive(I2CMutex);
@@ -1185,13 +1203,12 @@ static void screenAdjustLoop(void *parameter)
     {
       xSemaphoreTake(I2CMutex, portMAX_DELAY);
       {
-        apds.getColorData(&r, &g, &b, &c);
+        apds.readAmbientLightLux(ambientLightLux);
+        // ESP_LOGI("screenAdjustLoop", "Lux: %f", ambientLightLux);
       }
       xSemaphoreGive(I2CMutex);
 
-      int light = (c / 2) > 191 ? 191 : (c / 2);
-      light += 64;
-      ledcWrite(1, light);
+      ledcWrite(1, brightControl.updateBrightness(ambientLightLux, (setting_screenBrightness - 127) * 1.0 / 127));
     }
     else
     {
@@ -1241,7 +1258,7 @@ static void screenAdjustLoop(void *parameter)
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(20));
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
 
