@@ -1,51 +1,81 @@
 #include "system/Updating.h"
 
-bool updateFileAvaliable()
+int checkUpdateConfig(LinkedList<Vision_update_info_t> *listptr)
 {
-    int file_res;
+    FILE *f = nullptr;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        file_res = access("/s/Update.bin", F_OK);
+        f = fopen("/s/update.json", "r");
     }
     xSemaphoreGive(SDMutex);
-    if (file_res == -1)
-    {
-        return false;
-    }
 
-    FILE *f;
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
-    {
-        f = fopen("/s/Update.bin", "rb");
-    }
-    xSemaphoreGive(SDMutex);
     if (!f)
-    {
-        ESP_LOGE("updateFileAvaliable", "Unable to open Update.bin!");
-        return false;
-    }
-    char buf[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)];
+        return UPDATE_NO_UPDATE;
 
-    int bytes_read;
+    char conf_buf[1025];
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        bytes_read = fread(buf, 1, sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t), f);
+        fread(conf_buf, 1, 1024, f);
     }
     xSemaphoreGive(SDMutex);
-    if (bytes_read < sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t))
+
+    StaticJsonDocument<1024> doc;
+    DeserializationError error = deserializeJson(doc, conf_buf, 1024);
+
+    if (error)
     {
-        ESP_LOGE("updateFileAvaliable", "Error reading Update.bin!");
-        return false;
+        ESP_LOGE("checkUpdateConfig", "deserialize error");
+        return UPDATE_CONFIG_ERR;
     }
 
-    unsigned int identity_version;
-    unsigned int major_version;
-    unsigned int minor_version;
-    esp_app_desc_t new_app_info;
-    memcpy(&new_app_info, &buf[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
+    JsonArray files = doc["files"];
+    if (!files || files.size() < 1)
+    {
+        ESP_LOGE("checkUpdateConfig", "no update file record");
+        return UPDATE_CONFIG_ERR;
+    }
 
-    int ver_check_res = sscanf(new_app_info.version, "L%u.%u.%u", &identity_version, &major_version, &minor_version);
-    return ver_check_res > 2;
+    struct stat stat_buf;
+    Vision_update_info_t file_info;
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        JsonArray file_record = files[i];
+        if (!file_record || file_record.size() != 4)
+            return UPDATE_CONFIG_ERR;
+
+        const char *fn = file_record[0];
+        size_t file_size = file_record[1];
+        const char *offset16 = file_record[2];
+        const char *partition_size16 = file_record[3];
+        size_t offset = 0;
+        size_t partition_size = 0;
+
+        if (!fn || !file_size || !offset16 || !partition_size16)
+        {
+            ESP_LOGE("checkUpdateConfig", "missing parameter");
+            return UPDATE_CONFIG_ERR;
+        }
+
+        if (sscanf(offset16, "0x%x", &offset) != 1)
+        {
+            ESP_LOGE("checkUpdateConfig", "error reading offset");
+            return UPDATE_CONFIG_ERR;
+        }
+
+        if (sscanf(partition_size16, "0x%x", &partition_size) != 1)
+        {
+            ESP_LOGE("checkUpdateConfig", "error reading partition_size");
+            return UPDATE_CONFIG_ERR;
+        }
+
+        file_info.filePath = fn;
+        file_info.offset = offset;
+        file_info.partitionSize = partition_size;
+        file_info.totalBytes = file_size;
+        listptr->add(file_info);
+    }
+
+    return UPDATE_SUCCESS;
 }
 
 void tsk_performUpdate(void *parameter)
@@ -55,7 +85,7 @@ void tsk_performUpdate(void *parameter)
     FILE *f;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        f = fopen("/s/Update.bin", "rb");
+        f = fopen(stats->filePath.c_str(), "rb");
     }
     xSemaphoreGive(SDMutex);
     if (!f)
@@ -64,198 +94,54 @@ void tsk_performUpdate(void *parameter)
         vTaskDelete(NULL);
     }
 
-    // 获取文件大小
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
-    {
-        fseek(f, 0, SEEK_END);        // 定位文件指针到文件尾
-        stats->totalBytes = ftell(f); // 获取文件指针偏移量，即文件大小
-        fseek(f, 0, SEEK_SET);        // 定位回文件头
-    }
-    xSemaphoreGive(SDMutex);
+    esp_flash_t *flash = esp_flash_default_chip;
+    size_t offset = stats->offset;
+    size_t partition_size = stats->partitionSize;
+    size_t bytes_write = 0;
 
-    /* 启动OTA */
-    esp_ota_handle_t ota_handle;
-    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-    if (esp_ota_begin(update_partition, stats->totalBytes, &ota_handle)) // <- ESP_OK=0
+    /* 擦除分区 */
+    int res = esp_flash_erase_region(flash, offset, partition_size);
+    if (res)
     {
-        stats->result = UPDATE_OTA_START_FAIL;
+        stats->code = res;
+        stats->result = UPDATE_UPDATE_ABORTED;
         vTaskDelete(NULL);
     }
 
-    char buf[OTA_BUFFER_SIZE];
-    int read_bytes;
+    /* 写入分区 */
+    char buf[1024];
+    size_t bytes_read = 0;
     while (1)
     {
+        stats->writtenBytes += bytes_read;
+
         xSemaphoreTake(SDMutex, portMAX_DELAY);
         {
-            read_bytes = fread(buf, 1, OTA_BUFFER_SIZE, f);
+            bytes_read = fread(buf, 1, 1024, f);
         }
         xSemaphoreGive(SDMutex);
-        if (read_bytes == 0)
+        if (!bytes_read)
         {
-            if (stats->writtenBytes == stats->totalBytes)
-                break;
-            else
-            {
-                esp_ota_abort(ota_handle);
-                xSemaphoreTake(SDMutex, portMAX_DELAY);
-                {
-                    fclose(f);
-                }
-                xSemaphoreGive(SDMutex);
-                stats->result = UPDATE_OTA_ABORTED;
-                vTaskDelete(NULL);
-            }
+            break;
         }
 
-        if (esp_ota_write(ota_handle, buf, read_bytes)) // <- ESP_OK=0
+        res = esp_flash_write(flash, buf, offset + bytes_write, bytes_read);
+        if (res)
         {
-            esp_ota_abort(ota_handle);
-            xSemaphoreTake(SDMutex, portMAX_DELAY);
-            {
-                fclose(f);
-            }
-            xSemaphoreGive(SDMutex);
-            stats->result = UPDATE_OTA_ABORTED;
+            stats->code = res;
+            stats->result = UPDATE_UPDATE_ABORTED;
             vTaskDelete(NULL);
         }
-        stats->writtenBytes += read_bytes;
+
+        bytes_write += bytes_read;
     }
 
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
         fclose(f);
-        remove("/s/Update.bin");
     }
     xSemaphoreGive(SDMutex);
-
-    if (esp_ota_end(ota_handle))
-    {
-        stats->result = UPDATE_VALIDATE_FAIL;
-        vTaskDelete(NULL);
-    }
-
-    esp_ota_set_boot_partition(update_partition);
 
     stats->result = UPDATE_SUCCESS;
     vTaskDelete(NULL);
-}
-
-bool checkUpdate()
-{
-    bool result = false;
-
-    char url[strlen(getFileDownloadPrefix()) + 33];
-    char *updateChannel;
-    switch (setting_updateChannel)
-    {
-    case 1:
-        updateChannel = OTA_BETA_CHANNEL_JSON_PATH;
-        break;
-    default:
-        updateChannel = OTA_STABLE_CHANNEL_JSON_PATH;
-        break;
-    }
-    sprintf(url, "%s%s", getFileDownloadPrefix(), updateChannel);
-    if (downloadGithubFile(url, "/s/Update.json")) // <- DOWNLOAD_RES_OK=0
-        return result;
-
-    FILE *f;
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
-    {
-        f = fopen("/s/Update.json", "r");
-    }
-    xSemaphoreGive(SDMutex);
-
-    if (!f)
-    {
-        xSemaphoreTake(SDMutex, portMAX_DELAY);
-        {
-            fclose(f);
-        }
-        xSemaphoreGive(SDMutex);
-        return result;
-    }
-
-    char buf[OTA_JSON_CONF_DEFAULT_LENGTH];
-    xSemaphoreTake(SDMutex, portMAX_DELAY);
-    {
-        fread(buf, OTA_JSON_CONF_DEFAULT_LENGTH, 1, f);
-        fclose(f);
-    }
-    xSemaphoreGive(SDMutex);
-
-    StaticJsonDocument<OTA_JSON_CONF_JSON_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, buf, OTA_JSON_CONF_DEFAULT_LENGTH);
-
-    if (error)
-    {
-        ESP_LOGE("checkUpdate", "deserializeJson() failed:%s", error.c_str());
-        return result;
-    }
-    else
-    {
-        xSemaphoreTake(SDMutex, portMAX_DELAY);
-        remove("/s/Update.json");
-        xSemaphoreGive(SDMutex);
-    }
-
-    /* 资源文件更新 */
-    long static_resources_ver = doc["static_resources_ver"];
-    if (static_resources_ver && static_resources_ver > info_static_resources_ver)
-    {
-        fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
-        result = true;
-    }
-
-    /* 系统更新 */
-    const char *ver = doc["ver"];
-    if (!ver)
-    {
-        // 无版本号直接跳过
-        return result;
-    }
-    else
-    {
-        unsigned int new_identity_version;
-        unsigned int new_major_version;
-        unsigned int new_minor_version;
-
-        int ver_check_res = sscanf(ver, "L%u.%u.%u", &new_identity_version, &new_major_version, &new_minor_version);
-        if (ver_check_res < 3)
-        {
-            // 版本号不正确
-            return result;
-        }
-
-        unsigned int identity_version;
-        unsigned int major_version;
-        unsigned int minor_version;
-        sscanf(info_appVersion, "L%u.%u.%u", &identity_version, &major_version, &minor_version);
-
-        if (identity_version != new_identity_version || (major_version >= new_major_version && minor_version >= new_minor_version))
-        {
-            // 版本号没有更新
-            return result;
-        }
-    }
-
-    JsonArray local_path = doc["local_path"];
-    JsonArray download_path = doc["download_path"];
-    if (local_path.size() == 0 || download_path.size() == 0 || local_path.size() != download_path.size())
-    {
-        return result;
-    }
-
-    for (size_t i = 0; i < local_path.size(); i++)
-    {
-        const char *dp = download_path[i];
-        const char *lp = local_path[i];
-
-        if (dp && lp)
-            updateFileDownload(lp, dp, i == 0); // <-最后一个文件下载好后自动重启，重启检查更新文件无误后开始更新
-        result = true;
-    }
-
-    return result;
 }
