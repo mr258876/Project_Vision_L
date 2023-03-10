@@ -22,7 +22,7 @@ struct Vision_update_info_t
     Vision_update_res_t result = UPDATE_NO_UPDATE;
 };
 
-bool updateFileAvaliable();
+bool updateFileAvaliable(const char* filePath);
 void tsk_performUpdate(void *parameter);
 
 /* 

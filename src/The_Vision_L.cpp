@@ -33,7 +33,7 @@
 #include <Wire.h>
 #include <APDS9930.h>
 #undef DEFAULT_ATIME
-#define DEFAULT_ATIME 0xDB  // <- 将亮度传感器采样时间改为100ms
+#define DEFAULT_ATIME 0xDB // <- 将亮度传感器采样时间改为100ms
 
 #include <OneButton.h>
 #include <kxtj3-1057.h>
@@ -575,8 +575,8 @@ void hardwareSetup(void *parameter)
   /* 文件检查 */
   if (!(hwErr & VISION_HW_SD_ERR))
   {
-    /* 从Update.bin更新 */
-    if (updateFileAvaliable())
+    /* 更新Recovery */
+    if (updateFileAvaliable("/s/Recovery.bin"))
     {
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       {
@@ -586,14 +586,9 @@ void hardwareSetup(void *parameter)
       xSemaphoreGive(LVGLMutex);
 
       Vision_update_info_t update_info;
+
       /* 创建执行更新任务 */
-      xTaskCreatePinnedToCore(tsk_performUpdate,
-                              "tsk_performUpdate",
-                              4096,
-                              &update_info,
-                              1,
-                              NULL,
-                              0);
+      xTaskCreatePinnedToCore(tsk_performUpdate, "tsk_performUpdate", 4096, &update_info, 1, NULL, 0);
       while (!update_info.result)
       {
         xSemaphoreTake(LVGLMutex, portMAX_DELAY);
@@ -618,6 +613,52 @@ void hardwareSetup(void *parameter)
         xSemaphoreGive(LVGLMutex);
         vTaskDelete(NULL);
       }
+    }
+
+    /* 更新App */
+    if (updateFileAvaliable("/s/Update.bin"))
+    {
+      xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+      {
+        lv_label_set_text_fmt(ui_StartupLabel1, lang[curr_lang][6], 0); //"正在升级(%d%%)..."
+        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][7]);        // "请不要关闭电源\n或拔出SD卡"
+      }
+      xSemaphoreGive(LVGLMutex);
+
+      FILE *f;
+      size_t file_size = 0;
+      xSemaphoreTake(SDMutex, portMAX_DELAY);
+      {
+        f = fopen("/s/Update.bin", "w");
+        fseek(f, 0, SEEK_END);
+        file_size = ftell(f);
+        fclose(f);
+      }
+      xSemaphoreGive(SDMutex);
+
+      const esp_partition_t *curr_part = esp_ota_get_running_partition();
+
+      StaticJsonDocument<192> doc;
+      JsonArray files = doc.createNestedArray("files");
+      JsonArray files_0 = files.createNestedArray();
+      files_0.add("/s/partitions.bin");
+      files_0.add(file_size);
+      files_0.add(curr_part->address);
+      files_0.add(curr_part->size);
+
+      char json_buf[256];
+      serializeJson(doc, json_buf);
+
+      xSemaphoreTake(SDMutex, portMAX_DELAY);
+      {
+        f = fopen("/s/update.json", "w");
+        fwrite(json_buf, 1, strlen(json_buf) + 1, f);
+        fclose(f);
+      }
+      xSemaphoreGive(SDMutex);
+
+      esp_ota_set_boot_partition(esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL));
+      esp_restart();
     }
 
     /* 检查文件 */

@@ -1,11 +1,11 @@
 #include "system/Updating.h"
 
-bool updateFileAvaliable()
+bool updateFileAvaliable(const char *filePath)
 {
     int file_res;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        file_res = access("/s/Update.bin", F_OK);
+        file_res = access(filePath, F_OK);
     }
     xSemaphoreGive(SDMutex);
     if (file_res == -1)
@@ -16,12 +16,12 @@ bool updateFileAvaliable()
     FILE *f;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        f = fopen("/s/Update.bin", "rb");
+        f = fopen(filePath, "rb");
     }
     xSemaphoreGive(SDMutex);
     if (!f)
     {
-        ESP_LOGE("updateFileAvaliable", "Unable to open Update.bin!");
+        ESP_LOGE("updateFileAvaliable", "Unable to open file!");
         return false;
     }
     char buf[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)];
@@ -34,9 +34,15 @@ bool updateFileAvaliable()
     xSemaphoreGive(SDMutex);
     if (bytes_read < sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t))
     {
-        ESP_LOGE("updateFileAvaliable", "Error reading Update.bin!");
+        ESP_LOGE("updateFileAvaliable", "Error reading file!");
         return false;
     }
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+        fclose(f);
+    }
+    xSemaphoreGive(SDMutex);
 
     unsigned int identity_version;
     unsigned int major_version;
@@ -55,7 +61,7 @@ void tsk_performUpdate(void *parameter)
     FILE *f;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        f = fopen("/s/Update.bin", "rb");
+        f = fopen("/s/Recovery.bin", "rb");
     }
     xSemaphoreGive(SDMutex);
     if (!f)
@@ -73,17 +79,18 @@ void tsk_performUpdate(void *parameter)
     }
     xSemaphoreGive(SDMutex);
 
-    /* 启动OTA */
-    esp_ota_handle_t ota_handle;
-    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-    if (esp_ota_begin(update_partition, stats->totalBytes, &ota_handle)) // <- ESP_OK=0
+    /* 擦除分区 */
+    const esp_partition_t *rec_part = esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL);
+    int err = esp_partition_erase_range(rec_part, 0, rec_part->size);
+    if (err)
     {
-        stats->result = UPDATE_OTA_START_FAIL;
+        stats->result = UPDATE_OTA_ABORTED;
         vTaskDelete(NULL);
     }
 
     char buf[OTA_BUFFER_SIZE];
-    int read_bytes;
+    size_t read_bytes = 0;
+    size_t wrote_bytes = 0;
     while (1)
     {
         xSemaphoreTake(SDMutex, portMAX_DELAY);
@@ -97,7 +104,6 @@ void tsk_performUpdate(void *parameter)
                 break;
             else
             {
-                esp_ota_abort(ota_handle);
                 xSemaphoreTake(SDMutex, portMAX_DELAY);
                 {
                     fclose(f);
@@ -108,9 +114,8 @@ void tsk_performUpdate(void *parameter)
             }
         }
 
-        if (esp_ota_write(ota_handle, buf, read_bytes)) // <- ESP_OK=0
+        if (esp_partition_write(rec_part, wrote_bytes, buf, read_bytes)) // <- ESP_OK=0
         {
-            esp_ota_abort(ota_handle);
             xSemaphoreTake(SDMutex, portMAX_DELAY);
             {
                 fclose(f);
@@ -119,23 +124,16 @@ void tsk_performUpdate(void *parameter)
             stats->result = UPDATE_OTA_ABORTED;
             vTaskDelete(NULL);
         }
+        wrote_bytes += read_bytes;
         stats->writtenBytes += read_bytes;
     }
 
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
         fclose(f);
-        remove("/s/Update.bin");
+        remove("/s/Recovery.bin");
     }
     xSemaphoreGive(SDMutex);
-
-    if (esp_ota_end(ota_handle))
-    {
-        stats->result = UPDATE_VALIDATE_FAIL;
-        vTaskDelete(NULL);
-    }
-
-    esp_ota_set_boot_partition(update_partition);
 
     stats->result = UPDATE_SUCCESS;
     vTaskDelete(NULL);
@@ -157,13 +155,13 @@ bool checkUpdate()
         break;
     }
     sprintf(url, "%s%s", getFileDownloadPrefix(), updateChannel);
-    if (downloadGithubFile(url, "/s/Update.json")) // <- DOWNLOAD_RES_OK=0
+    if (downloadGithubFile(url, "/s/autoUpdate.json")) // <- DOWNLOAD_RES_OK=0
         return result;
 
     FILE *f;
     xSemaphoreTake(SDMutex, portMAX_DELAY);
     {
-        f = fopen("/s/Update.json", "r");
+        f = fopen("/s/autoUpdate.json", "r");
     }
     xSemaphoreGive(SDMutex);
 
@@ -196,7 +194,7 @@ bool checkUpdate()
     else
     {
         xSemaphoreTake(SDMutex, portMAX_DELAY);
-        remove("/s/Update.json");
+        remove("/s/autoUpdate.json");
         xSemaphoreGive(SDMutex);
     }
 
