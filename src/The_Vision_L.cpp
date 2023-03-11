@@ -233,6 +233,8 @@ static void prepareUpdate()
       canvas.print("No SD card!\n");
     }
     xSemaphoreGive(LGFXMutex);
+
+    verifyApp();
     return;
   }
 
@@ -291,6 +293,9 @@ static void prepareUpdate()
       canvas.setTextColor(TFT_WHITE);
     }
     xSemaphoreGive(LGFXMutex);
+
+    verifyApp();
+    return;
   }
   else
   {
@@ -427,7 +432,7 @@ static int verifyApp()
     xSemaphoreGive(LGFXMutex);
     return -2;
   }
-  
+
   // get app version
   esp_app_desc_t ota_app_info;
   int opt_res = esp_ota_get_partition_description(ota_partition, &ota_app_info);
