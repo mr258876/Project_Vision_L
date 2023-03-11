@@ -68,6 +68,16 @@ int checkUpdateConfig(LinkedList<Vision_update_info_t> *listptr)
             return UPDATE_CONFIG_ERR;
         }
 
+        int stat_res;
+        xSemaphoreTake(SDMutex, portMAX_DELAY);
+        {
+            stat_res = stat(fn, &stat_buf);
+        }
+        xSemaphoreGive(SDMutex);
+
+        if (stat_res || !S_ISREG(stat_buf.st_mode) || stat_buf.st_size != file_size)
+            return UPDATE_FILE_ERR;
+
         file_info.filePath = fn;
         file_info.offset = offset;
         file_info.partitionSize = partition_size;
