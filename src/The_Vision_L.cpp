@@ -661,9 +661,10 @@ void hardwareSetup(void *parameter)
       }
       xSemaphoreGive(SDMutex);
 
-      esp_ota_set_boot_partition(esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL));
-      esp_restart();
+      prefs.putBool("hasUpdated", false);
+      esp_ota_mark_app_invalid_rollback_and_reboot();
     }
+    esp_ota_mark_app_valid_cancel_rollback();
 
     /* 检查文件 */
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
