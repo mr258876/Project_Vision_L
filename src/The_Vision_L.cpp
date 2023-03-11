@@ -321,9 +321,9 @@ static void performUpdate()
   xSemaphoreGive(LGFXMutex);
 
   bool hasError = false;
-  while (updateList.size() > 0)
+  for (size_t i = 0; i < updateList.size(); i++)
   {
-    Vision_update_info_t update_info = updateList.shift();
+    Vision_update_info_t update_info = updateList.get(i);
     xSemaphoreTake(LGFXMutex, portMAX_DELAY);
     canvas.printf("Writing %s at %#x.", update_info.filePath.c_str(), update_info.offset);
     xSemaphoreGive(LGFXMutex);
@@ -377,6 +377,23 @@ static void performUpdate()
       canvas.setTextColor(TFT_GREEN, TFT_BLACK);
       canvas.println("Update success!");
       canvas.setTextColor(TFT_YELLOW, TFT_BLACK);
+      canvas.println("Cleaning files...");
+    }
+    xSemaphoreGive(LGFXMutex);
+
+    xSemaphoreTake(SDMutex, portMAX_DELAY);
+    {
+      for (size_t i = 0; i < updateList.size(); i++)
+      {
+        Vision_update_info_t update_info = updateList.get(i);
+        remove(update_info.filePath.c_str());
+      }
+      remove("/s/update.json");
+    }
+    xSemaphoreGive(SDMutex);
+
+    xSemaphoreTake(LGFXMutex, portMAX_DELAY);
+    {
       canvas.println("Rebooting in 5 secs.");
     }
     xSemaphoreGive(LGFXMutex);
@@ -535,7 +552,7 @@ static void drawUI()
   gfx.setTextDatum(bottom_center);
   gfx.setTextSize(1.75);
   gfx.drawCenterString("DO NOT POWER OFF!", 120, 210);
-  gfx.setCursor(75, 235);
+  gfx.setCursor(60, 235);
   gfx.setTextSize(1);
   gfx.setTextColor(TFT_WHITE, TFT_BLACK);
   gfx.printf("rec ver.%s\n", info_recVersion);
