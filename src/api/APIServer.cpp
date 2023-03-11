@@ -46,6 +46,7 @@ static esp_err_t setting_timezone_get_handler(httpd_req_t *req);
 static esp_err_t setting_time_get_handler(httpd_req_t *req);
 static esp_err_t setting_auto_update_get_handler(httpd_req_t *req);
 static esp_err_t setting_update_channel_get_handler(httpd_req_t *req);
+static esp_err_t setting_reboot_recovery_get_handler(httpd_req_t *req);
 
 static esp_err_t weather_city_get_handler(httpd_req_t *req);
 static esp_err_t weather_sync_get_handler(httpd_req_t *req);
@@ -257,6 +258,13 @@ httpd_uri_t uri_setting_update_channel_get = {
     .uri = "/api/v1/setting/update_channel",
     .method = HTTP_GET,
     .handler = setting_update_channel_get_handler,
+    .user_ctx = NULL};
+
+/* GET /setting/reboot_recovery 的 URI 处理结构 */
+httpd_uri_t uri_setting_reboot_recovery_get = {
+    .uri = "/api/v1/setting/reboot_recovery",
+    .method = HTTP_GET,
+    .handler = setting_reboot_recovery_get_handler,
     .user_ctx = NULL};
 
 /* GET /weather/city 的 URI 处理结构 */
@@ -2104,6 +2112,43 @@ static esp_err_t setting_update_channel_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 重启至恢复模式 */
+/* @param value: 固定为true */
+static esp_err_t setting_reboot_recovery_get_handler(httpd_req_t *req)
+{
+    // 解决跨域请求报错
+    char *cross_origin_hdr = nullptr;
+    int cross_origin_hdr_len = handle_cross_origin(cross_origin_hdr, req);
+
+    char str[64];
+    char value[64];
+
+    /* 获取url中参数 */
+    if (!httpd_req_get_url_query_str(req, str, 64)) // <-- ESP_OK = 0
+    {
+        /* 提取输入值 */
+        if (httpd_query_key_value(str, "value", value, 64)) // <-- ESP_OK = 0
+        {
+            free(cross_origin_hdr);
+            return return_err(req, "{\"response\":\"Invalid value\",\"code\":-2}");
+        }
+
+        /* 检查输入值 */
+        if (strcmp(value, "true") == 0)
+        {
+            prefs.putBool("hasUpdated", false);
+            esp_ota_mark_app_invalid_rollback_and_reboot();
+        }
+    }
+
+    httpd_resp_set_status(req, HTTPD_200);
+    httpd_resp_set_type(req, HTTPD_TYPE_JSON);
+    httpd_resp_send(req, "{\"result\":true}", HTTPD_RESP_USE_STRLEN);
+
+    free(cross_origin_hdr);
+    return ESP_OK;
+}
+
 /* 获取/设置城市 */
 /* @param city: 要设置的城市名称，通过url传参 */
 /* @param latitude: 要设置的城市纬度，通过url传参 */
@@ -2244,6 +2289,7 @@ void startAPIServer()
         // httpd_register_uri_handler(server, &uri_setting_time_get);
         httpd_register_uri_handler(server, &uri_setting_auto_update_get);
         httpd_register_uri_handler(server, &uri_setting_update_channel_get);
+        httpd_register_uri_handler(server, &uri_setting_reboot_recovery_get);
 
         httpd_register_uri_handler(server, &uri_weather_city_get);
         httpd_register_uri_handler(server, &uri_weather_sync_get);
