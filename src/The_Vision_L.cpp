@@ -576,7 +576,7 @@ void hardwareSetup(void *parameter)
   if (!(hwErr & VISION_HW_SD_ERR))
   {
     /* 更新Recovery */
-    if (updateFileAvaliable("/s/Recovery.bin"))
+    if (updateFileAvaliable("/s/recovery.bin"))
     {
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       {
@@ -616,7 +616,7 @@ void hardwareSetup(void *parameter)
     }
 
     /* 更新App */
-    if (updateFileAvaliable("/s/Update.bin"))
+    if (updateFileAvaliable("/s/update.bin"))
     {
       xSemaphoreTake(LVGLMutex, portMAX_DELAY);
       {
@@ -629,7 +629,7 @@ void hardwareSetup(void *parameter)
       size_t file_size = 0;
       xSemaphoreTake(SDMutex, portMAX_DELAY);
       {
-        f = fopen("/s/Update.bin", "rb");
+        f = fopen("/s/update.bin", "rb");
         fseek(f, 0, SEEK_END);
         file_size = ftell(f);
         fclose(f);
@@ -645,7 +645,7 @@ void hardwareSetup(void *parameter)
       StaticJsonDocument<192> doc;
       JsonArray files = doc.createNestedArray("files");
       JsonArray files_0 = files.createNestedArray();
-      files_0.add("/s/Update.bin");
+      files_0.add("/s/update.bin");
       files_0.add(file_size);
       files_0.add(offset_str);
       files_0.add(part_size_str);
