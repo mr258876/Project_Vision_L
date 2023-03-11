@@ -8,10 +8,8 @@ Do virtual gods hand out electronic visions?
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
-- [L0.2.020](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.2.020)
+- [L0.2.020](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.3.000)
 ### 测试版 / Beta Release
-- None
-### 开发版 / Indev Release
 - None
 
 ## 支持库 / Referenced Libraries
@@ -54,10 +52,10 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 - 自动更新✅
 - 综合信息界面(数字时钟/天气/树脂数据)✅
 - 管理界面(调整设置/远程控制/文件管理)✅
+- 恢复模式(应对ROM不足)✅
 
 下个大版本中计划的功能：
 - 蓝牙🚧
-- 恢复模式(应对ROM不足)🚧
 
 ## 神之眼实用程序
 自`0.2.1`版本起，神之眼实用程序可用于调整所有配置选项，包括播放列表、米游社配置、天气城市配置等。您可以从设备的设置菜单中启用实用程序后扫描二维码，或者访问设备ip地址进入实用程序。
@@ -195,12 +193,12 @@ These following hardwares are also supported:
 - Multi-language support ✅
 - Resin data syncing ✅
 - Auto update✅
-- Digital clock (with weather)✅
-- Management interface (with remote control & file management)✅
+- Digital clock (with weather) ✅
+- Management interface (with remote control & file management) ✅
+- Recovery mode (to solve ROM shortage) ✅
 
 Features planned for next major release:
 - Bluetooth 🚧
-- Recovery mode (to solve ROM shortage) 🚧
 
 ## How to Use
 ### For version L0.1
