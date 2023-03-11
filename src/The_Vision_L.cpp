@@ -629,7 +629,7 @@ void hardwareSetup(void *parameter)
       size_t file_size = 0;
       xSemaphoreTake(SDMutex, portMAX_DELAY);
       {
-        f = fopen("/s/Update.bin", "w");
+        f = fopen("/s/Update.bin", "rb");
         fseek(f, 0, SEEK_END);
         file_size = ftell(f);
         fclose(f);
@@ -637,14 +637,18 @@ void hardwareSetup(void *parameter)
       xSemaphoreGive(SDMutex);
 
       const esp_partition_t *curr_part = esp_ota_get_running_partition();
+      char offset_str[11];
+      char part_size_str[11];
+      sprintf(offset_str, "%#x", curr_part->address);
+      sprintf(part_size_str, "%#x", curr_part->size);
 
       StaticJsonDocument<192> doc;
       JsonArray files = doc.createNestedArray("files");
       JsonArray files_0 = files.createNestedArray();
-      files_0.add("/s/partitions.bin");
+      files_0.add("/s/Update.bin");
       files_0.add(file_size);
-      files_0.add(curr_part->address);
-      files_0.add(curr_part->size);
+      files_0.add(offset_str);
+      files_0.add(part_size_str);
 
       char json_buf[256];
       serializeJson(doc, json_buf);
@@ -652,7 +656,7 @@ void hardwareSetup(void *parameter)
       xSemaphoreTake(SDMutex, portMAX_DELAY);
       {
         f = fopen("/s/update.json", "w");
-        fwrite(json_buf, 1, strlen(json_buf) + 1, f);
+        fwrite(json_buf, 1, strlen(json_buf), f);
         fclose(f);
       }
       xSemaphoreGive(SDMutex);
