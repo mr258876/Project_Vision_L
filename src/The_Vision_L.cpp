@@ -35,9 +35,11 @@
 #undef DEFAULT_ATIME
 #define DEFAULT_ATIME 0xDB // <- 将亮度传感器采样时间改为100ms
 
-#include <OneButton.h>
 #include <kxtj3-1057.h>
 #undef getName
+
+#include <OneButton.h>
+#include <ButtonTicker.h>
 
 #include "hoyoverse/Hoyoverse.h"
 #include "api/APIServer.h"
@@ -85,7 +87,7 @@ struct ScreenFlushMsg
 //
 ////////////////////////
 /* Pwr button & Audio */
-static OneButton *pwrButton;
+ButtonTicker buttons;
 
 /* LCD screen */
 static LGFX_Device gfx;
@@ -105,7 +107,6 @@ bool mjpegInited = false;
 
 /* Proximity sensor Object */
 APDS9930 apds;
-OneButton *proxButton = NULL;
 BrightnessController brightControl;
 
 /* Accelmeter Object */
@@ -207,7 +208,15 @@ void setup()
   }
 
   // Buttons
-  pwrButton = new OneButton(po.PWR_BTN, true);
+  if (po.PWR_BTN)
+  {
+    OneButton *pwrButton = new OneButton(po.PWR_BTN, true);
+    pinMode(po.PWR_BTN, INPUT);
+    pwrButton->attachClick(onSingleClick);
+    pwrButton->attachDoubleClick(onDoubleClick);
+    pwrButton->attachMultiClick(onMultiClick);
+    buttons.assign({pwrButton, "pwrBtn"});
+  }
 
   // Audio Output
   // if (po.AUDIO_OUT)
@@ -664,7 +673,6 @@ void hardwareSetup(void *parameter)
       prefs.putBool("hasUpdated", false);
       esp_ota_mark_app_invalid_rollback_and_reboot();
     }
-    esp_ota_mark_app_valid_cancel_rollback();
 
     /* 检查文件 */
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
@@ -674,6 +682,7 @@ void hardwareSetup(void *parameter)
     }
     fileErr = checkSDFiles();
   }
+  esp_ota_mark_app_valid_cancel_rollback();
 
   // 若检查到错误则停止启动
   if (hwErr & VISION_HW_SPIFFS_ERR)
@@ -815,14 +824,10 @@ void hardwareSetup(void *parameter)
     apds.setProximityIntLowThreshold(0);
     apds.setProximityIntHighThreshold(setting_proxThres);
     pinMode(po.PROX_INT, INPUT_PULLUP);
-    proxButton = new OneButton(po.PROX_INT, true);
+    OneButton *proxButton = new OneButton(po.PROX_INT, true);
     proxButton->attachDoubleClick(onChangeVideo);
+    buttons.assign({proxButton, "proxBtn"});
   }
-
-  pinMode(po.PWR_BTN, INPUT);
-  pwrButton->attachClick(onSingleClick);
-  pwrButton->attachDoubleClick(onDoubleClick);
-  pwrButton->attachMultiClick(onMultiClick);
 
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
@@ -1223,26 +1228,18 @@ static void screenAdjustLoop(void *parameter)
   float ambientLightLux = 0;
   while (1)
   {
-    pwrButton->tick();
+    buttons.tick();
 
-    if (info_hasProx)
+    if (info_hasProx && !digitalRead(po.PROX_INT))
     {
-      if (proxButton)
+      xSemaphoreTake(I2CMutex, portMAX_DELAY);
       {
-        proxButton->tick();
-      }
-
-      if (!digitalRead(po.PROX_INT))
-      {
-        xSemaphoreTake(I2CMutex, portMAX_DELAY);
+        if (apds.readProximity() < setting_proxThres)
         {
-          if (apds.readProximity() < setting_proxThres)
-          {
-            apds.clearProximityInt();
-          }
+          apds.clearProximityInt();
         }
-        xSemaphoreGive(I2CMutex);
       }
+      xSemaphoreGive(I2CMutex);
     }
 
     if (info_hasProx && setting_autoBright)

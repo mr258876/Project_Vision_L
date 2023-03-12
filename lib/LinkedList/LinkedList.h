@@ -35,8 +35,6 @@ protected:
 	// everytime the list suffer changes
 	bool isCached;
 
-	ListNode<T>* getNode(int index);
-
 	ListNode<T>* findEndOfSortedString(ListNode<T> *p, int (*cmp)(T &, T &));
 
 public:
@@ -103,6 +101,11 @@ public:
 		Get the root node
 	*/
 	ListNode<T>* getRoot();
+
+	/*
+		Get a sepecific node
+	*/
+	ListNode<T>* getNode(int index);
 
 		// add support to array brakets [] operator
 	inline T& operator[](int index); 
