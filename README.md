@@ -4,7 +4,7 @@
 
 Do virtual gods hand out electronic visions?
 
-![image](/images/perview.jpg)
+![image](/docs/images/perview.jpg)
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
@@ -34,14 +34,17 @@ esp32_audio     https://github.com/atomic14/esp32_audio
 
 ## 中文
 
+[English](#english)
+
 该项目为硬件项目[璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)的对应固件。
 
 项目已同步至[Gitee](https://gitee.com/mr258876/Project_Vision_L/)。
 
 固件目前支持以下几种硬件：
 - [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (实验性)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
 - [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (实验性，未测试)
+- [神之眼挂件V1.1 by 小渣渣](https://oshwhub.com/Myzhazha/esp32_pico-d4-video) (实验性，未测试)
 
 ## 开发进度
 
@@ -142,27 +145,26 @@ if (ask == true) {
 
 ## 刷入固件
 ### 刷入预编译固件
-0. 建立串口连接。若使用的主板为开发版，使用Type-C接口直接连接电脑即可，无需额外操作；若使用的主板为普通版，则需使用额外USB-串口转换器，并按下图建立有线连接(以CH341A下载器为例)。
-![image](/images/serial_conn.png)
-1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载`ESP Download Tool(Flash下载工具)`。
+0. 建立串口连接。若使用的主板为开发版，使用Type-C接口直接连接电脑即可，无需额外操作；若使用的主板为普通版，则需使用额外USB-串口转换器，并按下图建立有线连接(以CH341A下载器为例)。</br>
+![image](/docs/images/serial_conn.png)</br>
+1. 移步[乐鑫科技网站]("https://www.espressif.com.cn/zh-hans/support/download/other-tools")并下载`ESP Download Tool(Flash下载工具)`。</br>
 
-2. 打开ESP Download Tool，芯片类型选择`ESP32`，工作模式选择`开发模式`。
-![image](/images/flash_step1.png)
-3. 按照下图设置刷入的文件、flash地址、flash速度，串口及下载速度按实际情况选择。
-![image](/images/flash_step2.png)
-4. 点击`下载`按钮。若使用的主板为普通版，还需在按住BOOT键的同时短按EN键。若下载状态一直显示等待上电同步，重复此步骤。
-![image](/images/boot_en_button.png)
-5. 当状态显示`完成`后，断开串口连接。
+2. 打开ESP Download Tool，芯片类型选择`ESP32`，工作模式选择`开发模式`。</br>
+![image](/docs/images/flash_step1.png)</br>
+3. 按照下图设置刷入的文件、flash地址、flash速度，串口及下载速度按实际情况选择。</br>
+![image](/docs/images/flash_step2.png)</br>
+4. 点击`下载`按钮。若使用的主板为普通版，还需在按住BOOT键的同时短按EN键。若下载状态一直显示等待上电同步，重复此步骤。</br>
+![image](/docs/images/boot_en_button.png)</br>
+5. 当状态显示`完成`后，断开串口连接。</br>
 
 ### 固件升级
-1. 将firmware.bin重命名为update.bin，并放置于SD卡根目录下。
-![image](images/update_rename.png)
-2. 将SD卡插入神之眼，神之眼会自动开始升级过程。
-![image](images/self_updating.png)
+1. 将firmware.bin重命名为update.bin，并放置于SD卡根目录下。</br>
+![image](/docs/images/update_rename.png)</br>
+2. 将SD卡插入神之眼，神之眼会自动开始升级过程。</br>
+![image](/docs/images/self_updating.png)</br>
 
 ### 已知问题
 - 使用微信AirKiss协议进行配网时，无法使用密码为空的SSID进行配网
-- 在SD卡与屏幕共享SPI总线的设备上，通过SD卡更新固件时画面显示被冻结
 
 ### 常见问题解答
 #### 为什么获取体力时会出现“错误1034”？
@@ -179,12 +181,15 @@ if (ask == true) {
 
 ## English
 
+[中文](#中文)
+
 This is the firmware of hardware project [璃月神之眼 Extended](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended).
 
 These following hardwares are also supported:
 - [璃月神之眼 Extended by mr258876](https://oshwhub.com/mr_258876/li-yue-shen-zhi-yan-gua-jian-extended)
-- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u) (Experimental)
+- [神之眼挂件V1.2_ESP32U by 小渣渣](https://oshwhub.com/Myzhazha/shen-zhi-yan-gua-jian-v1-2_esp32u)
 - [璃月神之眼挂件 by 小渣渣](https://oshwhub.com/Myzhazha/li-yue-shen-zhi-yan-gua-jian) (Experimental, Untested)
+- [神之眼挂件V1.1 by 小渣渣](https://oshwhub.com/Myzhazha/esp32_pico-d4-video) (Experimental, Untested)
 
 ## Development Process
 
@@ -262,27 +267,26 @@ Features planned for next major release:
 
 ## Flashing Firmware
 ### Flashing recompiled firmware
-0. Setup serial connection with the vision. If using a development version board, just connect the vision with a Type-C wire, no further operations required; otherwise you need a USB-TTL dongle, and setup the connection as shown (e.g. connect using a CH341A downloader).
-![image](/images/serial_conn.png)
-1. Move to [Espressif Systems](https://www.espressif.com.cn/en/support/download/other-tools) and download `ESP Download Tool (Flash Download Tool)`。
+0. Setup serial connection with the vision. If using a development version board, just connect the vision with a Type-C wire, no further operations required; otherwise you need a USB-TTL dongle, and setup the connection as shown (e.g. connect using a CH341A downloader).</br>
+![image](/docs/images/serial_conn.png)</br>
+1. Move to [Espressif Systems](https://www.espressif.com.cn/en/support/download/other-tools) and download `ESP Download Tool (Flash Download Tool)`。</br>
 
-2. Open ESP Download Tool，select `ESP32` for chip type, `development` for work mode.
-![image](/images/flash_step1.png)
-3. Set the files, flash address, flash speed according to the figure below. Set serial port and download speed according to the actual situation.
-![image](/images/flash_step2.png)
-4. Click `Download`. If not using a development version board, short press the EN key while holding the BOOT key. If the status always shows `sync`, repeat this step.
-![image](/images/boot_en_button.png)
-5. Disconnect when the status shows `Finish`.
+2. Open ESP Download Tool，select `ESP32` for chip type, `development` for work mode.</br>
+![image](/docs/images/flash_step1.png)</br>
+3. Set the files, flash address, flash speed according to the figure below. Set serial port and download speed according to the actual situation.</br>
+![image](/docs/images/flash_step2.png)</br>
+4. Click `Download`. If not using a development version board, short press the EN key while holding the BOOT key. If the status always shows `sync`, repeat this step.</br>
+![image](/docs/images/boot_en_button.png)</br>
+5. Disconnect when the status shows `Finish`.</br>
 
 ### Updating Firmware
-1. Rename `firmware.bin` to `update.bin` and place it in the SD card root directory.
-![image](images/update_rename.png)
-2. Insert SD card back in, the vision will start update automatically.
-![image](images/self_updating.png)
+1. Rename `firmware.bin` to `update.bin` and place it in the SD card root directory.</br>
+![image](/docs/images/update_rename.png)</br>
+2. Insert SD card back in, the vision will start update automatically.</br>
+![image](/docs/images/self_updating.png)</br>
 
 ### Known Issues
 - Failure on wifi configuration through Wechat AirKiss protocol using SSID without password
-- Screen will get frozen when updating firmware through SD card on devices with SD card and LCD screen sharing same SPI bus
 
 ### FAQ
 #### Why do I get "Error 1034" when getting resin data?
@@ -292,7 +296,7 @@ Features planned for next major release:
 
 ### Compilation considerations
 If you encounter errors during compilation, please:
-- Confirm that the support library is installed and the library path is configured correctly
+- Confirm the referenced libraries are installed and library paths are configured correctly
 - Remove SD/SDMMC libraries from Arduino Library Manager
 - Remove the Adafruit Zero DMA library
 Then try recompile. If problem still exists, bring up an issue for help.
