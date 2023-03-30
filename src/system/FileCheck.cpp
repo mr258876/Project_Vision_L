@@ -29,9 +29,9 @@ const char *fileDownloadPrefix[] = {
     "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.3",
 };
 
-static const char *static_res_json_down_path = "/s/The Vision L/static_resources.json";
-static const char *static_res_beta_down_path = "/s/The Vision L/static_resources_beta.json";
-static const char *static_res_json_local_path = "/static_resources.json";
+static const char *static_res_json_down_path = "/The Vision L/static_resources.json";
+static const char *static_res_beta_down_path = "/The Vision L/static_resources_beta.json";
+static const char *static_res_json_local_path = "/s/static_resources.json";
 
 static Vision_FileCheck_file_t constFileCheckList[] = {
   {static_res_json_local_path, static_res_json_down_path, cb_static_resources_json}

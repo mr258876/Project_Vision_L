@@ -2103,6 +2103,7 @@ static esp_err_t setting_update_channel_get_handler(httpd_req_t *req)
         {
             setting_updateChannel = channel;
             prefs.putUInt("updateChannel", setting_updateChannel);
+            remove("/s/static_resources.json"); // 删除静态资源验证文件
         }
         else
         {
