@@ -15,7 +15,6 @@ static uint checkStaticResources();
 static int getDownloadSource(const char *filename);
 
 static Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck);
-static Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_static_resources_file(bool filePassedCheck);
 static Vision_FileCheck_result_t cb_reboot_after_finish(bool filePassedCheck);
@@ -26,20 +25,21 @@ static Vision_FileCheck_result_t cb_reboot_after_finish(bool filePassedCheck);
 //
 //////////////////////////////
 const char *fileDownloadPrefix[] = {
-    "https://mr258876.github.io/Project_Vision_L/resources/0.2.1",
-    "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.2.1",
+    "https://mr258876.github.io/Project_Vision_L/resources/0.3",
+    "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.3",
 };
 
-const char *updateConfPath = "update.json";
+static const char *static_res_json_down_path = "/s/The Vision L/static_resources.json";
+static const char *static_res_beta_down_path = "/s/The Vision L/static_resources_beta.json";
+static const char *static_res_json_local_path = "/static_resources.json";
 
-static const Vision_FileCheck_t constFileCheckList[] = {
-    {"/s/The Vision L/fonts/ui_font_HanyiWenhei20.bin", "/fonts/ui_font_HanyiWenhei20.bin", cb_ui_font_HanyiWenhei20},
-    {"/s/The Vision L/static_resources.json", "/static_resources.json", cb_static_resources_json},
+static Vision_FileCheck_file_t constFileCheckList[] = {
+  {static_res_json_local_path, static_res_json_down_path, cb_static_resources_json}
 };
 
-LinkedList<Vision_FileCheck_t> staticFileDownloadList;
+Vision_FileCheck_result_t fileCheckResults[1];
 
-Vision_FileCheck_result_t fileCheckResults[2];
+LinkedList<Vision_FileCheck_file_t> staticFileDownloadList;
 
 uint static_resources_err = 0;
 
@@ -85,19 +85,6 @@ Vision_FileCheck_result_t cb_general_sys_file(bool filePassedCheck)
   if (filePassedCheck)
     return VISION_FILE_OK;
   return VISION_FILE_SYS_FILE_ERR;
-}
-
-Vision_FileCheck_result_t cb_ui_font_HanyiWenhei20(bool filePassedCheck)
-{
-  if (filePassedCheck)
-  {
-    flag_ui_font_HanyiWenhei20 = true;
-    return VISION_FILE_OK;
-  }
-  else
-  {
-    return VISION_FILE_SYS_FILE_ERR;
-  }
 }
 
 static Vision_FileCheck_result_t cb_static_resources_json(bool filePassedCheck)
@@ -156,8 +143,12 @@ uint checkSDFiles()
   err = err | loadWeatherConfig();
   // err = err | loadConfig();
 
+  if (setting_updateChannel == OTA_BETA_CHANNEL)
+  {
+    constFileCheckList[0].downloadPath = static_res_beta_down_path;
+  }
+
   // 此处检查写在 constFileCheckList 变量中的文件
-  // static_resources.json 中的文件
   SemaphoreHandle_t *FSMutex;
   struct stat stat_buf;
   int stat_res = 0;
@@ -578,7 +569,7 @@ void tsk_fixMissingFiles(void *parameter)
     info->total_file_count = listedFileCount + staticFileDownloadList.size(); // 重新计算需要下载的文件个数
   }
 
-  Vision_FileCheck_t static_file;
+  Vision_FileCheck_file_t static_file;
   while (staticFileDownloadList.size() > 0)
   {
     static_file = staticFileDownloadList.pop();

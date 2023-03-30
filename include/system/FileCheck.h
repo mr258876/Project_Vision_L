@@ -28,7 +28,7 @@ enum Vision_FileCheck_result_t : uint8_t
 
 typedef Vision_FileCheck_result_t (*Vision_FileCheck_cb_t)(bool filePassedCheck);
 
-struct Vision_FileCheck_t
+struct Vision_FileCheck_file_t
 {
     String localPath;              // local path with driver name
     String downloadPath;           // without prefix

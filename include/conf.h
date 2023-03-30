@@ -60,11 +60,15 @@
 // #define USE_TASK_MONITOR
 
 /* OTA update */
+#define OTA_STABLE_CHENNEL 0
+#define OTA_BETA_CHANNEL 1
 #define OTA_BUFFER_SIZE 1024
 #define OTA_JSON_CONF_DEFAULT_LENGTH 1024
 #define OTA_JSON_CONF_JSON_SIZE 1024
 #define OTA_STABLE_CHANNEL_JSON_PATH "/update_stable.json"
 #define OTA_BETA_CHANNEL_JSON_PATH "/update_beta.json"
+#define OTA_STABLE_CHANNEL_RESOURCES_JSON_PATH "/s/The Vision L/static_resources.json"
+#define OTA_BETA_CHANNEL_RESOURCES_JSON_PATH "/s/The Vision L/static_resources_beta.json"
 
 ///////////////////////////////////////
 
