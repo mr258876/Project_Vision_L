@@ -89,11 +89,12 @@ void cb_leaveSettingScreen(lv_event_t *e)
 
 void cb_loadResinScreen(lv_event_t *e)
 {
+  lv_obj_t *curr_scr = lv_scr_act();
   lv_group_remove_all_objs(ui_group);
   ui_ResinScreen_screen_init();
   lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_ResinScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_MenuScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, curr_scr);
 }
 
 void cb_loadClock(lv_event_t *e)
@@ -127,11 +128,13 @@ void cb_switchClockScreen(lv_event_t *e)
 
 void cb_loadClockScreen(lv_event_t *e)
 {
+  lv_obj_t *curr_scr = lv_scr_act();
+
   // Check whether time is avaliable
   if (!info_timeSynced)
   {
     // if not, pop out error message
-    mbox = lv_msgbox_create(ui_MenuScreen, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
+    mbox = lv_msgbox_create(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(mbox);
     ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
@@ -143,7 +146,7 @@ void cb_loadClockScreen(lv_event_t *e)
   lv_group_remove_all_objs(ui_group);
   ui_ClockScreen_screen_init();
   lv_scr_load_anim(ui_ClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
-  delScr(ui_MenuScreen);
+  delScr(curr_scr);
 
   // Rotate clock dial 45 degrees if using round LCD
   if (!info_isSquareLCD)
@@ -154,11 +157,13 @@ void cb_loadClockScreen(lv_event_t *e)
 
 void cb_loadDigitalClockScreen(lv_event_t *e)
 {
+  lv_obj_t *curr_scr = lv_scr_act();
+
   // Check whether time is avaliable
   if (!info_timeSynced)
   {
     // if not, pop out error message
-    mbox = lv_msgbox_create(ui_MenuScreen, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
+    mbox = lv_msgbox_create(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
     lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_center(mbox);
     ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
@@ -170,16 +175,17 @@ void cb_loadDigitalClockScreen(lv_event_t *e)
   lv_group_remove_all_objs(ui_group);
   ui_DigitalClockScreen_screen_init();
   lv_scr_load_anim(ui_DigitalClockScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
-  delScr(ui_MenuScreen);
+  delScr(curr_scr);
 }
 
 void cb_loadSettingScreen(lv_event_t *e)
 {
+  lv_obj_t *curr_scr = lv_scr_act();
   lv_group_remove_all_objs(ui_group);
   ui_SettingScreen_screen_init();
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_MenuScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, curr_scr);
 }
 
 ////////////////////////

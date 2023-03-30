@@ -932,21 +932,45 @@ void hardwareSetup(void *parameter)
   ESP_ERROR_CHECK(esp_timer_create(&weatherSync_timer_args, &weatherSyncTimer));
   ESP_ERROR_CHECK(esp_timer_start_periodic(weatherSyncTimer, setting_weatherSyncPeriod));
 
-  if (!(hwErr & VISION_HW_SD_ERR) && !((fileErr & VISION_FILE_PLAYLIST_ERR) || (fileErr & VISION_FILE_PLAYLIST_CRITICAL)))
+  // 启动过程结束切换至其他屏幕
+  cleanObj(ui_StartupScreen);
+  switch (setting_defaultScreen)
   {
-    // 若有SD卡且播放列表不为空则进行播放
-    loadVideoScreen(NULL);
-  }
-  else
-  {
-    // 否则切换到菜单屏
-    if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+  case 2:
+    xSemaphoreTake(LVGLMutex, portMAX_DELAY);
     {
-      cleanObj(ui_StartupScreen);
+      ui_ResinScreen_screen_init();                                        // 加载树脂屏
+      lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+    }
+    xSemaphoreGive(LVGLMutex);
+    break;
+  case 3:
+    xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+    {
+      if (info_timeSynced)
+      {
+        cb_loadClock(NULL);
+      }
+      // 时间未同步则加载菜单屏
       ui_MenuScreen_screen_init();                                        // 加载菜单屏
       lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
-      xSemaphoreGive(LVGLMutex);
     }
+    xSemaphoreGive(LVGLMutex);
+    break;
+  case 1:
+    if (!(hwErr & VISION_HW_SD_ERR) && !((fileErr & VISION_FILE_PLAYLIST_ERR) || (fileErr & VISION_FILE_PLAYLIST_CRITICAL)))
+    {
+      // 若有SD卡且播放列表不为空则进行播放，否则加载菜单屏
+      loadVideoScreen(NULL);
+      break;
+    }
+  default:
+    xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+    {
+      ui_MenuScreen_screen_init();                                        // 加载菜单屏
+      lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+    }
+    xSemaphoreGive(LVGLMutex);
   }
 
   vTaskDelete(NULL);
