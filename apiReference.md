@@ -726,6 +726,46 @@ RESPONSE:
 }
 ~~~
 
+### GET /api/v1/setting/default_screen
+#### Brief
+该函数用于获取或设置设备启动后界面。
+
+This function is to get or set default screen.
+
+#### Param
+value: 要设置的值，下方语言代码表中的一个。获取值时uri中不要带有查询参数。
+
+value: Value to set, should be one of codes bwlow. DO NOT add any query params when getting this value.
+
+| Screen | Code |
+| --- | --- |
+| Menu 主菜单 | 0 |
+| Vision 神之眼 | 1 |
+| Resin 树脂 | 2 |
+| Clock 主题时钟 | 3 |
+
+#### Return
+当前设置值，或更新后的设置值（若有）。
+
+The current setting value, or the updated setting value (if set a new one).
+
+或者下列错误代码中的一个：
+
+or error among table below:
+| Description | Code |
+| --- | --- |
+| Invalid value | -2 |
+
+#### Example
+~~~
+GET /api/v1/setting/default_screen?value=0
+
+RESPONSE:
+{
+    "setting_defaultScreen":0
+}
+~~~
+
 ## 天气配置 / Weather Configurations
 ### GET /api/v1/weather/city
 #### Brief

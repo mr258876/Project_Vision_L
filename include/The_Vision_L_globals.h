@@ -84,4 +84,6 @@ extern String setting_timeZone;
 extern bool setting_autoUpdate;
 extern unsigned int setting_updateChannel;
 
+extern uint8_t setting_defaultScreen;
+
 #endif

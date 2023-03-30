@@ -430,6 +430,8 @@ static void loadSettings()
 
   setting_proxThres = prefs.getUInt("proxThres", 210);
 
+  setting_defaultScreen = prefs.getUInt("defaultScreen", 1);
+
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
   strcpy(info_appVersion, running_app_info->version);
