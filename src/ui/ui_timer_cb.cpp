@@ -340,7 +340,7 @@ void cb_timer_DigitalClockResinTimer(lv_timer_t *timer)
                 lv_label_set_text_fmt(ui_DigitalClockResinLabel2, "%d", nd.homecoinRemain);
             else
                 lv_label_set_text_fmt(ui_DigitalClockResinLabel2, "%.1fK", (nd.homecoinRemain / 1000.0));
-            
+
             *((bool *)timer->user_data) = false;
         }
         else
@@ -408,22 +408,15 @@ const void *weather_img_table[] = {
 void cb_timer_DigitalClockWeatherTimer(lv_timer_t *timer)
 {
     // 城市名称
-    if (flag_ui_font_HanyiWenhei20)
+    if (wp->getCity().isEmpty())
     {
-        if (wp->getCity().isEmpty())
-        {
-            lv_label_set_text(ui_DigitalClockWeatherCityLabel, "未来");
-        }
-        else
-        {
-            lv_label_set_text(ui_DigitalClockWeatherCityLabel, wp->getCity().c_str());
-        }
-        lv_obj_set_style_text_font(ui_DigitalClockWeatherCityLabel, &ui_font_HanyiWenhei20, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_label_set_text(ui_DigitalClockWeatherCityLabel, "未来");
     }
     else
     {
-        lv_obj_add_flag(ui_DigitalClockWeatherCityLabel, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_DigitalClockWeatherCityLabel, wp->getCity().c_str());
     }
+    lv_obj_set_style_text_font(ui_DigitalClockWeatherCityLabel, &ui_font_HanyiWenhei20ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // 空气质量颜色
     switch (weather.aqiStandard)

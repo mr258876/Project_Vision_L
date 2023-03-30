@@ -168,8 +168,6 @@ extern lv_timer_t *ui_timer_DigitalClockResinTimer;
 extern lv_timer_t *ui_timer_DigitalClockWeatherTimer;
 extern lv_timer_t *ui_timer_ScrDelTimer;
 
-extern bool flag_ui_font_HanyiWenhei20;
-
 extern bool flag_ui_DigitalClockNeedInit;
 extern bool flag_ui_DigitalClockDispResin;
 
@@ -270,9 +268,6 @@ LV_FONT_DECLARE(ui_font_HanyiWenhei24ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei48ASCII);
 LV_FONT_DECLARE(ui_font_FontAwesomeIcon24);
 LV_FONT_DECLARE(ui_font_FontAwesomeIcon48);
-
-/* Check flag_ui_font_HanyiWenhei20 before use! */
-LV_FONT_DECLARE(ui_font_HanyiWenhei20);
 
 
 void ui_init(void);
