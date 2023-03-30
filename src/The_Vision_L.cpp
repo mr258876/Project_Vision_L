@@ -951,9 +951,12 @@ void hardwareSetup(void *parameter)
       {
         cb_loadClock(NULL);
       }
-      // 时间未同步则加载菜单屏
-      ui_MenuScreen_screen_init();                                        // 加载菜单屏
-      lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+      else
+      {
+        // 时间未同步则加载菜单屏
+        ui_MenuScreen_screen_init();                                        // 加载菜单屏
+        lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+      }
     }
     xSemaphoreGive(LVGLMutex);
     break;
