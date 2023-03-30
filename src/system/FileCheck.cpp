@@ -634,7 +634,7 @@ static uint checkStaticResources()
     if (!f)
     {
       /* 若返回空指针则说明文件不存在，返回错误 */
-      fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
+      fileCheckResults[0] = VISION_FILE_SYS_FILE_CRITICAL;
       fclose(f);
       xSemaphoreGive(SDMutex);
       free(buf);
