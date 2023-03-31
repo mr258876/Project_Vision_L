@@ -139,6 +139,13 @@ void setup()
 
   ////////// End of Boot Process //////////
 
+  bool info_hasUpdated = prefs.getBool("hasUpdated", false);
+  if (info_hasUpdated)
+  {
+    // 若更新标志位为true则为刚更新过，检查app分区（自动更新前app应将此标志位设为false）
+    verifyApp();
+  }
+
   prepareUpdate();
 }
 
