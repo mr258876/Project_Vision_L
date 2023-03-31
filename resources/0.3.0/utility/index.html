@@ -84,6 +84,19 @@
                         </label>
                     </li>
                     <li class="mdui-list-item">
+                        <h4>界面</h4>
+                    </li>
+                    <li class="mdui-list-item mdui-ripple" id="default-screen-li">
+                        <i class="mdui-list-item-icon mdui-icon material-icons">crop_original</i>
+                        <div class="mdui-list-item-content">默认界面</div>
+                        <select class="mdui-select" id="device-default-screen-select">
+                            <option value="0">主菜单</option>
+                            <option value="1">神之眼</option>
+                            <option value="2">树脂</option>
+                            <option value="3">时钟</option>
+                        </select>
+                    </li>
+                    <li class="mdui-list-item">
                         <h4>区域和语言</h4>
                     </li>
                     <li class="mdui-list-item mdui-ripple" id="language-li">
@@ -458,7 +471,7 @@
 </body>
 
 <script>
-    const UTILITY_VERSION = 20230125;
+    const UTILITY_VERSION = 20230331;
 
     $.ajaxSettings.timeout = 5000;
 
@@ -476,6 +489,7 @@
     var device_brightness;
     var device_auto_bright;
     var device_auto_rotate;
+    var device_defaultScreen;
     var device_language;
     var device_timezone;
     var device_auto_update;
@@ -612,6 +626,28 @@
         })
             .done(function () {
                 updateRotationIcon();
+            })
+            .fail(function () {
+                mdui.snackbar({
+                    message: '连接设备失败',
+                    position: 'top'
+                });
+                mdui.alert("设备在规定的时间内没有响应。请检查设备网络状态，然后重试。", "连接已断开", function () { connectDevice(); }, { confirmText: "重新连接", history: false, modal: true, closeOnEsc: false, closeOnConfirm: true });
+            })
+            .always(
+                function () {
+                    hideProgressBar();
+                }
+            );
+    }
+    /* 获取/设置默认界面 */
+    function getDefaultScreen(val) {
+        showProgressBar();
+        return $.getJSON("http://" + device_IP + API_PREFIX + "/setting/default_screen" + (val ? ("?value=" + val.replace("+", "%2B")) : ""), function (data) {
+            device_defaultScreen = data.setting_defaultScreen;
+        })
+            .done(function () {
+                $("#device-default-screen-select").val(device_defaultScreen);
             })
             .fail(function () {
                 mdui.snackbar({
@@ -1313,6 +1349,7 @@
             getAutoRotate();
         }
         getBrightness();
+        getDefaultScreen();
         getLanguage();
         getTimezone();
         getAutoUpdate();
@@ -1404,6 +1441,11 @@
     $("#rotation-auto-check").change(function () {
         getAutoRotate($("#rotation-auto-check").is(":checked"));
         updateEotationIcon();
+    });
+
+    // 设置 - 默认界面
+    $("#device-default-screen-select").change(function () {
+        getDefaultScreen($("#device-default-screen-select").val());
     });
 
     // 设置 - 语言
