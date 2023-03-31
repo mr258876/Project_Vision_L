@@ -202,7 +202,7 @@ bool checkUpdate()
     long static_resources_ver = doc["static_resources_ver"];
     if (static_resources_ver && static_resources_ver > info_static_resources_ver)
     {
-        fileCheckResults[1] = VISION_FILE_SYS_FILE_CRITICAL;
+        fileCheckResults[0] = VISION_FILE_SYS_FILE_CRITICAL;
         result = true;
     }
 
