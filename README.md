@@ -8,7 +8,7 @@ Do virtual gods hand out electronic visions?
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
-- [L0.2.020](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.3.000)
+- [L0.3.000](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.3.000)
 ### 测试版 / Beta Release
 - None
 
