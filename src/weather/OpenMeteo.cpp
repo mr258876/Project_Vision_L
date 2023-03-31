@@ -2,7 +2,7 @@
 
 OpenMeteoWeather OpenMeteo = OpenMeteoWeather();
 
-const char HTTP_TAG[] = "OpenMeteoWeather::getCurrentWeather";
+const char HTTP_TAG[] = "OpenMeteoWeather";
 
 Weather_weather_t OpenMeteoWeather::weatherCodeConvert(int weatherId)
 {
@@ -27,9 +27,9 @@ Weather_result_t OpenMeteoWeather::getCurrentWeather(float latitude, float longi
 
     esp_http_client_config_t conf = {
         .url = url.c_str(),
-        .cert_pem = ISRG_Root_X1,
         .method = HTTP_METHOD_GET,
         .buffer_size = 1024,
+        .crt_bundle_attach = esp_crt_bundle_attach,
         .keep_alive_enable = false,
     };
 

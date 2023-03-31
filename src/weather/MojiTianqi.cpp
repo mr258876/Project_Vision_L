@@ -2,7 +2,7 @@
 
 MojiTianqiWeather MojiTianqi = MojiTianqiWeather();
 
-const char HTTP_TAG[] = "MojiTianqiWeather::getCurrentWeather";
+const char HTTP_TAG[] = "MojiTianqiWeather";
 
 Weather_weather_t MojiTianqiWeather::weatherCodeConvert(int weatherId)
 {
@@ -20,8 +20,8 @@ Weather_result_t MojiTianqiWeather::performCurrentWeatherQuery(const char *url, 
 {
     esp_http_client_config_t conf = {
         .url = url,
-        .cert_pem = GlobalSign_Root_CA2,
         .method = HTTP_METHOD_GET,
+        .crt_bundle_attach = esp_crt_bundle_attach,
         .keep_alive_enable = false,
     };
 

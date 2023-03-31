@@ -6,6 +6,7 @@
 #include "system/TimeManager.h"
 #include "system/Networking.h"
 #include "system/Updating.h"
+#include "esp_crt_bundle.h"
 
 #include <FS.h>
 #include <SD.h>
@@ -303,6 +304,7 @@ void setup()
 
   // WiFi init
   WiFi.onEvent(wifiEvent_handler); // 注册事件处理程序
+  esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start);  // 注册TLS证书
 
   // LVGL init
   lv_init();
@@ -933,14 +935,14 @@ void hardwareSetup(void *parameter)
   ESP_ERROR_CHECK(esp_timer_start_periodic(weatherSyncTimer, setting_weatherSyncPeriod));
 
   // 启动过程结束切换至其他屏幕
-  cleanObj(ui_StartupScreen);
   switch (setting_defaultScreen)
   {
   case 2:
     xSemaphoreTake(LVGLMutex, portMAX_DELAY);
     {
-      ui_ResinScreen_screen_init();                                        // 加载树脂屏
-      lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+      ui_ResinScreen_screen_init();                                         // 加载树脂屏
+      lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+      delScr(ui_StartupScreen);
     }
     xSemaphoreGive(LVGLMutex);
     break;
@@ -955,7 +957,8 @@ void hardwareSetup(void *parameter)
       {
         // 时间未同步则加载菜单屏
         ui_MenuScreen_screen_init();                                        // 加载菜单屏
-        lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+        lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+        delScr(ui_StartupScreen);
       }
     }
     xSemaphoreGive(LVGLMutex);
@@ -971,7 +974,8 @@ void hardwareSetup(void *parameter)
     xSemaphoreTake(LVGLMutex, portMAX_DELAY);
     {
       ui_MenuScreen_screen_init();                                        // 加载菜单屏
-      lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true); // 切换屏幕
+      lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
+      delScr(ui_StartupScreen);
     }
     xSemaphoreGive(LVGLMutex);
   }

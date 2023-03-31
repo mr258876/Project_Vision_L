@@ -3,9 +3,9 @@
 
 #include "Weather.h"
 #include <esp_http_client.h>
+#include <esp_crt_bundle.h>
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "TLScert.h"
 
 class MojiTianqiWeather : public WeatherProvider
 {

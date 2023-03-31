@@ -25,12 +25,12 @@ static Vision_FileCheck_result_t cb_reboot_after_finish(bool filePassedCheck);
 //
 //////////////////////////////
 const char *fileDownloadPrefix[] = {
-    "https://mr258876.github.io/Project_Vision_L/resources/0.3",
-    "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.3",
+    "https://mr258876.github.io/Project_Vision_L/resources/0.3.0",
+    "https://gitee.com/mr258876/Project_Vision_L/raw/static_resources/resources/0.3.0",
 };
 
-static const char *static_res_json_down_path = "/The Vision L/static_resources.json";
-static const char *static_res_beta_down_path = "/The Vision L/static_resources_beta.json";
+static const char *static_res_json_down_path = "/static_resources.json";
+static const char *static_res_beta_down_path = "/static_resources_beta.json";
 static const char *static_res_json_local_path = "/s/static_resources.json";
 
 static Vision_FileCheck_file_t constFileCheckList[] = {
@@ -388,7 +388,7 @@ static uint loadWeatherConfig()
 //  File downloader
 //
 //////////////////////////////
-uint downloadFile(const char *url, const char *path_to_save, const char *TLScert, Vision_download_info_t *info)
+uint downloadFile(const char *url, const char *path_to_save, Vision_download_info_t *info)
 {
   const char *HTTP_TAG = "downloadFile";
   String path0 = "";
@@ -425,8 +425,8 @@ uint downloadFile(const char *url, const char *path_to_save, const char *TLScert
 
   esp_http_client_config_t conf = {
       .url = url,
-      .cert_pem = TLScert,
       .method = HTTP_METHOD_GET,
+      .crt_bundle_attach = esp_crt_bundle_attach,
   };
 
   esp_http_client_handle_t client = esp_http_client_init(&conf);
@@ -560,7 +560,7 @@ void tsk_fixMissingFiles(void *parameter)
       char url[strlen(getFileDownloadPrefix(getDownloadSource(constFileCheckList[i].downloadPath.c_str()))) + strlen(constFileCheckList[i].downloadPath.c_str()) + 1];
       sprintf(url, "%s%s", getFileDownloadPrefix(getDownloadSource(constFileCheckList[i].downloadPath.c_str())), constFileCheckList[i].downloadPath.c_str());
 
-      if (!downloadGithubFile(url, constFileCheckList[i].localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
+      if (!downloadFile(url, constFileCheckList[i].localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
       {
         fileCheckResults[i] = constFileCheckList[i].file_cb(true);
       }
@@ -580,7 +580,7 @@ void tsk_fixMissingFiles(void *parameter)
     char url[strlen(getFileDownloadPrefix(getDownloadSource(static_file.downloadPath.c_str()))) + strlen(static_file.downloadPath.c_str()) + 1];
     sprintf(url, "%s%s", getFileDownloadPrefix(getDownloadSource(static_file.downloadPath.c_str())), static_file.downloadPath.c_str());
 
-    if (!downloadGithubFile(url, static_file.localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
+    if (!downloadFile(url, static_file.localPath.c_str(), info)) // <- DOWNLOAD_RES_OK=0
     {
       static_file.file_cb(true);
     }
@@ -588,11 +588,6 @@ void tsk_fixMissingFiles(void *parameter)
 
   info->result = DOWNLOAD_RES_OK;
   vTaskDelete(NULL);
-}
-
-uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t *info)
-{
-  return downloadFile(url, path_to_save, GlobalSign_Root_CA, info);
 }
 
 const char *getFileDownloadPrefix(int source)

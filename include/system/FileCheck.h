@@ -6,7 +6,7 @@
 #include "The_Vision_L_globals.h"
 
 #include <esp_http_client.h>
-#include "TLScert.h"
+#include <esp_crt_bundle.h>
 
 #include "lvgl.h"
 #include "ui/ui.h"
@@ -69,9 +69,7 @@ struct Vision_download_info_t
     @param TLScert: certicifate for HTTPS
     @return reference to Vision_FileCheck_download_res_t
 */
-uint downloadFile(const char *url, const char *path_to_save, const char *TLScert = nullptr, Vision_download_info_t *info = nullptr);
-
-uint downloadGithubFile(const char *url, const char *path_to_save, Vision_download_info_t *info = nullptr);
+uint downloadFile(const char *url, const char *path_to_save, Vision_download_info_t *info = nullptr);
 
 const char *getFileDownloadPrefix(int source = curr_lang);
 

@@ -38,7 +38,8 @@
         "exception": "cpp",
         "iosfwd": "cpp",
         "new": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "esp_crt_bundle.h": "c"
     },
     "cmake.configureOnOpen": true
 }

@@ -155,7 +155,7 @@ bool checkUpdate()
         break;
     }
     sprintf(url, "%s%s", getFileDownloadPrefix(), updateChannel);
-    if (downloadGithubFile(url, "/s/autoUpdate.json")) // <- DOWNLOAD_RES_OK=0
+    if (downloadFile(url, "/s/autoUpdate.json")) // <- DOWNLOAD_RES_OK=0
         return result;
 
     FILE *f;

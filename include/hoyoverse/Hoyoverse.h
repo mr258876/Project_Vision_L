@@ -4,6 +4,7 @@
 #include <ArduinoJSON.h>
 #include <MD5Builder.h>
 #include <esp_http_client.h>
+#include <esp_crt_bundle.h>
 
 struct Notedata
 {

@@ -36,6 +36,10 @@ extern LinkedList<String> filePaths;
 /* Mjpeg decoder */
 extern MjpegClass mjpeg;
 
+/* TLS cert */
+extern const uint8_t x509_crt_imported_bundle_bin_start[] asm("_binary_x509_crt_bundle_start");
+extern const uint8_t x509_crt_imported_bundle_bin_end[]   asm("_binary_x509_crt_bundle_end");
+
 /* Runtime info */
 extern int info_processUsingWifi;
 extern bool info_isConnectingWifi;

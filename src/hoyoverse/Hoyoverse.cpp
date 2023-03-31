@@ -19,10 +19,9 @@ modification, are permitted provided that the following conditions are met:
 
 #include "hoyoverse/Hoyoverse.h"
 #include "hoyoverse/Hoyoverse_const.h"
-#include <TLScert.h>
 
 #define MAX_HTTP_RECV_BUFFER 2048
-static const PROGMEM char *HTTP_TAG = "HTTP_CLIENT";
+static const PROGMEM char *HTTP_TAG = "HoyoverseClient";
 
 HoyoverseClient::HoyoverseClient()
 {
@@ -213,10 +212,10 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 
     esp_http_client_config_t conf = {
         .url = url.c_str(),
-        .cert_pem = GlobalSign_Root_CA,
         .user_agent = Hoyoverse_App_UA[forumtype],
         .method = HTTP_METHOD_GET,
         .buffer_size_tx = 1536,
+        .crt_bundle_attach = esp_crt_bundle_attach,
         .keep_alive_enable = false,
     };
     // ESP_LOGI(HTTP_TAG, "URL:%s", url.c_str());
@@ -227,6 +226,8 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
         ESP_LOGE(HTTP_TAG, "Cannot malloc http receive buffer");
         return HOYO_CLI_OUT_OF_MEM;
     }
+
+    ESP_LOGI(HTTP_TAG, "%d %s", conf.method, conf.url);
 
     esp_http_client_handle_t client = esp_http_client_init(&conf);
     if (!client)
@@ -295,7 +296,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 
     if (error)
     {
-        ESP_LOGE("Arduino JSON", "deserializeJson() failed: %s", error.c_str());
+        ESP_LOGE(HTTP_TAG, "deserializeJson() failed: %s", error.c_str());
         free(buffer);
         doc.clear();
         return HOYO_CLI_JSON_DESER_FAIL;
@@ -306,7 +307,7 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
     nd->respMsg = (const char *)doc["message"]; // "OK"
     if (retcode != 0)
     {
-        ESP_LOGE("HoyoverseClient::getDailyNote()", "Get data failed! Server response code: %d", (int)doc["retcode"]);
+        ESP_LOGE(HTTP_TAG, "Get data failed! Server response code: %d", (int)doc["retcode"]);
         free(buffer);
         doc.clear();
         return HOYO_CLI_RESP_ERR;
