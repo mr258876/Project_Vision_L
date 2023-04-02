@@ -47,10 +47,10 @@ void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const 
     lv_timer_t *mbox_timer = lv_timer_create(cb_timer_mboxDelTimer, timeout, mbox);
     lv_timer_set_repeat_count(mbox_timer, 1);
 
-    ui_obj_timer_t *obj_timer = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
-    obj_timer->obj = mbox;
-    obj_timer->timer = mbox_timer;
-    lv_obj_set_user_data(mbox, obj_timer);
+    ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+    obj_timer_data->obj = mbox;
+    obj_timer_data->timer = mbox_timer;
+    lv_obj_set_user_data(mbox, obj_timer_data);
   }
 
   lv_obj_add_event(mbox, ui_event_mbox, LV_EVENT_ALL, NULL);
@@ -58,20 +58,24 @@ void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const 
 
 void cb_timer_ScrDelTimer(lv_timer_t *timer)
 {
-  lv_obj_t *scr = (lv_obj_t *)(timer->user_data);
+  lv_obj_t *scr = ((ui_obj_timer_t *)timer->user_data)->obj;
   delScr(scr);
   lv_timer_del(timer);
 }
 
 void cb_leaveResinScreen(lv_event_t *e)
 {
-  lv_timer_del(ui_timer_ResinDispTimer);                                             // 删除树脂显示刷新定时器
-  lv_group_remove_all_objs(ui_group);                                                // 删除控制组内对象
-  ui_MenuScreen_screen_init();                                                       // 初始化下个要显示的屏幕
-  lv_group_focus_obj(ui_MenuButton2);                                                // 聚焦在树脂按钮上
-  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);          // 切换屏幕
-  refreshScr(ui_MenuScreen);                                                         // 刷新屏幕消除切换回菜单后的残留部分
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_ResinScreen); // 创建定时器异步删除屏幕
+  lv_timer_del(ui_timer_ResinDispTimer);                                    // 删除树脂显示刷新定时器
+  lv_group_remove_all_objs(ui_group);                                       // 删除控制组内对象
+  ui_MenuScreen_screen_init();                                              // 初始化下个要显示的屏幕
+  lv_group_focus_obj(ui_MenuButton2);                                       // 聚焦在树脂按钮上
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
+  refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_ResinScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_leaveClockScreen(lv_event_t *e)
@@ -90,6 +94,7 @@ void cb_leaveClockScreen(lv_event_t *e)
 
 void cb_leaveDigitalClockScreen(lv_event_t *e)
 {
+  lv_anim_del_all();                                                   // 删除动画
   lv_timer_del(ui_timer_DigitalClockTimer);                            // 删除秒针刷新定时器
   lv_timer_del(ui_timer_DigitalClockResinTimer);                       // 删除分针刷新定时器
   lv_timer_del(ui_timer_DigitalClockWeatherTimer);                     // 删除天气数据刷新定时器
@@ -103,14 +108,17 @@ void cb_leaveDigitalClockScreen(lv_event_t *e)
 
 void cb_leaveSettingScreen(lv_event_t *e)
 {
-  lv_anim_del_all();                                                                   // 删除时钟背景动画
-  lv_timer_del(ui_timer_SettingDispTimer);                                             // 删除设置值显示刷新定时器
-  lv_group_remove_all_objs(ui_group);                                                  // 删除控制组内对象
-  ui_MenuScreen_screen_init();                                                         // 初始化下个要显示的屏幕
-  lv_group_focus_obj(ui_MenuButton4);                                                  // 聚焦在设置按钮上
-  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);            // 切换屏幕
-  refreshScr(ui_MenuScreen);                                                           // 刷新屏幕消除切换回菜单后的残留部分
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, ui_SettingScreen); // 创建定时器异步删除屏幕
+  lv_timer_del(ui_timer_SettingDispTimer);                                  // 删除设置值显示刷新定时器
+  lv_group_remove_all_objs(ui_group);                                       // 删除控制组内对象
+  ui_MenuScreen_screen_init();                                              // 初始化下个要显示的屏幕
+  lv_group_focus_obj(ui_MenuButton4);                                       // 聚焦在设置按钮上
+  lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
+  refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_SettingScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadResinScreen(lv_event_t *e)
@@ -120,7 +128,11 @@ void cb_loadResinScreen(lv_event_t *e)
   ui_ResinScreen_screen_init();
   lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_ResinScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, curr_scr);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = curr_scr;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadClock(lv_event_t *e)
@@ -205,7 +217,11 @@ void cb_loadSettingScreen(lv_event_t *e)
   ui_SettingScreen_screen_init();
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, curr_scr);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = curr_scr;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 }
 
 ////////////////////////
