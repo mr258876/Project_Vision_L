@@ -234,7 +234,11 @@ void cb_leaveWifiReconfigInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_SettingPanel1Button1Button);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_InfoScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -290,7 +294,11 @@ void cb_leaveSDErrorInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_InfoScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -359,7 +367,11 @@ void cb_leavePlaylistErrorInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_InfoScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -434,7 +446,11 @@ void cb_leaveProxCalibrationInfo()
   lv_group_del(ui_group_ProxCalibrationInfo);
   lv_group_focus_obj(ui_SettingPanel2Button1Button);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, ui_InfoScreen);
+  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+  obj_timer_data->obj = ui_InfoScreen;
+  obj_timer_data->timer = ui_timer_ScrDelTimer;
+  ui_timer_ScrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_timer_ProxCalibrationTimer(lv_timer_t *timer)
