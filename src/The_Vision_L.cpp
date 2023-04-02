@@ -1491,7 +1491,7 @@ static void onSingleClick()
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_RIGHT);
     }
-    else if (lv_group_get_obj_count(lv_group_get_default()) > 0)
+    else if (lv_group_get_obj_count(lv_group_get_default()) > 1)
     {
       lv_group_focus_next(lv_group_get_default());
     }
@@ -1545,7 +1545,7 @@ static void onMultiClick()
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_LEFT);
     }
-    else if (lv_group_get_obj_count(lv_group_get_default()) > 0)
+    else if (lv_group_get_obj_count(lv_group_get_default()) > 1)
     {
       lv_group_focus_prev(lv_group_get_default());
     }
