@@ -1524,10 +1524,13 @@ static void onSingleClick()
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_RIGHT);
     }
+    else if (lv_group_get_obj_count(lv_group_get_default()) > 0)
+    {
+      lv_group_focus_next(lv_group_get_default());
+    }
     else
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_NEXT);
-      lv_group_focus_next(lv_group_get_default());
     }
   }
   xSemaphoreGive(LVGLMutex);
@@ -1579,10 +1582,13 @@ static void onMultiClick()
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_LEFT);
     }
+    else if (lv_group_get_obj_count(lv_group_get_default()) > 0)
+    {
+      lv_group_focus_prev(lv_group_get_default());
+    }
     else
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_PREV);
-      lv_group_focus_prev(lv_group_get_default());
     }
   }
   xSemaphoreGive(LVGLMutex);
