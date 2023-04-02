@@ -154,8 +154,6 @@ extern lv_obj_t * ui_DigitalClockDateLabelShadow;
 extern lv_obj_t * ui_DigitalClockDateLabel;
 extern lv_obj_t * ui_DigitalClockDateLabel;
 
-extern lv_obj_t * mbox;
-
 extern lv_group_t * ui_group;
 
 extern lv_timer_t *ui_timer_ResinDispTimer;
@@ -199,13 +197,14 @@ void cb_loadDigitalClockScreen(lv_event_t * e);
 void cb_loadSettingScreen(lv_event_t * e);
 
 void cb_loadVideoScreen(lv_event_t * e);
-
 void cb_loadWifiReconfigInfo(lv_event_t * e);
 void cb_loadSDErrorInfo(lv_event_t * e);
 void cb_loadPlaylistErrorInfo(lv_event_t * e);
 void cb_loadProxCalibrationInfo(lv_event_t * e);
 
 void cb_loadWifiConfigInfoStartupScreen(lv_event_t * e);
+
+void ui_event_mbox(lv_event_t *e);
 
 void cb_setAPIserver(bool val);
 void cb_setAutoBright(bool val);

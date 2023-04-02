@@ -8,6 +8,12 @@
 
 #include "ui.h"
 
+typedef struct {
+    lv_obj_t *obj;
+    lv_timer_t *timer;
+} ui_obj_timer_t;
+
+
 #define _UI_TEMPORARY_STRING_BUFFER_SIZE 32
 #define _UI_BAR_PROPERTY_VALUE 0
 #define _UI_BAR_PROPERTY_VALUE_WITH_ANIM 1

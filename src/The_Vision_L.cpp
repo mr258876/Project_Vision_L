@@ -619,9 +619,7 @@ void hardwareSetup(void *parameter)
       {
         xSemaphoreTake(LVGLMutex, portMAX_DELAY);
         {
-          mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false); // LV_SYMBOL_WARNING " 更新失败"  "请通过串口手动更新固件"
-          lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-          lv_obj_center(mbox);
+          mboxCreate(ui_StartupScreen, lang[curr_lang][18], lang[curr_lang][19], {}, false, 0); // LV_SYMBOL_WARNING " 更新失败"  "请通过串口手动更新固件"
         }
         xSemaphoreGive(LVGLMutex);
         vTaskDelete(NULL);
@@ -694,9 +692,7 @@ void hardwareSetup(void *parameter)
     ESP_LOGE("hardwareSetup", "Hardware err Detected!!!");
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][8], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 发现如下问题,启动已终止:"
-      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-      lv_obj_center(mbox);
+      mboxCreate(ui_StartupScreen, lang[curr_lang][8], errMsg.c_str(), {}, false, 0); // LV_SYMBOL_WARNING " 发现如下问题,启动已终止:"
       xSemaphoreGive(LVGLMutex);
     }
     vTaskDelete(NULL);
@@ -896,12 +892,10 @@ void hardwareSetup(void *parameter)
 
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      mbox = lv_msgbox_create(ui_StartupScreen, lang[curr_lang][54], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 错误"
-      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-      lv_obj_center(mbox);
+      mboxCreate(ui_StartupScreen, lang[curr_lang][54], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 错误"
       xSemaphoreGive(LVGLMutex);
     }
-    vTaskDelay(5000);
+    vTaskDelay(pdMS_TO_TICKS(5000));
   }
 
   /* 启动硬件循环任务(按键、重力传感器、距离传感器) */
@@ -956,7 +950,7 @@ void hardwareSetup(void *parameter)
       else
       {
         // 时间未同步则加载菜单屏
-        ui_MenuScreen_screen_init();                                        // 加载菜单屏
+        ui_MenuScreen_screen_init();                                         // 加载菜单屏
         lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
         delScr(ui_StartupScreen);
       }
@@ -973,7 +967,7 @@ void hardwareSetup(void *parameter)
   default:
     xSemaphoreTake(LVGLMutex, portMAX_DELAY);
     {
-      ui_MenuScreen_screen_init();                                        // 加载菜单屏
+      ui_MenuScreen_screen_init();                                         // 加载菜单屏
       lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, false); // 切换屏幕
       delScr(ui_StartupScreen);
     }
@@ -1061,11 +1055,7 @@ static void getDailyNoteFromResinScreen(void *parameter)
   {
     if (!updateRes)
     {
-      mbox = lv_msgbox_create(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
-      lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-      lv_obj_center(mbox);
-      lv_obj_move_foreground(mbox);
-      lv_timer_t *ui_timer_ObjDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox); // 创建定时器异步删除屏幕
+      mboxCreate(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
     }
 
     lv_timer_ready(ui_timer_ResinDispTimer); // 立即更新树脂显示

@@ -30,6 +30,32 @@ void refreshScr(void *scr)
   lv_obj_invalidate((lv_obj_t *)scr);
 }
 
+void cb_timer_mboxDelTimer(lv_timer_t *timer)
+{
+  lv_obj_t *mbox = (lv_obj_t *)(timer->user_data);
+  lv_msgbox_close(mbox);
+}
+
+void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const char **btn_txts, bool add_close_btn, uint32_t timeout)
+{
+  lv_obj_t *mbox = lv_msgbox_create(parent, title, content, btn_txts, add_close_btn);
+  lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_center(mbox);
+
+  if (timeout > 0)
+  {
+    lv_timer_t *mbox_timer = lv_timer_create(cb_timer_mboxDelTimer, timeout, mbox);
+    lv_timer_set_repeat_count(mbox_timer, 1);
+
+    ui_obj_timer_t *obj_timer = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
+    obj_timer->obj = mbox;
+    obj_timer->timer = mbox_timer;
+    lv_obj_set_user_data(mbox, obj_timer);
+  }
+
+  lv_obj_add_event(mbox, ui_event_mbox, LV_EVENT_ALL, NULL);
+}
+
 void cb_timer_ScrDelTimer(lv_timer_t *timer)
 {
   lv_obj_t *scr = (lv_obj_t *)(timer->user_data);

@@ -152,8 +152,6 @@ lv_obj_t *ui_DigitalClockDatePanel;
 lv_obj_t *ui_DigitalClockDateLabelShadow;
 lv_obj_t *ui_DigitalClockDateLabel;
 
-lv_obj_t *mbox;
-
 lv_group_t *ui_group;
 
 lv_timer_t *ui_timer_ResinDispTimer;
@@ -634,6 +632,20 @@ void ui_event_InfoTitleBackButton(lv_event_t *e)
     if (event_code == LV_EVENT_CLICKED)
     {
         (*cb_ui_InfoScreen_back)();
+    }
+}
+
+void ui_event_mbox(lv_event_t *e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t *target = lv_event_get_target(e);
+    if (event_code == LV_EVENT_DELETE)
+    {
+        if (target->user_data)
+        {
+            lv_timer_del(((ui_obj_timer_t *)target->user_data)->timer);
+            lv_free(target->user_data);
+        }
     }
 }
 
