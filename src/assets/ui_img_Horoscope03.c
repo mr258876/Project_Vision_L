@@ -764,11 +764,11 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_UI_IMG_HO
 };
 
 const lv_img_dsc_t ui_img_Horoscope03 = {
-  .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+  .header.cf = LV_COLOR_FORMAT_ARGB8565,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 185,
   .header.h = 185,
-  .data_size = 34225 * LV_IMG_PX_SIZE_ALPHA_BYTE,
+  .data_size = 34225 * (LV_COLOR_SIZE / 8 + 1),
   .data = ui_img_Horoscope03_map,
 };

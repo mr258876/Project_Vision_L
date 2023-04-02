@@ -171,8 +171,8 @@ bool flag_ui_DigitalClockDispResin = true;
 #if LV_COLOR_DEPTH != 16
 #error "LV_COLOR_DEPTH should be 16bit to match SquareLine Studio's settings"
 #endif
-#if LV_COLOR_16_SWAP != 1
-#error "#error LV_COLOR_16_SWAP should be 1 to match SquareLine Studio's settings"
+#if LV_COLOR_16_SWAP != 0
+#error "#error LV_COLOR_16_SWAP should be 0 to match SquareLine Studio's settings"
 #endif
 
 ///////////////////// ANIMATIONS ////////////////////
@@ -656,7 +656,7 @@ void ui_StartupScreen_screen_init(void)
     // ui_StartupScreen
     ui_StartupScreen = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_StartupScreen, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_event_cb(ui_StartupScreen, ui_event_StartupScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_StartupScreen, ui_event_StartupScreen, LV_EVENT_ALL, NULL);
     lv_obj_set_style_bg_color(ui_StartupScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_StartupScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -725,6 +725,7 @@ void ui_SettingScreen_screen_init(void)
 {
     ui_SettingScreen = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_SettingScreen, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_clear_flag(ui_SettingScreen, LV_OBJ_FLAG_CLICKABLE);  /// Flags
 
     ui_SettingTitlePanel = lv_obj_create(ui_SettingScreen);
     lv_obj_set_width(ui_SettingTitlePanel, 240);
@@ -955,7 +956,10 @@ void ui_SettingScreen_screen_init(void)
     lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][73]); // 73 Utility disabled.
     lv_obj_set_style_text_font(ui_SettingPanel0Label2, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_SettingPanel0QR1 = lv_qrcode_create(ui_SettingInfoPanel0, 100, lv_color_black(), lv_color_white());
+    ui_SettingPanel0QR1 = lv_qrcode_create(ui_SettingInfoPanel0);
+    lv_qrcode_set_size(ui_SettingPanel0QR1, 100);
+    lv_qrcode_set_dark_color(ui_SettingPanel0QR1, lv_color_black());
+    lv_qrcode_set_light_color(ui_SettingPanel0QR1, lv_color_white());
     lv_obj_set_x(ui_SettingPanel0QR1, 0);
     lv_obj_set_y(ui_SettingPanel0QR1, 35);
     lv_obj_set_align(ui_SettingPanel0QR1, LV_ALIGN_CENTER);
@@ -1349,18 +1353,18 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel6, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event_cb(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingTitleBackButton, ui_event_SettingTitleBackButton, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingSideButton0, ui_event_SettingSideButton0, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingSideButton1, ui_event_SettingSideButton1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingSideButton2, ui_event_SettingSideButton2, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel0SW1Switch1, ui_event_SettingPanel0SW1Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel1Button1Button, ui_event_SettingPanel1Button1Button, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel2DP1Dropdown1, ui_event_SettingPanel2DP1Dropdown1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_SettingPanel2Button1Button, ui_event_SettingPanel2Button1Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingTitleBackButton, ui_event_SettingTitleBackButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingSideButton0, ui_event_SettingSideButton0, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingSideButton1, ui_event_SettingSideButton1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingSideButton2, ui_event_SettingSideButton2, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel0SW1Switch1, ui_event_SettingPanel0SW1Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel1Button1Button, ui_event_SettingPanel1Button1Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel2DP1Dropdown1, ui_event_SettingPanel2DP1Dropdown1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_SettingPanel2Button1Button, ui_event_SettingPanel2Button1Button, LV_EVENT_ALL, NULL);
 
     lv_group_focus_obj(ui_SettingSideButton0); // 默认聚焦第一个菜单按钮
     lv_obj_add_state(ui_SettingSideButton0, LV_STATE_PRESSED);
@@ -1429,16 +1433,17 @@ void ui_InfoScreen_screen_init(void)
     lv_obj_set_style_bg_opa(ui_InfoPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_InfoPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event_cb(ui_InfoTitleBackButton, ui_event_InfoTitleBackButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_InfoTitleBackButton, ui_event_InfoTitleBackButton, LV_EVENT_ALL, NULL);
 }
 
 void ui_VideoScreen_screen_init(void)
 {
     ui_VideoScreen = lv_obj_create(NULL);
 
-    lv_obj_set_style_bg_color(ui_StartupScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_StartupScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_VideoScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_VideoScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_clear_flag(ui_VideoScreen, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(ui_VideoScreen, LV_OBJ_FLAG_CLICKABLE);
 
     lv_group_add_obj(ui_group, ui_VideoScreen);
 }
@@ -1447,6 +1452,7 @@ void ui_MenuScreen_screen_init(void)
 {
     ui_MenuScreen = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_MenuScreen, LV_OBJ_FLAG_SCROLLABLE); /// Flags
+    lv_obj_clear_flag(ui_MenuScreen, LV_OBJ_FLAG_CLICKABLE);  /// Flags
     lv_obj_set_style_bg_color(ui_MenuScreen, lv_color_hex(0xF4F1EB), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_MenuScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -1624,10 +1630,10 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_MenuButton4Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton4Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event_cb(ui_MenuButton1, ui_event_Menubutton_Vision, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_MenuButton2, ui_event_Menubutton_Resin, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_MenuButton3, ui_event_Menubutton_Clock, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_MenuButton4, ui_event_Menubutton_Setting, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_MenuButton1, ui_event_Menubutton_Vision, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_MenuButton2, ui_event_Menubutton_Resin, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_MenuButton3, ui_event_Menubutton_Clock, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_MenuButton4, ui_event_Menubutton_Setting, LV_EVENT_ALL, NULL);
 
     // lv_group_add_obj(ui_group, ui_MenuButton1);
     // lv_group_add_obj(ui_group, ui_MenuButton2);
@@ -1740,7 +1746,7 @@ void ui_ResinScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_NoteUpdateTimeLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_NoteUpdateTimeLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event_cb(ui_ResinScreen, ui_event_ResinScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_ResinScreen, ui_event_ResinScreen, LV_EVENT_ALL, NULL);
 
     lv_group_add_obj(ui_group, ui_ResinScreen);
 
@@ -1878,7 +1884,7 @@ void ui_ClockScreen_screen_init(void)
     lv_obj_clear_flag(ui_ClockIconNight, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_img_set_angle(ui_ClockIconNight, 450);
 
-    lv_obj_add_event_cb(ui_ClockScreen, ui_event_ClockScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_ClockScreen, ui_event_ClockScreen, LV_EVENT_ALL, NULL);
 
     // 将屏幕添加至group内监听按键触发
     lv_group_add_obj(ui_group, ui_ClockScreen);
@@ -1983,17 +1989,17 @@ void ui_DigitalClockScreen_screen_init(void)
 
     ui_DigitalClockResinIcon1 = lv_img_create(ui_DigitalClockResinPanel);
     lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Resin);
-    lv_obj_set_width(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT);   /// 40
-    lv_obj_set_height(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT);    /// 40
+    lv_obj_set_width(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIcon1, LV_SIZE_CONTENT); /// 40
     lv_obj_set_x(ui_DigitalClockResinIcon1, lv_pct(-40));
     lv_obj_set_y(ui_DigitalClockResinIcon1, lv_pct(-25));
     lv_obj_set_align(ui_DigitalClockResinIcon1, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_add_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIcon1, LV_OBJ_FLAG_SCROLLABLE); /// Flags
 
     ui_DigitalClockResinLabel1 = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabel1, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockResinLabel1, lv_pct(20));
     lv_obj_set_y(ui_DigitalClockResinLabel1, lv_pct(-25));
     lv_obj_set_align(ui_DigitalClockResinLabel1, LV_ALIGN_CENTER);
@@ -2004,17 +2010,17 @@ void ui_DigitalClockScreen_screen_init(void)
 
     ui_DigitalClockResinIcon2 = lv_img_create(ui_DigitalClockResinPanel);
     lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Homecoin);
-    lv_obj_set_width(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT);   /// 40
-    lv_obj_set_height(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT);    /// 40
+    lv_obj_set_width(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT);  /// 40
+    lv_obj_set_height(ui_DigitalClockResinIcon2, LV_SIZE_CONTENT); /// 40
     lv_obj_set_x(ui_DigitalClockResinIcon2, lv_pct(-40));
     lv_obj_set_y(ui_DigitalClockResinIcon2, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockResinIcon2, LV_ALIGN_CENTER);
-    lv_obj_add_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
-    lv_obj_clear_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_add_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_ADV_HITTEST);  /// Flags
+    lv_obj_clear_flag(ui_DigitalClockResinIcon2, LV_OBJ_FLAG_SCROLLABLE); /// Flags
 
     ui_DigitalClockResinLabel2 = lv_label_create(ui_DigitalClockResinPanel);
-    lv_obj_set_width(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_width(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_height(ui_DigitalClockResinLabel2, LV_SIZE_CONTENT); /// 1
     lv_obj_set_x(ui_DigitalClockResinLabel2, lv_pct(20));
     lv_obj_set_y(ui_DigitalClockResinLabel2, lv_pct(25));
     lv_obj_set_align(ui_DigitalClockResinLabel2, LV_ALIGN_CENTER);
@@ -2186,7 +2192,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_label_set_text(ui_DigitalClockDateLabel, "2022年\n12月14日");
     lv_obj_set_style_text_font(ui_DigitalClockDateLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event_cb(ui_DigitalClockScreen, ui_event_DigitalClockScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event(ui_DigitalClockScreen, ui_event_DigitalClockScreen, LV_EVENT_ALL, NULL);
 
     // 将屏幕添加至group内监听按键触发
     lv_group_add_obj(ui_group, ui_DigitalClockScreen);

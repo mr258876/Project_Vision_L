@@ -68,7 +68,7 @@ const lv_img_dsc_t ui_img_clockicon_noon = {
     .header.w = 57,
     .header.h = 57,
     .data_size = sizeof(ui_img_clockicon_noon_data),
-    .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+    .header.cf = LV_COLOR_FORMAT_ARGB8565,
     .data = ui_img_clockicon_noon_data
 };
 

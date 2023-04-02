@@ -69,21 +69,6 @@ enum Vision_HW_result_t
 
 ////////////////////////
 //
-//  Structs
-//
-////////////////////////
-struct ScreenFlushMsg
-{
-  lv_disp_drv_t *disp;
-  lv_color_t *color_p;
-  lv_coord_t x1;
-  lv_coord_t x2;
-  lv_coord_t y1;
-  lv_coord_t y2;
-};
-
-////////////////////////
-//
 //  Variables
 //
 ////////////////////////
@@ -96,10 +81,9 @@ static LGFX_Device gfx;
 /* LVGL Stuff */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
-static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
 static lv_color_t *disp_draw_buf_2;
-static lv_disp_drv_t disp_drv;
+static lv_disp_t *disp_drv;
 bool isInLVGL = true;
 
 /* Mjpeg stuff */
@@ -156,7 +140,7 @@ static void onMultiClick();
 /**
  * @brief Custom scren update function for LVGL
  */
-void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void disp_flush(lv_disp_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
   lv_coord_t w = (area->x2 - area->x1 + 1);
   lv_coord_t h = (area->y2 - area->y1 + 1);
@@ -164,7 +148,7 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
   if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
   {
     gfx.setAddrWindow(area->x1, area->y1, w, h);
-    gfx.pushPixelsDMA((uint16_t *)&color_p->full, w * h);
+    gfx.pushPixelsDMA((uint16_t *)color_p, w * h);
     xSemaphoreGive(*LCDMutexptr);
   }
   lv_disp_flush_ready(disp);
@@ -303,8 +287,8 @@ void setup()
   }
 
   // WiFi init
-  WiFi.onEvent(wifiEvent_handler); // 注册事件处理程序
-  esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start);  // 注册TLS证书
+  WiFi.onEvent(wifiEvent_handler);                                                                                               // 注册事件处理程序
+  esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start); // 注册TLS证书
 
   // LVGL init
   lv_init();
@@ -326,19 +310,12 @@ void setup()
   }
   else
   {
-    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, disp_draw_buf_2, screenWidth * 30);
-
     /* Initialize the display */
-    lv_disp_drv_init(&disp_drv);
-    /* Change the following line to your display resolution */
-    disp_drv.hor_res = screenWidth;
-    disp_drv.ver_res = screenHeight;
-    disp_drv.flush_cb = disp_flush;
-    disp_drv.draw_buf = &draw_buf;
-    disp_drv.sw_rotate = 0;
-    disp_drv.full_refresh = 0;
-
-    lv_disp_drv_register(&disp_drv);
+    disp_drv = lv_disp_create(screenWidth, screenHeight);
+    lv_disp_set_draw_buffers(disp_drv, disp_draw_buf, disp_draw_buf_2, screenWidth * 30, LV_DISP_RENDER_MODE_PARTIAL);
+    lv_disp_set_flush_cb(disp_drv, disp_flush);
+    lv_disp_set_rotation(disp_drv, LV_DISP_ROTATION_0, false);
+    lv_disp_set_color_format(disp_drv, LV_COLOR_FORMAT_NATIVE_REVERSED);
 
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();
@@ -1540,19 +1517,15 @@ static void onDoubleClick()
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_ENTER);
       inEditMode = false;
-      xSemaphoreGive(LVGLMutex);
-      return;
     }
     else if (lv_obj_is_editable(lv_group_get_focused(lv_group_get_default())))
     {
       lv_group_send_data(lv_group_get_default(), LV_KEY_ENTER);
       inEditMode = true;
-      xSemaphoreGive(LVGLMutex);
-      return;
     }
     else
     {
-      lv_event_send(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
+      lv_obj_send_event(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
     }
   }
   xSemaphoreGive(LVGLMutex);

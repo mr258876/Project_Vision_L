@@ -39,7 +39,12 @@
         "iosfwd": "cpp",
         "new": "cpp",
         "algorithm": "cpp",
-        "esp_crt_bundle.h": "c"
+        "esp_crt_bundle.h": "c",
+        "lv_os.h": "c",
+        "lv_conf_internal.h": "c",
+        "freertos.h": "c",
+        "lv_color_op.h": "c",
+        "lv_qrcode.h": "c"
     },
     "cmake.configureOnOpen": true
 }

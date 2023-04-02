@@ -3,6 +3,7 @@
 #include "The_Vision_L_globals.h"
 
 #include "ui/ui.h"
+#include "ui/ui_helpers.h"
 #include "ui/ui_multiLanguage.h"
 #include "ui/ui_supply_functions.h"
 
@@ -13,7 +14,6 @@ void cleanObj(lv_obj_t *obj)
     cleanObj(lv_obj_get_child(obj, i));
   }
   lv_obj_remove_style_all(obj);
-  lv_mem_free(lv_obj_get_user_data(obj));
 }
 
 void delScr(void *scr)
@@ -160,10 +160,7 @@ void cb_loadClockScreen(lv_event_t *e)
   if (!info_timeSynced)
   {
     // if not, pop out error message
-    mbox = lv_msgbox_create(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
-    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_center(mbox);
-    ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
+    mboxCreate(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
 
     return;
   }
@@ -189,10 +186,7 @@ void cb_loadDigitalClockScreen(lv_event_t *e)
   if (!info_timeSynced)
   {
     // if not, pop out error message
-    mbox = lv_msgbox_create(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
-    lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_center(mbox);
-    ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 5000, mbox);
+    mboxCreate(curr_scr, lang[curr_lang][54], lang[curr_lang][55], {}, false); // LV_SYMBOL_WARNING "错误：" "未同步时间\n"
 
     return;
   }
@@ -244,7 +238,10 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
   lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][33]); // "使用微信扫描QR码\n进行网络配置"
   lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  lv_obj_t *ui_InfoPanelQR1 = lv_qrcode_create(ui_InfoPanel, 100, lv_color_black(), lv_color_white());
+  lv_obj_t *ui_InfoPanelQR1 = lv_qrcode_create(ui_InfoPanel);
+  lv_qrcode_set_size(ui_InfoPanelQR1, 100);
+  lv_qrcode_set_dark_color(ui_InfoPanelQR1, lv_color_black());
+  lv_qrcode_set_light_color(ui_InfoPanelQR1, lv_color_white());
   lv_qrcode_update(ui_InfoPanelQR1, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
   lv_obj_set_x(ui_InfoPanelQR1, 0);
   lv_obj_set_y(ui_InfoPanelQR1, 60);
@@ -408,8 +405,8 @@ void cb_loadPlaylistErrorInfo(lv_event_t *e)
 ////////////////////////
 // 距离传感器校准界面
 
-lv_group_t * ui_group_ProxCalibrationInfo;
-lv_timer_t * ui_timer_ProxCalibrationTimer;
+lv_group_t *ui_group_ProxCalibrationInfo;
+lv_timer_t *ui_timer_ProxCalibrationTimer;
 uint16_t proxReading = 0;
 
 void cb_leaveProxCalibrationInfo()
@@ -427,13 +424,12 @@ void cb_leaveProxCalibrationInfo()
 void cb_timer_ProxCalibrationTimer(lv_timer_t *timer)
 {
   proxReading = cb_readProx();
-  lv_label_set_text_fmt(((lv_obj_t *)timer->user_data), lang[curr_lang][114], proxReading);  // "距离读数：150"
+  lv_label_set_text_fmt(((lv_obj_t *)timer->user_data), lang[curr_lang][114], proxReading); // "距离读数：150"
 }
 
 void ui_event_ProxCal_Button(lv_event_t *e)
 {
   lv_event_code_t event = lv_event_get_code(e);
-  lv_obj_t *ta = lv_event_get_target(e);
   if (event == LV_EVENT_CLICKED)
   {
     cb_setProxThres(proxReading);
@@ -506,7 +502,7 @@ void cb_loadProxCalibrationInfo(lv_event_t *e)
   ui_timer_ProxCalibrationTimer = lv_timer_create(cb_timer_ProxCalibrationTimer, 500, ui_InfoPanelLabel2);
   lv_timer_ready(ui_timer_ProxCalibrationTimer);
 
-  lv_obj_add_event_cb(ui_ProxCal_Button, ui_event_ProxCal_Button, LV_EVENT_ALL, NULL);
+  lv_obj_add_event(ui_ProxCal_Button, ui_event_ProxCal_Button, LV_EVENT_ALL, NULL);
 
   cb_ui_InfoScreen_back = cb_leaveProxCalibrationInfo;
 
@@ -551,7 +547,10 @@ void cb_loadWifiConfigInfoStartupScreen(lv_event_t *e)
   lv_obj_set_style_text_opa(ui_NetConfigureLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_font(ui_NetConfigureLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen, 100, lv_color_black(), lv_color_white());
+  lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen);
+  lv_qrcode_set_size(qr, 100);
+  lv_qrcode_set_dark_color(qr, lv_color_black());
+  lv_qrcode_set_light_color(qr, lv_color_white());
 
   /*Set data*/
   lv_qrcode_update(qr, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"

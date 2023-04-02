@@ -55,7 +55,7 @@ const lv_img_dsc_t ui_img_clockicon_morning = {
     .header.w = 54,
     .header.h = 45,
     .data_size = sizeof(ui_img_clockicon_morning_data),
-    .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+    .header.cf = LV_COLOR_FORMAT_ARGB8565,
     .data = ui_img_clockicon_morning_data
 };
 

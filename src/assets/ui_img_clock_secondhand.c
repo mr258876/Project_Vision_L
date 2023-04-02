@@ -440,11 +440,11 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_UI_IMG_CL
 };
 
 const lv_img_dsc_t ui_img_clock_secondhand = {
-  .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+  .header.cf = LV_COLOR_FORMAT_ARGB8565,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 12,
   .header.h = 104,
-  .data_size = 1248 * LV_IMG_PX_SIZE_ALPHA_BYTE,
+  .data_size = 1248 * (LV_COLOR_SIZE / 8 + 1),
   .data = ui_img_clock_secondhand_map,
 };
