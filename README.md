@@ -18,7 +18,7 @@ Do virtual gods hand out electronic visions?
 ArduinoJson     6.20.1
 KXTJ3-1057      0.0.1
 LovyanGFX       1.1.2
-LVGL            8.3.5
+LVGL            9.0.0 - 02b5611
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
