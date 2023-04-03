@@ -77,6 +77,7 @@ void cb_leaveResinScreen(lv_event_t *e)
   obj_timer_data->obj = ui_ResinScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_leaveClockScreen(lv_event_t *e)
@@ -120,6 +121,7 @@ void cb_leaveSettingScreen(lv_event_t *e)
   obj_timer_data->obj = ui_SettingScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_loadResinScreen(lv_event_t *e)
@@ -134,6 +136,7 @@ void cb_loadResinScreen(lv_event_t *e)
   obj_timer_data->obj = curr_scr;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_loadClock(lv_event_t *e)
@@ -223,6 +226,7 @@ void cb_loadSettingScreen(lv_event_t *e)
   obj_timer_data->obj = curr_scr;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 ////////////////////////
@@ -240,6 +244,7 @@ void cb_leaveWifiReconfigInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -300,6 +305,7 @@ void cb_leaveSDErrorInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_loadSDErrorInfo(lv_event_t *e)
@@ -371,6 +377,7 @@ void cb_leavePlaylistErrorInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_loadPlaylistErrorInfo(lv_event_t *e)
@@ -448,6 +455,7 @@ void cb_leaveProxCalibrationInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
+  scrDelTimer->period += 10;  // 增加10ms延时防止删除屏幕与渲染冲突
 }
 
 void cb_timer_ProxCalibrationTimer(lv_timer_t *timer)
