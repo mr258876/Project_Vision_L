@@ -1031,11 +1031,9 @@ static void getDailyNoteFromResinScreen(void *parameter)
   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
   {
     if (!updateRes)
-    {
-      mboxCreate(lv_scr_act(), lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
-    }
-
-    lv_timer_ready(ui_timer_ResinDispTimer); // 立即更新树脂显示
+      mboxCreate(NULL, lang[curr_lang][15], errMsg.c_str(), {}, false); // LV_SYMBOL_WARNING " 获取数据失败:"
+    else if (ui_timer_ResinDispTimer)
+      lv_timer_ready(ui_timer_ResinDispTimer); // 立即更新树脂显示
 
     xSemaphoreGive(LVGLMutex);
   }
@@ -1371,11 +1369,19 @@ static bool getDailyNote(Notedata *nd, String *errMsg)
   struct tm timeinfo;
   if (!info_timeSynced)
   {
-    ESP_LOGE("getDailyNote", "Time not obtained");
-    res = false;
-    errMsg->concat(lang[curr_lang][21]); // "同步时间失败\n"
+    syncTime_NTP_async();
+    unsigned long time_startNTP = millis();
+    while (1)
+    {
+      if (info_timeSynced || millis() - time_startNTP > 20000)
+      {
+        break;
+      }
+      vTaskDelay(50);
+    }
   }
-  else if (getLocalTime(&timeinfo, 50)) // <- 获取时间50ms超时
+
+  if (getLocalTime(&timeinfo, 50)) // <- 获取时间50ms超时
   {
     info_timeSynced = true;
     int r = 0;
@@ -1406,6 +1412,12 @@ static bool getDailyNote(Notedata *nd, String *errMsg)
       res = false;
     }
   }
+  else
+  {
+    ESP_LOGE("getDailyNote", "Time not obtained");
+    res = false;
+    errMsg->concat(lang[curr_lang][21]); // "同步时间失败\n"
+  }
 
   disConnectWiFi();
 
@@ -1423,10 +1435,25 @@ static void resinCalc(void *parameter)
 
 static void resinSync(void *parameter)
 {
-  if (info_timeSynced && connectWiFi())
+  if (connectWiFi())
   {
-    if (xSemaphoreTake(NoteDataMutex, portMAX_DELAY) == pdTRUE)
+    if (!info_timeSynced)
     {
+      syncTime_NTP_async();
+      unsigned long time_startNTP = millis();
+      while (1)
+      {
+        if (info_timeSynced || millis() - time_startNTP > 20000)
+        {
+          break;
+        }
+        vTaskDelay(50);
+      }
+    }
+
+    if (info_timeSynced)
+    {
+      xSemaphoreTake(NoteDataMutex, portMAX_DELAY);
       hyc.syncDailyNote(&nd);
       xSemaphoreGive(NoteDataMutex);
     }
