@@ -42,6 +42,7 @@ void ButtonTicker::tick()
     while (node)
     {
         node->data.btn->tick();
+        node = node->next;
     }
 }
 
