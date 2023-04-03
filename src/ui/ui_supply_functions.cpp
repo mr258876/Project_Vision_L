@@ -72,11 +72,11 @@ void cb_leaveResinScreen(lv_event_t *e)
   lv_group_focus_obj(ui_MenuButton2);                                       // 聚焦在树脂按钮上
   lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
   refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_ResinScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_leaveClockScreen(lv_event_t *e)
@@ -115,11 +115,11 @@ void cb_leaveSettingScreen(lv_event_t *e)
   lv_group_focus_obj(ui_MenuButton4);                                       // 聚焦在设置按钮上
   lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
   refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_SettingScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadResinScreen(lv_event_t *e)
@@ -129,11 +129,11 @@ void cb_loadResinScreen(lv_event_t *e)
   ui_ResinScreen_screen_init();
   lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_ResinScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = curr_scr;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadClock(lv_event_t *e)
@@ -218,11 +218,11 @@ void cb_loadSettingScreen(lv_event_t *e)
   ui_SettingScreen_screen_init();
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = curr_scr;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 ////////////////////////
@@ -235,11 +235,11 @@ void cb_leaveWifiReconfigInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_SettingPanel1Button1Button);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 
   cb_stopWifiReConfigure(NULL);
 }
@@ -295,11 +295,11 @@ void cb_leaveSDErrorInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadSDErrorInfo(lv_event_t *e)
@@ -366,11 +366,11 @@ void cb_leavePlaylistErrorInfo()
   lv_group_focus_freeze(ui_group, false);
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_loadPlaylistErrorInfo(lv_event_t *e)
@@ -443,11 +443,11 @@ void cb_leaveProxCalibrationInfo()
   lv_group_del(ui_group_ProxCalibrationInfo);
   lv_group_focus_obj(ui_SettingPanel2Button1Button);
   refreshScr(ui_SettingScreen);
-  ui_timer_ScrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
+  lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
   ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
-  obj_timer_data->timer = ui_timer_ScrDelTimer;
-  ui_timer_ScrDelTimer->user_data = obj_timer_data;
+  obj_timer_data->timer = scrDelTimer;
+  scrDelTimer->user_data = obj_timer_data;
 }
 
 void cb_timer_ProxCalibrationTimer(lv_timer_t *timer)

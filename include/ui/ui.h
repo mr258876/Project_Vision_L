@@ -164,7 +164,6 @@ extern lv_timer_t *ui_timer_ClockTimerHour;
 extern lv_timer_t *ui_timer_DigitalClockTimer;
 extern lv_timer_t *ui_timer_DigitalClockResinTimer;
 extern lv_timer_t *ui_timer_DigitalClockWeatherTimer;
-extern lv_timer_t *ui_timer_ScrDelTimer;
 
 extern bool flag_ui_DigitalClockNeedInit;
 extern bool flag_ui_DigitalClockDispResin;

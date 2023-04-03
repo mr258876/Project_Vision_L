@@ -162,7 +162,6 @@ lv_timer_t *ui_timer_ClockTimerHour;
 lv_timer_t *ui_timer_DigitalClockTimer;
 lv_timer_t *ui_timer_DigitalClockResinTimer;
 lv_timer_t *ui_timer_DigitalClockWeatherTimer;
-lv_timer_t *ui_timer_ScrDelTimer;
 
 bool flag_ui_DigitalClockNeedInit = true;
 bool flag_ui_DigitalClockDispResin = true;
