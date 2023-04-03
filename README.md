@@ -8,7 +8,7 @@ Do virtual gods hand out electronic visions?
 
 ## 版本 / Versions
 ### 稳定版 / Stable Release
-- [L0.3.000](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.3.000)
+- [L0.3.100](https://github.com/mr258876/Project_Vision_L/releases/tag/L0.3.100)
 ### 测试版 / Beta Release
 - None
 
@@ -18,13 +18,13 @@ Do virtual gods hand out electronic visions?
 ArduinoJson     6.20.1
 KXTJ3-1057      0.0.1
 LovyanGFX       1.1.2
-LVGL            9.0.0 - 02b5611
 OneButton       2.0.3
 ```
 - 以下库通过MIT协议随项目分发 / Following libraries are distributed with this project under MIT license
 ```
 APDS-9930       https://github.com/Depau/APDS9930
 LinkedList      https://github.com/ivanseidel/LinkedList
+LVGL            https://github.com/lvgl/lvgl
 ```
 - 部分代码参考了以下项目 / Some code refer to following projects
 ```
