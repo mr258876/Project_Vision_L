@@ -60,6 +60,7 @@ void cb_timer_ScrDelTimer(lv_timer_t *timer)
 {
   lv_obj_t *scr = ((ui_obj_timer_t *)timer->user_data)->obj;
   delScr(scr);
+  if (timer->user_data) lv_free(timer->user_data);
   lv_timer_del(timer);
 }
 
@@ -299,8 +300,6 @@ void cb_leaveSDErrorInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = ui_timer_ScrDelTimer;
   ui_timer_ScrDelTimer->user_data = obj_timer_data;
-
-  cb_stopWifiReConfigure(NULL);
 }
 
 void cb_loadSDErrorInfo(lv_event_t *e)
@@ -372,8 +371,6 @@ void cb_leavePlaylistErrorInfo()
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = ui_timer_ScrDelTimer;
   ui_timer_ScrDelTimer->user_data = obj_timer_data;
-
-  cb_stopWifiReConfigure(NULL);
 }
 
 void cb_loadPlaylistErrorInfo(lv_event_t *e)
@@ -421,7 +418,7 @@ void cb_loadPlaylistErrorInfo(lv_event_t *e)
   lv_obj_set_style_text_opa(ui_InfoPanelLabel4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_font(ui_InfoPanelLabel4, &ui_font_FontAwesomeIcon24, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  cb_ui_InfoScreen_back = cb_leaveSDErrorInfo;
+  cb_ui_InfoScreen_back = cb_leavePlaylistErrorInfo;
 
   lv_scr_load_anim(ui_InfoScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
 
