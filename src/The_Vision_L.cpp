@@ -92,7 +92,6 @@ static lv_disp_draw_buf_t draw_buf_dsc;
 bool isInLVGL = true;
 
 /* Mjpeg stuff */
-uint8_t *vFileReadBuf = (uint8_t *)malloc(MJPEG_BUFFER_SIZE);
 bool mjpegInited = false;
 
 /* Proximity sensor Object */
@@ -327,11 +326,6 @@ void setup()
   screenWidth = gfx.width();
   screenHeight = gfx.height();
 
-  if (!vFileReadBuf)
-  {
-    ESP_LOGE("setup", "Video file buffer allocate failed!");
-  }
-
   disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   lv_disp_draw_buf_init(&draw_buf_dsc, disp_draw_buf, disp_draw_buf_2, screenWidth * 24);
@@ -504,7 +498,7 @@ static void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
-  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), vFileReadBuf, &gfx, true, screenWidth, screenHeight))
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), (uint8_t*)disp_draw_buf, &gfx, true, screenWidth, screenHeight))
   {
     ESP_LOGE("mjpegInit", "Mjpeg decoder init failed!");
   }
