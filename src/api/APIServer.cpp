@@ -1573,7 +1573,7 @@ static esp_err_t file_copy_handler(httpd_req_t *req)
 /* file OPTIONS handler */
 /* 响应ajax请求预检 */
 static esp_err_t file_options_handler(httpd_req_t *req)
-{   
+{
     char *cross_origin_hdr = nullptr;
     int cross_origin_hdr_len = handle_cross_origin(cross_origin_hdr, req);
 
@@ -1581,7 +1581,7 @@ static esp_err_t file_options_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, DELETE, MOVE, COPY, OPTIONS");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
     httpd_resp_send(req, "", HTTPD_RESP_USE_STRLEN);
-    
+
     free(cross_origin_hdr);
     return ESP_OK;
 }
@@ -2233,15 +2233,19 @@ static esp_err_t weather_city_get_handler(httpd_req_t *req)
         /* 检查输入值 */
         if ((sscanf(value2, "%f", &lat) == 1 && lat >= -90 && lat <= 90) && (sscanf(value3, "%f", &lon) == 1 && lon >= -180 && lon <= 180) && (sscanf(value4, "%d", &provider) == 1 && provider >= 0 && provider <= 1))
         {
-            setting_weatherProvider = provider;
-            switch (provider)
+            if (setting_weatherProvider != provider)
             {
-            case 0:
-                wp = &OpenMeteo;
-                break;
-            default:
-                wp = &MojiTianqi;
-                break;
+                delete wp;
+                switch (provider)
+                {
+                case 0:
+                    wp = new OpenMeteoWeather();
+                    break;
+                default:
+                    wp = new MojiTianqiWeather();
+                    break;
+                }
+                setting_weatherProvider = provider;
             }
 
             wp->setCoordinate(lat, lon);

@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+#include "esp_wifi.h"
 #include <WiFi.h>
 #include <The_Vision_L_globals.h>
 #include "rtos_externs.h"
@@ -16,5 +17,7 @@ bool disConnectWiFi();
 
 void wifiConfigure(void *parameter);
 void stopWifiConfigure(void *parameter);
+
+void deinitWiFi();
 
 #endif

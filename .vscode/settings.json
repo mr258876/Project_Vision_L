@@ -44,7 +44,10 @@
         "lv_conf_internal.h": "c",
         "freertos.h": "c",
         "lv_color_op.h": "c",
-        "lv_qrcode.h": "c"
+        "lv_qrcode.h": "c",
+        "atomic": "cpp",
+        "cstdint": "cpp",
+        "esp_lcd_panel_interface.h": "c"
     },
     "cmake.configureOnOpen": true
 }

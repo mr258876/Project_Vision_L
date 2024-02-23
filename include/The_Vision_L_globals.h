@@ -90,4 +90,8 @@ extern unsigned int setting_updateChannel;
 
 extern uint8_t setting_defaultScreen;
 
+#define SETTING_WIRELESS_WIFI   0b01
+#define SETTING_WIRELESS_BT     0b10
+extern uint8_t setting_wirelessMode;    // wireless mode. 0=off, 1=wifi, 2=bt, 3=both_on
+
 #endif

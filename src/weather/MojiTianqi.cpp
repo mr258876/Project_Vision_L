@@ -1,7 +1,5 @@
 #include "weather/MojiTianqi.h"
 
-MojiTianqiWeather MojiTianqi = MojiTianqiWeather();
-
 const char HTTP_TAG[] = "MojiTianqiWeather";
 
 Weather_weather_t MojiTianqiWeather::weatherCodeConvert(int weatherId)

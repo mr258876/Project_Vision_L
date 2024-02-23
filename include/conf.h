@@ -21,7 +21,7 @@
 #define LOW_POWER            // Accelerometer Power mode -> {LOW_POWER, HIGH_RESOLUTION}
 
 // MJPEG decoder settings
-#define MJPEG_BUFFER_SIZE (240 * 240 * 2 / 8) // Screen resolution 240*240, 2 byte color, compression ratio 1:16
+#define MJPEG_BUFFER_SIZE (240 * 240 * 2 / 14) // Screen resolution 240*240, 2 byte color, compression ratio 1:14
 
 // LVGL Drive Letter
 #define SD_DRIVE_LETTER 'S'

@@ -53,6 +53,10 @@
 // Freertos
 #include <rtc_wdt.h>
 
+// #include "gamepadEmu/DS4.h"
+
+// #define USE_TASK_MONITOR 1
+
 ////////////////////////
 //
 //  Typedef
@@ -83,7 +87,8 @@ static uint32_t screenWidth;
 static uint32_t screenHeight;
 static lv_color_t *disp_draw_buf;
 static lv_color_t *disp_draw_buf_2;
-static lv_disp_t *disp_drv;
+static lv_disp_drv_t disp_drv;
+static lv_disp_draw_buf_t draw_buf_dsc;
 bool isInLVGL = true;
 
 /* Mjpeg stuff */
@@ -103,6 +108,10 @@ int rotation = 0;
 // SampleSource *wav;
 // DACOutput *aOut;
 
+/* Bluetooth */
+// BLEServer *pServer;
+// DS4 *ds4;
+
 ////////////////////////
 //
 //  Function Declartions
@@ -110,6 +119,7 @@ int rotation = 0;
 ////////////////////////
 static void loadSettings();
 static uint checkHardware();
+static void hardwareSetup();
 static bool getDailyNote(Notedata *nd, String *errMsg);
 static void resinCalc(void *parameter);
 static void resinSync(void *parameter);
@@ -140,7 +150,7 @@ static void onMultiClick();
 /**
  * @brief Custom scren update function for LVGL
  */
-void disp_flush(lv_disp_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
   lv_coord_t w = (area->x2 - area->x1 + 1);
   lv_coord_t h = (area->y2 - area->y1 + 1);
@@ -286,9 +296,30 @@ void setup()
     sdfs = &SD;
   }
 
-  // WiFi init
-  WiFi.onEvent(wifiEvent_handler);                                                                                               // 注册事件处理程序
-  esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start); // 注册TLS证书
+  // wireless init
+  {
+    if (setting_wirelessMode & SETTING_WIRELESS_WIFI)
+    {
+      // WiFi init
+      WiFi.onEvent(wifiEvent_handler);                                                                                               // 注册事件处理程序
+      esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start); // 注册TLS证书
+    }
+    
+    // if (setting_wirelessMode & SETTING_WIRELESS_BT)
+    // {
+    //   esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    //   esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
+    //   NimBLEDevice::init(setting_deviceName.c_str());
+    //   pServer = NimBLEDevice::createServer();
+    //   ds4 = new DS4(pServer);
+    // }
+    // else
+    // {
+    //   esp_bt_controller_disable();
+    //   esp_bt_controller_deinit();
+    //   esp_bt_controller_mem_release(ESP_BT_MODE_BTDM);
+    // }
+  }
 
   // LVGL init
   lv_init();
@@ -301,21 +332,26 @@ void setup()
     ESP_LOGE("setup", "Video file buffer allocate failed!");
   }
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 30, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 30, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  lv_disp_draw_buf_init(&draw_buf_dsc, disp_draw_buf, disp_draw_buf_2, screenWidth * 24);
 
   if (!disp_draw_buf || !disp_draw_buf_2)
+  // if (!disp_draw_buf)
   {
     ESP_LOGE("setup", "LVGL disp_draw_buf allocate failed!");
   }
   else
   {
     /* Initialize the display */
-    disp_drv = lv_disp_create(screenWidth, screenHeight);
-    lv_disp_set_draw_buffers(disp_drv, disp_draw_buf, disp_draw_buf_2, screenWidth * 30, LV_DISP_RENDER_MODE_PARTIAL);
-    lv_disp_set_flush_cb(disp_drv, disp_flush);
-    lv_disp_set_rotation(disp_drv, LV_DISP_ROTATION_0, false);
-    lv_disp_set_color_format(disp_drv, LV_COLOR_FORMAT_NATIVE_REVERSED);
+    lv_disp_drv_init(&disp_drv);
+    disp_drv.hor_res = screenWidth;
+    disp_drv.ver_res = screenHeight;
+    disp_drv.flush_cb = disp_flush;
+    disp_drv.draw_buf = &draw_buf_dsc;
+    disp_drv.full_refresh = false;
+    lv_disp_drv_register(&disp_drv);
+    
 
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();
@@ -335,17 +371,24 @@ void setup()
                             1);              // 执行任务核心
 
     LV_LOG_INFO("LVGL booted.");
+
+    hardwareSetup();
   }
+
+  ESP_LOGI("setup", "Boot process complete.");
+  ESP_LOGI("setup", "Free MEM:%u\n", esp_get_free_heap_size());
+  ESP_LOGI("setup", "Max Free Block:%u\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
 }
 
-uint8_t CPU_RunInfo[512];
 void loop()
 {
-#ifdef USE_TASK_MONITOR
-  /* Enable FreeRTOS runtime stats in menuconfig before use */
-  ESP_LOGI("loop", "Free MEM:%d\n", esp_get_free_heap_size());
-  ESP_LOGI("loop", "Max Free Block:%d\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+#if USE_TASK_MONITOR
+  ESP_LOGI("loop", "Free MEM:%u\n", esp_get_free_heap_size());
+  ESP_LOGI("loop", "Max Free Block:%u\n", heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
 
+#if SHOW_TASK_INFO
+  /* Enable FreeRTOS runtime stats in menuconfig before use */
+  uint8_t CPU_RunInfo[512];
   memset(CPU_RunInfo, 0, 512);
   vTaskList((char *)&CPU_RunInfo); // 获取任务运行时间信息
   printf("---------------------------------------------\r\n");
@@ -357,6 +400,7 @@ void loop()
   printf("任务名         运行计数     使用率\r\n");
   printf("%s", CPU_RunInfo);
   printf("---------------------------------------------\r\n\n");
+#endif
 
   vTaskDelay(pdMS_TO_TICKS(2000));
 #else
@@ -411,6 +455,8 @@ static void loadSettings()
 
   setting_defaultScreen = prefs.getUInt("defaultScreen", 1);
 
+  setting_wirelessMode = prefs.getUInt("wirelessMode", 1);
+
   // get app version
   const esp_app_desc_t *running_app_info = esp_ota_get_app_description();
   strcpy(info_appVersion, running_app_info->version);
@@ -444,10 +490,10 @@ static void loadSettings()
   switch (setting_weatherProvider)
   {
   case 0:
-    wp = &OpenMeteo;
+    wp = new OpenMeteoWeather();
     break;
   default:
-    wp = &MojiTianqi;
+    wp = new MojiTianqiWeather();
     break;
   }
   wp->setCity(cityName.c_str());
@@ -546,7 +592,7 @@ static uint checkHardware()
   return err;
 }
 
-void hardwareSetup(void *parameter)
+void hardwareSetup()
 {
   uint hwErr = 0;
   uint fileErr = 0;
@@ -768,9 +814,9 @@ void hardwareSetup(void *parameter)
                               "tsk_fixMissingFiles",
                               4096,
                               &info,
-                              2,
+                              1,
                               NULL,
-                              0);
+                              1);
 
       size_t last_writtenBytes = 0;
       while (info.result == DOWNLOAD_RES_DOWNLOADING)
@@ -882,7 +928,7 @@ void hardwareSetup(void *parameter)
                           NULL,             // 任务参数
                           1,                // 任务优先级
                           NULL,             // 任务句柄
-                          0);               // 执行任务核心
+                          1);               // 执行任务核心
 
   // 每30s计算一次树脂数据
   esp_timer_create_args_t resinCalc_timer_args = {
@@ -938,7 +984,13 @@ void hardwareSetup(void *parameter)
     if (!(hwErr & VISION_HW_SD_ERR) && !((fileErr & VISION_FILE_PLAYLIST_ERR) || (fileErr & VISION_FILE_PLAYLIST_CRITICAL)))
     {
       // 若有SD卡且播放列表不为空则进行播放，否则加载菜单屏
-      loadVideoScreen(NULL);
+      xTaskCreatePinnedToCore(loadVideoScreen,   // 任务函数
+                              "loadVideoScreen", // 任务名称
+                              3072,              // 任务堆栈大小
+                              NULL,              // 任务参数
+                              2,                 // 任务优先级
+                              NULL,              // 任务句柄
+                              1);                // 执行任务核心
       break;
     }
   default:
@@ -949,9 +1001,8 @@ void hardwareSetup(void *parameter)
       delScr(ui_StartupScreen);
     }
     xSemaphoreGive(LVGLMutex);
+    break;
   }
-
-  vTaskDelete(NULL);
 }
 
 static void leaveVideoScreen(void *parameter)
@@ -1046,18 +1097,6 @@ static void getDailyNoteFromResinScreen(void *parameter)
 //  LVGL Callbacks
 //
 ////////////////////
-
-void cb_hardwareSetup(lv_event_t *e)
-{
-  xTaskCreatePinnedToCore(hardwareSetup,   // 任务函数
-                          "hardwareSetup", // 任务名称
-                          8192,            // 任务堆栈大小
-                          NULL,            // 任务参数
-                          1,               // 任务优先级
-                          NULL,            // 任务句柄
-                          0);              // 执行任务核心
-}
-
 void cb_getDailyNoteFromResinScreen(lv_event_t *e)
 {
   xTaskCreatePinnedToCore(getDailyNoteFromResinScreen, // 任务函数
@@ -1066,7 +1105,7 @@ void cb_getDailyNoteFromResinScreen(lv_event_t *e)
                           NULL,                        // 任务参数
                           1,                           // 任务优先级
                           NULL,                        // 任务句柄
-                          0);                          // 执行任务核心
+                          1);                          // 执行任务核心
 }
 
 void cb_loadVideoScreen(lv_event_t *e)
@@ -1285,8 +1324,8 @@ static void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        if (isInLVGL)
-          xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        if (isInLVGL) xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+
         xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);
         {
           gfx.setRotation(toRotate);
@@ -1294,8 +1333,8 @@ static void screenAdjustLoop(void *parameter)
           lv_obj_invalidate(lv_scr_act());
         }
         xSemaphoreGive(*LCDMutexptr);
-        if (isInLVGL)
-          xSemaphoreGive(LVGLMutex);
+
+        if (isInLVGL) xSemaphoreGive(LVGLMutex);
       }
     }
 
@@ -1552,7 +1591,7 @@ static void onDoubleClick()
     }
     else
     {
-      lv_obj_send_event(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
+      lv_event_send(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
     }
   }
   xSemaphoreGive(LVGLMutex);

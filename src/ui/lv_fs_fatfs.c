@@ -136,7 +136,7 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
     }
     strcat(complete_path, path);
 
-    FIL *f = lv_malloc(sizeof(FIL));
+    FIL *f = lv_mem_alloc(sizeof(FIL));
     if (f == NULL)
     {
         LV_LOG_ERROR("No memory to open file!");
@@ -157,7 +157,7 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
     else
     {
         LV_LOG_ERROR("Unable to open file! Result was FRESULT::%d, Path:%s", res, path);
-        lv_free(f);
+        lv_mem_free(f);
         return NULL;
     }
 }
@@ -174,7 +174,7 @@ static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p)
     f_close(file_p);
     if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
-    lv_free(file_p);
+    lv_mem_free(file_p);
     return LV_FS_RES_OK;
 }
 
@@ -274,7 +274,7 @@ static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
  */
 static void *fs_dir_open(lv_fs_drv_t *drv, const char *path)
 {
-    FF_DIR *d = lv_malloc(sizeof(FF_DIR));
+    FF_DIR *d = lv_mem_alloc(sizeof(FF_DIR));
     if (d == NULL)
         return NULL;
 
@@ -300,7 +300,7 @@ static void *fs_dir_open(lv_fs_drv_t *drv, const char *path)
     if (drv->letter == 'S') xSemaphoreGive(SDMutex);
     if (res != FR_OK)
     {
-        lv_free(d);
+        lv_mem_free(d);
         d = NULL;
     }
     return d;
@@ -365,7 +365,7 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *dir_p)
     f_closedir(dir_p);
     if (drv->letter == 'S') xSemaphoreGive(SDMutex);
 
-    lv_free(dir_p);
+    lv_mem_free(dir_p);
     return LV_FS_RES_OK;
 }
 

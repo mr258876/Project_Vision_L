@@ -359,13 +359,14 @@ static uint loadWeatherConfig()
     prefs.putFloat("weatherLong", longitude);
     prefs.putInt("weatherProvider", provider);
 
+    if (wp) delete wp;
     switch (provider)
     {
     case 0:
-      // wp = &OpenMeteo;
+      wp = new OpenMeteoWeather();
       break;
     default:
-      wp = &MojiTianqi;
+      wp = new OpenMeteoWeather();
       break;
     }
     wp->setCity(city);

@@ -292,7 +292,7 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_UI_IMG_CL
 };
 
 const lv_img_dsc_t ui_img_clock_hourhand = {
-  .header.cf = LV_COLOR_FORMAT_ARGB8565,
+  .header.cf = LV_IMG_CF_RGB565A8,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 29,

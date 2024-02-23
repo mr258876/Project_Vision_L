@@ -1,7 +1,5 @@
 #include "weather/OpenMeteo.h"
 
-OpenMeteoWeather OpenMeteo = OpenMeteoWeather();
-
 const char HTTP_TAG[] = "OpenMeteoWeather";
 
 Weather_weather_t OpenMeteoWeather::weatherCodeConvert(int weatherId)

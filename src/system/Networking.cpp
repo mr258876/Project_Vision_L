@@ -59,6 +59,9 @@ void stopWifiConfigure(void *parameter)
 
 bool connectWiFi()
 {
+    if (!(setting_wirelessMode & SETTING_WIRELESS_WIFI))
+        return false;
+
     xSemaphoreTake(WiFiConnectMutex, portMAX_DELAY);
 
     if (WiFi.status() == WL_CONNECTED)
@@ -69,7 +72,7 @@ bool connectWiFi()
     }
 
     WiFi.mode(WIFI_STA);
-    int wifiCount = WiFi.scanNetworks(false, true, false, 300, 0, prefs.getString("wifiSSID1").c_str());
+    int wifiCount = WiFi.scanNetworks(false, true, false, 1200, 0, prefs.getString("wifiSSID1").c_str());
     // WiFi.scanDelete();
     if (wifiCount < 1)
     {

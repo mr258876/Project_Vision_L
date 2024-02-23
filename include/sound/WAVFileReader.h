@@ -1,7 +1,6 @@
 #ifndef _WAV_FILE_RAEDER_H_
 #define _WAV_FILE_RAEDER_H_
 
-#include <SPIFFS.h>
 #include <FS.h>
 #include "sound/SampleSource.h"
 

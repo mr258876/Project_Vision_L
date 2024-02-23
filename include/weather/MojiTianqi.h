@@ -70,6 +70,4 @@ private:
     {94, WEATHER_MODERATE_SNOW_FALL}};
 };
 
-extern MojiTianqiWeather MojiTianqi;
-
 #endif

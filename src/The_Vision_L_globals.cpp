@@ -72,3 +72,5 @@ bool setting_autoUpdate = false;
 unsigned int setting_updateChannel = 0;
 
 uint8_t setting_defaultScreen = 1;
+
+uint8_t setting_wirelessMode = 0;

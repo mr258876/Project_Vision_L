@@ -44,6 +44,4 @@ private:
     {99, WEATHER_HAIL}};
 };
 
-extern OpenMeteoWeather OpenMeteo;
-
 #endif

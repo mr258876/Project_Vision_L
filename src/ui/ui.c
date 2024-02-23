@@ -170,8 +170,8 @@ bool flag_ui_DigitalClockDispResin = true;
 #if LV_COLOR_DEPTH != 16
 #error "LV_COLOR_DEPTH should be 16bit to match SquareLine Studio's settings"
 #endif
-#if LV_COLOR_16_SWAP != 0
-#error "#error LV_COLOR_16_SWAP should be 0 to match SquareLine Studio's settings"
+#if LV_COLOR_16_SWAP != 1
+#error "#error LV_COLOR_16_SWAP should be 1 to match SquareLine Studio's settings"
 #endif
 
 ///////////////////// ANIMATIONS ////////////////////
@@ -326,16 +326,6 @@ void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay)
 }
 
 ///////////////////// FUNCTIONS ////////////////////
-void ui_event_StartupScreen(lv_event_t *e)
-{
-    lv_event_code_t event = lv_event_get_code(e);
-    lv_obj_t *ta = lv_event_get_target(e);
-    if (event == LV_EVENT_SCREEN_LOAD_START)
-    {
-        cb_hardwareSetup(e);
-    }
-}
-
 void ui_event_ResinScreen(lv_event_t *e)
 {
     lv_event_code_t event = lv_event_get_code(e);
@@ -643,7 +633,7 @@ void ui_event_mbox(lv_event_t *e)
         if (target->user_data)
         {
             lv_timer_del(((ui_obj_timer_t *)target->user_data)->timer);
-            lv_free(target->user_data);
+            lv_mem_free(target->user_data);
         }
     }
 }
@@ -655,7 +645,6 @@ void ui_StartupScreen_screen_init(void)
     // ui_StartupScreen
     ui_StartupScreen = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_StartupScreen, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_event(ui_StartupScreen, ui_event_StartupScreen, LV_EVENT_ALL, NULL);
     lv_obj_set_style_bg_color(ui_StartupScreen, lv_color_hex(0x394050), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_StartupScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -955,10 +944,7 @@ void ui_SettingScreen_screen_init(void)
     lv_label_set_text(ui_SettingPanel0Label2, lang[curr_lang][73]); // 73 Utility disabled.
     lv_obj_set_style_text_font(ui_SettingPanel0Label2, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_SettingPanel0QR1 = lv_qrcode_create(ui_SettingInfoPanel0);
-    lv_qrcode_set_size(ui_SettingPanel0QR1, 100);
-    lv_qrcode_set_dark_color(ui_SettingPanel0QR1, lv_color_black());
-    lv_qrcode_set_light_color(ui_SettingPanel0QR1, lv_color_white());
+    ui_SettingPanel0QR1 = lv_qrcode_create(ui_SettingInfoPanel0, 100, lv_color_black(), lv_color_white());
     lv_obj_set_x(ui_SettingPanel0QR1, 0);
     lv_obj_set_y(ui_SettingPanel0QR1, 35);
     lv_obj_set_align(ui_SettingPanel0QR1, LV_ALIGN_CENTER);
@@ -1352,18 +1338,18 @@ void ui_SettingScreen_screen_init(void)
     lv_obj_set_style_text_font(ui_SettingInfoPanelAboutLabel6, &ui_font_HanyiWenhei16ZhHans,
                                LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingTitleBackButton, ui_event_SettingTitleBackButton, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingSideButton0, ui_event_SettingSideButton0, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingSideButton1, ui_event_SettingSideButton1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingSideButton2, ui_event_SettingSideButton2, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel0SW1Switch1, ui_event_SettingPanel0SW1Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel1Button1Button, ui_event_SettingPanel1Button1Button, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel2DP1Dropdown1, ui_event_SettingPanel2DP1Dropdown1, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_SettingPanel2Button1Button, ui_event_SettingPanel2Button1Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingScreen, ui_event_SettingScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingTitleBackButton, ui_event_SettingTitleBackButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingSideButton0, ui_event_SettingSideButton0, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingSideButton1, ui_event_SettingSideButton1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingSideButton2, ui_event_SettingSideButton2, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingSideButton3, ui_event_SettingSideButton3, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel0SW1Switch1, ui_event_SettingPanel0SW1Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel1Button1Button, ui_event_SettingPanel1Button1Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel2SW1Switch1, ui_event_SettingPanel2SW1Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel2SW2Switch1, ui_event_SettingPanel2SW2Switch1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel2DP1Dropdown1, ui_event_SettingPanel2DP1Dropdown1, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_SettingPanel2Button1Button, ui_event_SettingPanel2Button1Button, LV_EVENT_ALL, NULL);
 
     lv_group_focus_obj(ui_SettingSideButton0); // 默认聚焦第一个菜单按钮
     lv_obj_add_state(ui_SettingSideButton0, LV_STATE_PRESSED);
@@ -1432,7 +1418,7 @@ void ui_InfoScreen_screen_init(void)
     lv_obj_set_style_bg_opa(ui_InfoPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_side(ui_InfoPanel, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event(ui_InfoTitleBackButton, ui_event_InfoTitleBackButton, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_InfoTitleBackButton, ui_event_InfoTitleBackButton, LV_EVENT_ALL, NULL);
 }
 
 void ui_VideoScreen_screen_init(void)
@@ -1629,10 +1615,10 @@ void ui_MenuScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_MenuButton4Label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_MenuButton4Label, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event(ui_MenuButton1, ui_event_Menubutton_Vision, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_MenuButton2, ui_event_Menubutton_Resin, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_MenuButton3, ui_event_Menubutton_Clock, LV_EVENT_ALL, NULL);
-    lv_obj_add_event(ui_MenuButton4, ui_event_Menubutton_Setting, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MenuButton1, ui_event_Menubutton_Vision, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MenuButton2, ui_event_Menubutton_Resin, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MenuButton3, ui_event_Menubutton_Clock, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MenuButton4, ui_event_Menubutton_Setting, LV_EVENT_ALL, NULL);
 
     // lv_group_add_obj(ui_group, ui_MenuButton1);
     // lv_group_add_obj(ui_group, ui_MenuButton2);
@@ -1745,7 +1731,7 @@ void ui_ResinScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_NoteUpdateTimeLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_NoteUpdateTimeLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event(ui_ResinScreen, ui_event_ResinScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_ResinScreen, ui_event_ResinScreen, LV_EVENT_ALL, NULL);
 
     lv_group_add_obj(ui_group, ui_ResinScreen);
 
@@ -1883,7 +1869,7 @@ void ui_ClockScreen_screen_init(void)
     lv_obj_clear_flag(ui_ClockIconNight, LV_OBJ_FLAG_SCROLLABLE); /// Flags
     lv_img_set_angle(ui_ClockIconNight, 450);
 
-    lv_obj_add_event(ui_ClockScreen, ui_event_ClockScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_ClockScreen, ui_event_ClockScreen, LV_EVENT_ALL, NULL);
 
     // 将屏幕添加至group内监听按键触发
     lv_group_add_obj(ui_group, ui_ClockScreen);
@@ -2191,7 +2177,7 @@ void ui_DigitalClockScreen_screen_init(void)
     lv_label_set_text(ui_DigitalClockDateLabel, "2022年\n12月14日");
     lv_obj_set_style_text_font(ui_DigitalClockDateLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_event(ui_DigitalClockScreen, ui_event_DigitalClockScreen, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_DigitalClockScreen, ui_event_DigitalClockScreen, LV_EVENT_ALL, NULL);
 
     // 将屏幕添加至group内监听按键触发
     lv_group_add_obj(ui_group, ui_DigitalClockScreen);
