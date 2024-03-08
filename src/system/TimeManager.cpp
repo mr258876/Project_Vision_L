@@ -48,8 +48,71 @@ void syncTime_NTP_async()
     {
         setenv("TZ", setting_timeZone.c_str(), 1);
     }
-    
+
     tzset();
 
     sntp_init();
+}
+
+/*
+    @brief Sync time from other BLE devices. Refer: https://www.bluetooth.com/zh-cn/specifications/specs/current-time-service-1-1/
+*/
+void syncTime_BT()
+{
+    // Create a BLE scan
+    NimBLEScan *scan = NimBLEDevice::getScan();
+
+    // Start scanning for 10 seconds
+    NimBLEScanResults results = scan->start(10, false);
+    ESP_LOGI("TimeManager_BT", "Found %d devices", results.getCount());
+
+    // Iterate through the scan results
+    for (int i = 0; i < results.getCount(); i++)
+    {
+        ESP_LOGI("TimeManager_BT", "Trying device %d", i);
+
+        NimBLEAdvertisedDevice device = results.getDevice(i);
+
+        // Create a BLE client
+        NimBLEClient *client = NimBLEDevice::createClient();
+
+        // Connect to the device
+        ESP_LOGI("TimeManager_BT", "Connecting to %s", device.getAddress().toString().c_str());
+        if (!client->connect(&device))
+        {
+            ESP_LOGW("TimeManager_BT", "Could not connect to %s", device.getAddress().toString().c_str());
+            continue;
+        }
+        ESP_LOGI("TimeManager_BT", "Connected!");
+
+        // Discover the service
+        NimBLERemoteService *cts = client->getService(CURRENT_TIME_SERVICE_UUID);
+        if (!cts)
+        {
+            ESP_LOGW("TimeManager_BT", "Failed to find Current Time Service");
+            client->disconnect();
+            continue;
+        }
+
+        // Discover the characteristic
+        NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHARACTERISTIC_UUID);
+        if (!currentTimeChar)
+        {
+            ESP_LOGW("TimeManager_BT", "Failed to find Current Time Characteristic");
+            client->disconnect();
+            continue;
+        }
+
+        // Read the characteristic value
+        std::string value = currentTimeChar->readValue();
+        ESP_LOGW("TimeManager_BT", "Characteristic value: %s", value.c_str());
+        info_timeSynced = true;
+
+        // Disconnect from the device
+        client->disconnect();
+
+        // Stop scanning as we've synced
+        scan->stop();
+        break;
+    }
 }

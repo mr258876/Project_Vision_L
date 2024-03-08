@@ -93,12 +93,12 @@ int WAVFileReader::getFrames(Frame_t *frames, int number_frames)
         }
         // we need unsigned bytes for the DAC, since we dont have negative voltage output
         int32_t sum = (((int32_t)left) + ((int32_t)right)) + 65536;
-        int_fast8_t val = (64 - (sum / 2048.0)); // 2 channels * 1024
+        int_fast8_t val = (32 - (sum / 4096.0)); // 2 channels * 1024
         if (val < 1)
         {
             val = 0;
         }
-        frames[i].data = 0xffffffffffffffff >> val; // generates a 6-bit output
+        frames[i].data = 0x5555555555555555 >> val; // generates a 5-bit output (each 01 is one bit)
                                                     // position of bits in frames[i] here does not mean anything
                                                     // take reference to the 1-bit music player DACs
     }

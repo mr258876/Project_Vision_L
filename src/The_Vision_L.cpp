@@ -53,6 +53,8 @@
 // Freertos
 #include <rtc_wdt.h>
 
+#include <NimBLEDevice.h>
+#include <NimBLE2904.h>
 // #include "gamepadEmu/DS4.h"
 
 // #define USE_TASK_MONITOR 1
@@ -108,7 +110,10 @@ int rotation = 0;
 // DACOutput *aOut;
 
 /* Bluetooth */
-// BLEServer *pServer;
+NimBLEServer *pBLEServer;
+NimBLEClient *pBLEClient;
+NimBLESecurity *pBLESecurity;
+NimBLEAdvertising *pBLEAdvertising;
 // DS4 *ds4;
 
 ////////////////////////
@@ -303,14 +308,14 @@ void setup()
       WiFi.onEvent(wifiEvent_handler);                                                                                               // 注册事件处理程序
       esp_crt_bundle_set(x509_crt_imported_bundle_bin_start, x509_crt_imported_bundle_bin_end - x509_crt_imported_bundle_bin_start); // 注册TLS证书
     }
-    
+
     // if (setting_wirelessMode & SETTING_WIRELESS_BT)
     // {
-    //   esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    //   esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
-    //   NimBLEDevice::init(setting_deviceName.c_str());
-    //   pServer = NimBLEDevice::createServer();
-    //   ds4 = new DS4(pServer);
+    esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
+    NimBLEDevice::init(setting_deviceName.c_str());
+
+    // ds4 = new DS4(pServer);
     // }
     // else
     // {
@@ -345,7 +350,6 @@ void setup()
     disp_drv.draw_buf = &draw_buf_dsc;
     disp_drv.full_refresh = false;
     lv_disp_drv_register(&disp_drv);
-    
 
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();
@@ -498,7 +502,7 @@ static void mjpegInit()
 {
   // Mjpeg初始化
   int fileNo = prefs.getUInt("currFileId", 0);
-  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), (uint8_t*)disp_draw_buf, &gfx, true, screenWidth, screenHeight))
+  if (!mjpeg.setup(filePaths.get(fileNo).c_str(), (uint8_t *)disp_draw_buf, &gfx, true, screenWidth, screenHeight))
   {
     ESP_LOGE("mjpegInit", "Mjpeg decoder init failed!");
   }
@@ -740,29 +744,36 @@ void hardwareSetup()
     hasWifi = connectWiFi();
   }
 
+  /* 对时 */
+  if (!info_timeSynced)
+  {
+    // if (hasWifi)
+    // {
+    //   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+    //   {
+    //     lv_label_set_text(ui_StartupLabel2, lang[curr_lang][95]); // "正在对时..."
+    //     xSemaphoreGive(LVGLMutex);
+    //   }
+
+    //   syncTime_NTP_async();
+    //   unsigned long time_startNTP = millis();
+    //   while (1)
+    //   {
+    //     if (info_timeSynced || millis() - time_startNTP > 20000)
+    //     {
+    //       break;
+    //     }
+    //     vTaskDelay(50);
+    //   }
+    // }
+    // else
+    // {
+      syncTime_BT();
+    // }
+  }
+  hasWifi = false;
   if (hasWifi)
   {
-    /* 对时 */
-    if (!info_timeSynced)
-    {
-      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-      {
-        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][95]); // "正在对时..."
-        xSemaphoreGive(LVGLMutex);
-      }
-
-      syncTime_NTP_async();
-      unsigned long time_startNTP = millis();
-      while (1)
-      {
-        if (info_timeSynced || millis() - time_startNTP > 20000)
-        {
-          break;
-        }
-        vTaskDelay(50);
-      }
-    }
-
     /* 查询树脂 */
     if (info_timeSynced) // <- 未对时无法生成动态盐值
     {
@@ -1318,7 +1329,8 @@ static void screenAdjustLoop(void *parameter)
 
       if (toRotate != rotation)
       {
-        if (isInLVGL) xSemaphoreTake(LVGLMutex, portMAX_DELAY);
+        if (isInLVGL)
+          xSemaphoreTake(LVGLMutex, portMAX_DELAY);
 
         xSemaphoreTake(*LCDMutexptr, portMAX_DELAY);
         {
@@ -1328,7 +1340,8 @@ static void screenAdjustLoop(void *parameter)
         }
         xSemaphoreGive(*LCDMutexptr);
 
-        if (isInLVGL) xSemaphoreGive(LVGLMutex);
+        if (isInLVGL)
+          xSemaphoreGive(LVGLMutex);
       }
     }
 
