@@ -74,3 +74,7 @@ unsigned int setting_updateChannel = 0;
 uint8_t setting_defaultScreen = 1;
 
 uint8_t setting_wirelessMode = 0;
+
+/* Bluetooth */
+String setting_ble_cts_peer = "";
+uint8_t setting_ble_cts_peer_type = 0;

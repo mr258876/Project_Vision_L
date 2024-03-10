@@ -1,4 +1,17 @@
 #include "system/TimeManager.h"
+#include "system/Bluetooth.h"
+
+void syncTime_async()
+{
+    if (info_wifiStatus == 3) // WL_CONNECTED
+    {
+        syncTime_NTP_async();
+    }
+    else
+    {
+        syncTime_BT_async();
+    }
+}
 
 void time_sync_notification_cb(struct timeval *tv)
 {
@@ -8,7 +21,7 @@ void time_sync_notification_cb(struct timeval *tv)
 
 void syncTime_NTP_async()
 {
-    esp_netif_init();
+    ESP_LOGI("TimeManager", "Syncing time from NTP server");
     if (sntp_enabled())
     {
         sntp_stop();
@@ -59,60 +72,37 @@ void syncTime_NTP_async()
 */
 void syncTime_BT()
 {
-    // Create a BLE scan
-    NimBLEScan *scan = NimBLEDevice::getScan();
-
-    // Start scanning for 10 seconds
-    NimBLEScanResults results = scan->start(10, false);
-    ESP_LOGI("TimeManager_BT", "Found %d devices", results.getCount());
-
-    // Iterate through the scan results
-    for (int i = 0; i < results.getCount(); i++)
+    // Check CTS
+    NimBLERemoteService *cts = pBLEClient->getService(CURRENT_TIME_SERVICE_UUID);
+    if (!cts)
     {
-        ESP_LOGI("TimeManager_BT", "Trying device %d", i);
-
-        NimBLEAdvertisedDevice device = results.getDevice(i);
-
-        // Create a BLE client
-        NimBLEClient *client = NimBLEDevice::createClient();
-
-        // Connect to the device
-        ESP_LOGI("TimeManager_BT", "Connecting to %s", device.getAddress().toString().c_str());
-        if (!client->connect(&device))
-        {
-            ESP_LOGW("TimeManager_BT", "Could not connect to %s", device.getAddress().toString().c_str());
-            continue;
-        }
-        ESP_LOGI("TimeManager_BT", "Connected!");
-
-        // Discover the service
-        NimBLERemoteService *cts = client->getService(CURRENT_TIME_SERVICE_UUID);
-        if (!cts)
-        {
-            ESP_LOGW("TimeManager_BT", "Failed to find Current Time Service");
-            client->disconnect();
-            continue;
-        }
-
-        // Discover the characteristic
-        NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHARACTERISTIC_UUID);
-        if (!currentTimeChar)
-        {
-            ESP_LOGW("TimeManager_BT", "Failed to find Current Time Characteristic");
-            client->disconnect();
-            continue;
-        }
-
-        // Read the characteristic value
-        std::string value = currentTimeChar->readValue();
-        ESP_LOGW("TimeManager_BT", "Characteristic value: %s", value.c_str());
-        info_timeSynced = true;
-
-        // Disconnect from the device
-        client->disconnect();
-
-        // Stop scanning as we've synced
-        scan->stop();
-        break;
+        ESP_LOGW("TimeManager_BT", "Failed to find Current Time Service");
+        return;
     }
+
+    // Discover the characteristic
+    NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHARACTERISTIC_UUID);
+    if (!currentTimeChar)
+    {
+        ESP_LOGW("TimeManager_BT", "Failed to find Current Time Characteristic");
+        return;
+    }
+
+    // Read the characteristic value
+    std::string value = currentTimeChar->readValue();
+    ESP_LOGW("TimeManager_BT", "Characteristic value: %s", value.c_str());
+    info_timeSynced = true;
+}
+
+void syncTime_BT_async()
+{
+    if (setting_ble_cts_peer.isEmpty())
+    {
+        return;
+    }
+
+    ESP_LOGI("TimeManager_BT", "Connecting to peer...");
+    
+    // pBLEClient->setConnectTimeout(10);
+    // pBLEClient->connect(NimBLEAddress(setting_ble_cts_peer.c_str(), setting_ble_cts_peer_type));
 }

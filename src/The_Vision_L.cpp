@@ -53,8 +53,7 @@
 // Freertos
 #include <rtc_wdt.h>
 
-#include <NimBLEDevice.h>
-#include <NimBLE2904.h>
+#include "system/Bluetooth.h"
 // #include "gamepadEmu/DS4.h"
 
 // #define USE_TASK_MONITOR 1
@@ -109,11 +108,6 @@ int rotation = 0;
 // SampleSource *wav;
 // DACOutput *aOut;
 
-/* Bluetooth */
-NimBLEServer *pBLEServer;
-NimBLEClient *pBLEClient;
-NimBLESecurity *pBLESecurity;
-NimBLEAdvertising *pBLEAdvertising;
 // DS4 *ds4;
 
 ////////////////////////
@@ -311,9 +305,7 @@ void setup()
 
     // if (setting_wirelessMode & SETTING_WIRELESS_BT)
     // {
-    esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
-    NimBLEDevice::init(setting_deviceName.c_str());
+    bluetooth_init();
 
     // ds4 = new DS4(pServer);
     // }
@@ -496,6 +488,11 @@ static void loadSettings()
   }
   wp->setCity(cityName.c_str());
   wp->setCoordinate(latitude, longitude);
+
+
+  /* bluetooth */
+  setting_ble_cts_peer = prefs.getString("BLE_CTS_PEER", "");
+  setting_ble_cts_peer_type = prefs.getUChar("BLE_CTS_PEERT", 0);
 }
 
 static void mjpegInit()
@@ -768,7 +765,7 @@ void hardwareSetup()
     // }
     // else
     // {
-      syncTime_BT();
+      syncTime_BT_async();
     // }
   }
   hasWifi = false;
