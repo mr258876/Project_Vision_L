@@ -81,7 +81,7 @@ void syncTime_BT()
     }
 
     // Discover the characteristic
-    NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHARACTERISTIC_UUID);
+    NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHAR_UUID);
     if (!currentTimeChar)
     {
         ESP_LOGW("TimeManager_BT", "Failed to find Current Time Characteristic");

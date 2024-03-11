@@ -79,7 +79,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
   }
 };
 
-// Callback class for handling CTS characteristic read and write events
+// Callback class for handling CTS Current Time characteristic read and write events
 class CurrentTimeCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
   void onRead(NimBLECharacteristic *pCharacteristic)
@@ -103,22 +103,84 @@ class CurrentTimeCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 
   void onWrite(NimBLECharacteristic *pCharacteristic)
   {
-    // Handle time update from a connected client
-    std::string value = pCharacteristic->getValue();
-    if (value.length() == 10)
+    if (pCharacteristic->getUUID().equals(NimBLEUUID(CURRENT_TIME_CHAR_UUID)))
     {
-      // Extract time components from the written value
-      struct tm newTime;
-      newTime.tm_year = value[0] + value[1] * 256 - 1900;
-      newTime.tm_mon = value[2] - 1;
-      newTime.tm_mday = value[3];
-      newTime.tm_hour = value[4];
-      newTime.tm_min = value[5];
-      newTime.tm_sec = value[6];
-      // Set the system time to the updated value
-      time_t newEpochTime = mktime(&newTime);
-      struct timeval newTimeVal = {newEpochTime, 0};
-      settimeofday(&newTimeVal, nullptr);
+      // Handle time update from a connected client
+      std::string value = pCharacteristic->getValue();
+      if (value.length() == 10)
+      {
+        // Extract time components from the written value
+        struct tm newTime;
+        newTime.tm_year = value[0] + value[1] * 256 - 1900;
+        newTime.tm_mon = value[2] - 1;
+        newTime.tm_mday = value[3];
+        newTime.tm_hour = value[4];
+        newTime.tm_min = value[5];
+        newTime.tm_sec = value[6];
+        // Set the system time to the updated value
+        time_t newEpochTime = mktime(&newTime);
+        struct timeval newTimeVal = {newEpochTime, 0};
+        settimeofday(&newTimeVal, nullptr);
+      }
+    }
+    else if (pCharacteristic->getUUID().equals(NimBLEUUID(LOCAL_TIME_INFO_CHAR_UUID)))
+    {
+    }
+  }
+};
+
+// Callback class for handling CTS Local Time Information characteristic read and write events
+class LocalTimeInfoCharacteristicCallbacks : public NimBLECharacteristicCallbacks
+{
+  void onRead(NimBLECharacteristic *pCharacteristic)
+  {
+    const char *tz = getenv("TZ");
+    int8_t timeZoneOffset = 0;
+    int8_t dstOffset = 0;
+
+    // parse TimeZone offset
+    if (tz != nullptr)
+    {
+      int hours = 0, minutes = 0;
+      if (sscanf(tz, "UTC+%d:%d", &hours, &minutes) == 2 ||
+          sscanf(tz, "UTC-%d:%d", &hours, &minutes) == 2)
+      {
+        // Handle "UTC±XX:XX" format
+        timeZoneOffset = (hours * 4) + (minutes / 15);
+      }
+      else if (sscanf(tz, "UTC+%d", &hours) == 1 ||
+               sscanf(tz, "UTC-%d", &hours) == 1)
+      {
+        // Handle "UTC±XX" format
+        timeZoneOffset = hours * 4;
+      }
+    }
+
+    uint8_t localTimeInfo[2] = {(uint8_t)timeZoneOffset, (uint8_t)dstOffset};
+    pCharacteristic->setValue(localTimeInfo, 2);
+  }
+
+  void onWrite(NimBLECharacteristic *pCharacteristic)
+  {
+    // Handle time zone and DST offset update for Local Time Information characteristic
+    std::string value = pCharacteristic->getValue();
+    if (value.length() == 2)
+    {
+      int8_t timeZoneOffset = (int8_t)value[0]; // Time zone offset in 15-minute increments
+      int8_t dstOffset = (int8_t)value[1];      // DST offset in 15-minute increments
+
+      // Calculate the total offset in hours and minutes
+      int totalOffsetMinutes = timeZoneOffset * 15 + dstOffset * 15;
+      int hours = totalOffsetMinutes / 60;
+      int minutes = abs(totalOffsetMinutes % 60);
+
+      // Construct the time zone string in the format "UTC±hh:mm"
+      char timeZoneString[10];
+      snprintf(timeZoneString, sizeof(timeZoneString), "UTC%+d:%02d", hours, minutes);
+
+      // Set the time zone environment variable and update the time zone setting
+      setenv("TZ", timeZoneString, 1);
+      tzset();
     }
   }
 };
@@ -137,7 +199,7 @@ void bluetooth_init()
   NimBLEDevice::setSecurityInitKey(3);
   NimBLEDevice::setSecurityRespKey(3);
 
-  // Enable pairing
+  // Enable pairing & RPA
   NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM, false);
   NimBLEDevice::setSecurityAuth(true, true, true);
 
@@ -148,13 +210,16 @@ void bluetooth_init()
   // Create a server
   pBLEServer = NimBLEDevice::createServer();
 
-  // Create current time service
+  // Setup current time service
   NimBLEService *pCurrentTimeService = pBLEServer->createService(CURRENT_TIME_SERVICE_UUID);
   NimBLECharacteristic *pCurrentTimeCharacteristic = pCurrentTimeService->createCharacteristic(
-      CURRENT_TIME_CHARACTERISTIC_UUID,
+      CURRENT_TIME_CHAR_UUID,
       NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::WRITE_ENC);
-
   pCurrentTimeCharacteristic->setCallbacks(new CurrentTimeCharacteristicCallbacks());
+  NimBLECharacteristic *pLocalTimeInfoCharacteristic = pCurrentTimeService->createCharacteristic(
+      LOCAL_TIME_INFO_CHAR_UUID,
+      NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC);
+  pLocalTimeInfoCharacteristic->setCallbacks(new LocalTimeInfoCharacteristicCallbacks());
   pCurrentTimeService->start();
 
   // Start advertising
