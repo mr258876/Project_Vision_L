@@ -13,7 +13,6 @@
 void syncTime_async();
 
 void syncTime_NTP_async();
-void syncTime_BT();         // only when connected to a BLE server
 void syncTime_BT_async();
 
 #endif

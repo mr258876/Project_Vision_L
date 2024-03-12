@@ -437,6 +437,11 @@ static void loadSettings()
   setting_useDigitalClock = prefs.getBool("useDigitalClock", false);
 
   setting_timeZone = prefs.getString("timeZone", "");
+  if (!setting_timeZone.isEmpty())
+  {
+    setenv("TZ", setting_timeZone.c_str(), 1);
+    tzset();
+  }
 
   setting_autoUpdate = prefs.getBool("autoUpdate", true);
   setting_updateChannel = prefs.getUInt("updateChannel", 0);
