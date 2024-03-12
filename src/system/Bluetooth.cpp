@@ -4,6 +4,7 @@
 #include <esp_nimble_hci.h>
 #include <nimble/nimble/host/src/ble_hs_resolv_priv.h>
 #include "TimeManager.h"
+#include <time.h>
 
 NimBLEServer *pBLEServer = nullptr;
 NimBLEAdvertising *pBLEAdvertising = nullptr;
@@ -103,28 +104,28 @@ class CurrentTimeCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 
   void onWrite(NimBLECharacteristic *pCharacteristic)
   {
-    if (pCharacteristic->getUUID().equals(NimBLEUUID(CURRENT_TIME_CHAR_UUID)))
+    // Handle time update from a connected client
+    std::string value = pCharacteristic->getValue();
+    if (value.length() == 10)
     {
-      // Handle time update from a connected client
-      std::string value = pCharacteristic->getValue();
-      if (value.length() == 10)
-      {
-        // Extract time components from the written value
-        struct tm newTime;
-        newTime.tm_year = value[0] + value[1] * 256 - 1900;
-        newTime.tm_mon = value[2] - 1;
-        newTime.tm_mday = value[3];
-        newTime.tm_hour = value[4];
-        newTime.tm_min = value[5];
-        newTime.tm_sec = value[6];
-        // Set the system time to the updated value
-        time_t newEpochTime = mktime(&newTime);
-        struct timeval newTimeVal = {newEpochTime, 0};
-        settimeofday(&newTimeVal, nullptr);
-      }
-    }
-    else if (pCharacteristic->getUUID().equals(NimBLEUUID(LOCAL_TIME_INFO_CHAR_UUID)))
-    {
+      // Extract time components from the written value
+      struct tm newTime;
+      newTime.tm_year = value[0] + value[1] * 256 - 1900;
+      newTime.tm_mon = value[2] - 1;
+      newTime.tm_mday = value[3];
+      newTime.tm_hour = value[4];
+      newTime.tm_min = value[5];
+      newTime.tm_sec = value[6];
+
+      // Convert local time to UTC time
+      // Note: This assumes that the time zone and DST offset have been correctly set
+      // using the LocalTimeInfo characteristic.
+      time_t newEpochTime = mktime(&newTime);
+      struct timeval newTimeVal = {newEpochTime, 0};
+      newTimeVal.tv_sec -= _timezone; // Adjust for the local time zone offset
+
+      // Set the system time to the UTC value
+      settimeofday(&newTimeVal, nullptr);
     }
   }
 };
