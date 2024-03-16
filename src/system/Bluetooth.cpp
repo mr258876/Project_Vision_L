@@ -32,8 +32,6 @@ class ServerCallbacks : public NimBLEServerCallbacks
   }
 };
 
-
-
 /*
     @brief Initialize Bluetooth
 */
@@ -60,12 +58,10 @@ void bluetooth_init()
   pBLEServer = NimBLEDevice::createServer();
 
   pBLEAdvertising = NimBLEDevice::getAdvertising();
-  pBLEAdvertising->setAppearance(256);  // BLE_APPEARANCE_GENERIC_CLOCK
+  pBLEAdvertising->setAppearance(256); // BLE_APPEARANCE_GENERIC_CLOCK
   ble_cts_setup(pBLEServer);
   pBLEAdvertising->start();
 
   pBLEServer->setCallbacks(new ServerCallbacks());
-  
 
-  // pBLEClient->connect(NimBLEDevice::getBondedAddress(0));
 }

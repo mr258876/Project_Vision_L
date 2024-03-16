@@ -217,6 +217,7 @@ class CTSClientCallbacks : public NimBLEClientCallbacks
     void onConnect(NimBLEClient *pClient)
     {
         ESP_LOGI(TAG, "Connected to server");
+        pClient->secureConnection();
         ble_read_cts_from_peer_and_disconnect(pClient);
     }
 
@@ -224,6 +225,12 @@ class CTSClientCallbacks : public NimBLEClientCallbacks
     {
         ESP_LOGI(TAG, "Disconnected from server");
         NimBLEDevice::deleteClient(pClient);
+    }
+
+    bool onConfirmPIN(uint32_t pin)
+    {
+        ESP_LOGI(TAG, "Server Confirm PIN: %u", pin);
+        return true;
     }
 };
 
@@ -261,6 +268,7 @@ class CTSAdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
 
             NimBLEClient *pClient = NimBLEDevice::createClient();
             pClient->setClientCallbacks(new CTSClientCallbacks());
+            pClient->setConnectTimeout(5);
             pClient->connect(dev_address);
         }
     }
@@ -268,9 +276,9 @@ class CTSAdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
 
 void ble_scan_bonded_device_auto_cts_async()
 {
-    // NimBLEScan *scan = NimBLEDevice::getScan();
-    // scan->setActiveScan(true);
-    // scan->setAdvertisedDeviceCallbacks(new CTSAdvertisedDeviceCallbacks());
-    // scan->setMaxResults(0); // do not store results, use callback only
-    // scan->start(15, nullptr, false);
+    NimBLEScan *scan = NimBLEDevice::getScan();
+    scan->setActiveScan(true);
+    scan->setAdvertisedDeviceCallbacks(new CTSAdvertisedDeviceCallbacks());
+    scan->setMaxResults(0); // do not store results, use callback only
+    scan->start(5, nullptr, false);
 }
