@@ -13,6 +13,8 @@ static const NimBLEUUID LOCAL_TIME_INFO_CHAR_UUID((uint16_t)0x2A0F);
 // static NimBLECharacteristic *pCurrentTimeCharacteristic = nullptr;
 // static NimBLECharacteristic *pLocalTimeInfoCharacteristic = nullptr;
 
+static void makeClientConnection(void *param);
+
 static void updateTimeFromCurrentTime(const NimBLEAttValue &value)
 {
     // Extract time components from the written value
@@ -168,11 +170,13 @@ void ble_cts_setup(NimBLEServer *pBLEServer)
 */
 void ble_read_cts_from_peer(NimBLEClient *pClient)
 {
+    ESP_LOGD(TAG, "Checking server");
+
     // Check CTS
     NimBLERemoteService *cts = pClient->getService(CURRENT_TIME_SERVICE_UUID);
     if (!cts)
     {
-        ESP_LOGW("TimeManager_BT", "Failed to find Current Time Service");
+        ESP_LOGW(TAG, "Failed to find Current Time Service");
         return;
     }
 
@@ -180,7 +184,7 @@ void ble_read_cts_from_peer(NimBLEClient *pClient)
     NimBLERemoteCharacteristic *localTimeInfoChar = cts->getCharacteristic(LOCAL_TIME_INFO_CHAR_UUID);
     if (!localTimeInfoChar)
     {
-        ESP_LOGW("TimeManager_BT", "Failed to find Local Time Info Characteristic");
+        ESP_LOGW(TAG, "Failed to find Local Time Info Characteristic");
         /* continue since this is an optional characteristic */
     }
     else
@@ -194,7 +198,7 @@ void ble_read_cts_from_peer(NimBLEClient *pClient)
     NimBLERemoteCharacteristic *currentTimeChar = cts->getCharacteristic(CURRENT_TIME_CHAR_UUID);
     if (!currentTimeChar)
     {
-        ESP_LOGW("TimeManager_BT", "Failed to find Current Time Characteristic");
+        ESP_LOGW(TAG, "Failed to find Current Time Characteristic");
         return;
     }
 
@@ -205,10 +209,15 @@ void ble_read_cts_from_peer(NimBLEClient *pClient)
     info_timeSynced = true;
 }
 
-static void ble_read_cts_from_peer_and_disconnect(NimBLEClient *pClient)
+static void ble_read_cts_from_peer_and_disconnect(void *param)
 {
+    uint16_t *pConnId = (uint16_t *)param;
+    NimBLEClient *pClient = NimBLEDevice::getClientByID(*pConnId);
+    pClient->secureConnection();
     ble_read_cts_from_peer(pClient);
     pClient->disconnect();
+
+    vTaskDelete(NULL);
 }
 
 // Callbacks for client events
@@ -217,8 +226,10 @@ class CTSClientCallbacks : public NimBLEClientCallbacks
     void onConnect(NimBLEClient *pClient)
     {
         ESP_LOGI(TAG, "Connected to server");
-        pClient->secureConnection();
-        ble_read_cts_from_peer_and_disconnect(pClient);
+
+        uint16_t *pConnId = (uint16_t *)malloc(sizeof(pConnId));
+        *pConnId = pClient->getConnId();
+        xTaskCreate(ble_read_cts_from_peer_and_disconnect, "read_cts", 4096, pConnId, 1, NULL);
     }
 
     void onDisconnect(NimBLEClient *pClient)
@@ -266,10 +277,8 @@ class CTSAdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
             NimBLEScan *scan = NimBLEDevice::getScan();
             scan->stop();
 
-            NimBLEClient *pClient = NimBLEDevice::createClient();
-            pClient->setClientCallbacks(new CTSClientCallbacks());
-            pClient->setConnectTimeout(5);
-            pClient->connect(dev_address);
+            NimBLEAddress *pAddr = new NimBLEAddress(dev_address);
+            xTaskCreate(makeClientConnection, "makeClientConnection", 4096, pAddr, 1, NULL);
         }
     }
 };
@@ -281,4 +290,19 @@ void ble_scan_bonded_device_auto_cts_async()
     scan->setAdvertisedDeviceCallbacks(new CTSAdvertisedDeviceCallbacks());
     scan->setMaxResults(0); // do not store results, use callback only
     scan->start(5, nullptr, false);
+}
+
+static void makeClientConnection(void *param)
+{
+    NimBLEAddress *pAddr = (NimBLEAddress *)param;
+
+    ESP_LOGI(TAG, "Device address %s", pAddr->toString().c_str());
+
+    NimBLEClient *pClient = NimBLEDevice::createClient();
+    pClient->setClientCallbacks(new CTSClientCallbacks());
+    pClient->setConnectTimeout(5);
+    pClient->connect(*pAddr);
+
+    delete pAddr;
+    vTaskDelete(NULL);
 }
