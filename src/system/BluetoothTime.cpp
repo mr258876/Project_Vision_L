@@ -209,15 +209,10 @@ void ble_read_cts_from_peer(NimBLEClient *pClient)
     info_timeSynced = true;
 }
 
-static void ble_read_cts_from_peer_and_disconnect(void *param)
+static void ble_read_cts_from_peer_and_disconnect(NimBLEClient *pClient)
 {
-    uint16_t *pConnId = (uint16_t *)param;
-    NimBLEClient *pClient = NimBLEDevice::getClientByID(*pConnId);
-    pClient->secureConnection();
     ble_read_cts_from_peer(pClient);
-    pClient->disconnect();
-
-    vTaskDelete(NULL);
+    // pClient->disconnect();
 }
 
 // Callbacks for client events
@@ -226,10 +221,8 @@ class CTSClientCallbacks : public NimBLEClientCallbacks
     void onConnect(NimBLEClient *pClient)
     {
         ESP_LOGI(TAG, "Connected to server");
-
-        uint16_t *pConnId = (uint16_t *)malloc(sizeof(pConnId));
-        *pConnId = pClient->getConnId();
-        xTaskCreate(ble_read_cts_from_peer_and_disconnect, "read_cts", 4096, pConnId, 1, NULL);
+        pClient->secureConnection();
+        ble_read_cts_from_peer_and_disconnect(pClient);
     }
 
     void onDisconnect(NimBLEClient *pClient)
