@@ -34,7 +34,10 @@ void cb_timer_mboxDelTimer(lv_timer_t *timer)
 
 void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const char **btn_txts, bool add_close_btn, uint32_t timeout)
 {
-  lv_obj_t *mbox = lv_msgbox_create(parent, title, content, btn_txts, add_close_btn);
+  lv_obj_t *mbox = lv_msgbox_create(parent);
+  lv_msgbox_add_text(mbox, content);
+  if (title) lv_msgbox_add_title(mbox, title);
+  if (add_close_btn) lv_msgbox_add_close_button(mbox);
   lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_center(mbox);
 
@@ -43,7 +46,7 @@ void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const 
     lv_timer_t *mbox_timer = lv_timer_create(cb_timer_mboxDelTimer, timeout, mbox);
     lv_timer_set_repeat_count(mbox_timer, 1);
 
-    ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+    ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
     obj_timer_data->obj = mbox;
     obj_timer_data->timer = mbox_timer;
     lv_obj_set_user_data(mbox, obj_timer_data);
@@ -56,6 +59,6 @@ void cb_timer_ScrDelTimer(lv_timer_t *timer)
 {
   lv_obj_t *scr = ((ui_obj_timer_t *)timer->user_data)->obj;
   delScr(scr);
-  if (timer->user_data) lv_mem_free(timer->user_data);
+  if (timer->user_data) lv_free(timer->user_data);
   lv_timer_del(timer);
 }

@@ -86,10 +86,9 @@ static LGFX_Device gfx;
 /* LVGL Stuff */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
-static lv_color_t *disp_draw_buf;
-static lv_color_t *disp_draw_buf_2;
-static lv_disp_drv_t disp_drv;
-static lv_disp_draw_buf_t draw_buf_dsc;
+static uint8_t *disp_draw_buf;
+static uint8_t *disp_draw_buf_2;
+static lv_display_t *disp_drv;
 bool isInLVGL = true;
 
 /* Mjpeg stuff */
@@ -148,10 +147,12 @@ static void onMultiClick();
 /**
  * @brief Custom scren update function for LVGL
  */
-void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *color_p)
 {
   lv_coord_t w = (area->x2 - area->x1 + 1);
   lv_coord_t h = (area->y2 - area->y1 + 1);
+
+  lv_draw_sw_rgb565_swap(color_p, w*h); // swap bytes
 
   if (xSemaphoreTake(*LCDMutexptr, portMAX_DELAY) == pdTRUE)
   {
@@ -160,6 +161,11 @@ void disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
     xSemaphoreGive(*LCDMutexptr);
   }
   lv_disp_flush_ready(disp);
+}
+
+unsigned int get_tick()
+{
+  return esp_timer_get_time() / 1000;
 }
 
 /* Setup Function */
@@ -320,12 +326,15 @@ void setup()
   // LVGL init
   lv_init();
 
+  /*Set a tick source so that LVGL will know how much time elapsed. */
+  lv_tick_set_cb(get_tick);
+  lv_delay_set_cb(vTaskDelay);
+
   screenWidth = gfx.width();
   screenHeight = gfx.height();
 
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  disp_draw_buf_2 = (lv_color_t *)heap_caps_malloc(sizeof(lv_color_t) * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  lv_disp_draw_buf_init(&draw_buf_dsc, disp_draw_buf, disp_draw_buf_2, screenWidth * 24);
+  disp_draw_buf = (uint8_t *)heap_caps_malloc(2 * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  disp_draw_buf_2 = (uint8_t *)heap_caps_malloc(2 * screenWidth * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 
   if (!disp_draw_buf || !disp_draw_buf_2)
   // if (!disp_draw_buf)
@@ -335,13 +344,10 @@ void setup()
   else
   {
     /* Initialize the display */
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res = screenWidth;
-    disp_drv.ver_res = screenHeight;
-    disp_drv.flush_cb = disp_flush;
-    disp_drv.draw_buf = &draw_buf_dsc;
-    disp_drv.full_refresh = false;
-    lv_disp_drv_register(&disp_drv);
+    disp_drv = lv_display_create(screenWidth, screenHeight);
+    lv_display_set_color_format(disp_drv, LV_COLOR_FORMAT_RGB565);
+    lv_display_set_buffers(disp_drv, disp_draw_buf, disp_draw_buf_2, 2 * screenWidth * 24, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_flush_cb(disp_drv, disp_flush);
 
     /* Initialize input device driver */
     // lv_indev_button_encoder_init();
@@ -749,29 +755,29 @@ void hardwareSetup()
   /* 对时 */
   if (!info_timeSynced)
   {
-    // if (hasWifi)
-    // {
-    //   if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
-    //   {
-    //     lv_label_set_text(ui_StartupLabel2, lang[curr_lang][95]); // "正在对时..."
-    //     xSemaphoreGive(LVGLMutex);
-    //   }
+    if (hasWifi)
+    {
+      if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
+      {
+        lv_label_set_text(ui_StartupLabel2, lang[curr_lang][95]); // "正在对时..."
+        xSemaphoreGive(LVGLMutex);
+      }
 
-    //   syncTime_NTP_async();
-    //   unsigned long time_startNTP = millis();
-    //   while (1)
-    //   {
-    //     if (info_timeSynced || millis() - time_startNTP > 20000)
-    //     {
-    //       break;
-    //     }
-    //     vTaskDelay(50);
-    //   }
-    // }
-    // else
-    // {
+      syncTime_NTP_async();
+      unsigned long time_startNTP = millis();
+      while (1)
+      {
+        if (info_timeSynced || millis() - time_startNTP > 20000)
+        {
+          break;
+        }
+        vTaskDelay(50);
+      }
+    }
+    else
+    {
       syncTime_BT_async();
-    // }
+    }
   }
   hasWifi = false;
   if (hasWifi)
@@ -1257,7 +1263,7 @@ static void lvglLoop(void *parameter)
   {
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_timer_handler(); /* let the GUI do its work */
+      lv_task_handler(); /* let the GUI do its work */
       xSemaphoreGive(LVGLMutex);
     }
     vTaskDelay(pdMS_TO_TICKS(5));
@@ -1600,7 +1606,7 @@ static void onDoubleClick()
     }
     else
     {
-      lv_event_send(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
+      lv_obj_send_event(lv_group_get_focused(lv_group_get_default()), LV_EVENT_CLICKED, NULL);
     }
   }
   xSemaphoreGive(LVGLMutex);

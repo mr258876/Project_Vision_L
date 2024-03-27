@@ -332,10 +332,10 @@ void cb_timer_DigitalClockResinTimer(lv_timer_t *timer)
         if (*((bool *)timer->user_data))
         {
             // 使用timer->user_data存储显示状态
-            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Resin);
+            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_resin_resin);
             lv_label_set_text_fmt(ui_DigitalClockResinLabel1, "%d", nd.resinRemain);
 
-            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Homecoin);
+            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_resin_homecoin);
             if (nd.homecoinRemain < 1000)
                 lv_label_set_text_fmt(ui_DigitalClockResinLabel2, "%d", nd.homecoinRemain);
             else
@@ -345,10 +345,10 @@ void cb_timer_DigitalClockResinTimer(lv_timer_t *timer)
         }
         else
         {
-            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_Expeditions);
+            lv_img_set_src(ui_DigitalClockResinIcon1, &ui_img_resin_expeditions);
             lv_label_set_text_fmt(ui_DigitalClockResinLabel1, "%d/%d", nd.expeditionFinished, nd.expeditionOngoing);
 
-            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_Transformer);
+            lv_img_set_src(ui_DigitalClockResinIcon2, &ui_img_resin_transformer);
             if (nd.hasTransformer)
             {
                 if (nd.transformerRecoverTime > 86400)

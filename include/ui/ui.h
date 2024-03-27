@@ -215,21 +215,21 @@ void aniDigitalClockLinear_Animation(lv_obj_t *TargetObject, int delay);
 
 LV_IMG_DECLARE(ui_img_back);
 
-LV_IMG_DECLARE(ui_img_icon_element);
-LV_IMG_DECLARE(ui_img_icon_activity_signintab);
-LV_IMG_DECLARE(ui_img_icon_timespeedup_s);
-LV_IMG_DECLARE(ui_img_icon_setting_s);
+LV_IMG_DECLARE(ui_img_menu_element);
+LV_IMG_DECLARE(ui_img_menu_resin);
+LV_IMG_DECLARE(ui_img_menu_clock);
+LV_IMG_DECLARE(ui_img_menu_setting);
 
-LV_IMG_DECLARE(ui_img_Resin);
-LV_IMG_DECLARE(ui_img_Homecoin);
-LV_IMG_DECLARE(ui_img_Expeditions);
-LV_IMG_DECLARE(ui_img_Transformer);
+LV_IMG_DECLARE(ui_img_resin_resin);
+LV_IMG_DECLARE(ui_img_resin_homecoin);
+LV_IMG_DECLARE(ui_img_resin_expeditions);
+LV_IMG_DECLARE(ui_img_resin_transformer);
 
-LV_IMG_DECLARE(ui_img_HoroscopeBg);
-LV_IMG_DECLARE(ui_img_Horoscope03);
-LV_IMG_DECLARE(ui_img_Horoscope04);
-LV_IMG_DECLARE(ui_img_Horoscope05);
-LV_IMG_DECLARE(ui_img_Horoscope06);
+LV_IMG_DECLARE(ui_img_clock_horoscopeBg);
+LV_IMG_DECLARE(ui_img_clock_horoscope03);
+LV_IMG_DECLARE(ui_img_clock_horoscope04);
+LV_IMG_DECLARE(ui_img_clock_horoscope05);
+LV_IMG_DECLARE(ui_img_clock_horoscope06);
 LV_IMG_DECLARE(ui_img_clock_mask);
 LV_IMG_DECLARE(ui_img_clock_minutehand);
 LV_IMG_DECLARE(ui_img_clock_secondhand);

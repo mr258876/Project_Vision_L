@@ -14,7 +14,7 @@ void cb_leaveResinScreen(lv_event_t *e)
   lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
   refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_ResinScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -58,7 +58,7 @@ void cb_leaveSettingScreen(lv_event_t *e)
   lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false); // 切换屏幕
   refreshScr(ui_MenuScreen);                                                // 刷新屏幕消除切换回菜单后的残留部分
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);  // 创建定时器异步删除屏幕
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_SettingScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -73,7 +73,7 @@ void cb_loadResinScreen(lv_event_t *e)
   lv_scr_load_anim(ui_ResinScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_ResinScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = curr_scr;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -163,7 +163,7 @@ void cb_loadSettingScreen(lv_event_t *e)
   lv_scr_load_anim(ui_SettingScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, false);
   refreshScr(ui_SettingScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 250, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = curr_scr;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -181,7 +181,7 @@ void cb_leaveWifiReconfigInfo()
   lv_group_focus_obj(ui_SettingPanel1Button1Button);
   refreshScr(ui_SettingScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -205,7 +205,8 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
   lv_label_set_text(ui_InfoPanelLabel1, lang[curr_lang][33]); // "使用微信扫描QR码\n进行网络配置"
   lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  lv_obj_t *ui_InfoPanelQR1 = lv_qrcode_create(ui_InfoPanel, 100, lv_color_black(), lv_color_white());
+  lv_obj_t *ui_InfoPanelQR1 = lv_qrcode_create(ui_InfoPanel);
+  lv_qrcode_set_size(ui_InfoPanel, 100);
   lv_qrcode_update(ui_InfoPanelQR1, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
   lv_obj_set_x(ui_InfoPanelQR1, 0);
   lv_obj_set_y(ui_InfoPanelQR1, 60);
@@ -239,7 +240,7 @@ void cb_leaveSDErrorInfo()
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -311,7 +312,7 @@ void cb_leavePlaylistErrorInfo()
   lv_group_focus_obj(ui_MenuButton1);
   refreshScr(ui_MenuScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -389,7 +390,7 @@ void cb_leaveProxCalibrationInfo()
   lv_group_focus_obj(ui_SettingPanel2Button1Button);
   refreshScr(ui_SettingScreen);
   lv_timer_t *scrDelTimer = lv_timer_create(cb_timer_ScrDelTimer, 200, NULL);
-  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_mem_alloc(sizeof(ui_obj_timer_t));
+  ui_obj_timer_t *obj_timer_data = (ui_obj_timer_t *)lv_malloc(sizeof(ui_obj_timer_t));
   obj_timer_data->obj = ui_InfoScreen;
   obj_timer_data->timer = scrDelTimer;
   scrDelTimer->user_data = obj_timer_data;
@@ -522,7 +523,8 @@ void cb_loadWifiConfigInfoStartupScreen(lv_event_t *e)
   lv_obj_set_style_text_opa(ui_NetConfigureLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_font(ui_NetConfigureLabel, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen, 100, lv_color_black(), lv_color_white());
+  lv_obj_t *qr = lv_qrcode_create(ui_StartupScreen);
+  lv_qrcode_set_size(qr, 100);
 
   /*Set data*/
   lv_qrcode_update(qr, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
