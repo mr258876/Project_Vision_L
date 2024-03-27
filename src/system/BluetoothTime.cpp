@@ -33,7 +33,7 @@ static void updateTimeFromCurrentTime(const NimBLEAttValue &value)
     struct timeval newTimeVal = {newEpochTime, 0};
     time_t timenow_utc = time(nullptr);
     time_t time_offset = mktime(localtime(&timenow_utc)) - timenow_utc;
-    newTimeVal.tv_sec -= time_offset; // Adjust for the local time zone offset
+    newTimeVal.tv_sec += time_offset; // Adjust for the local time zone offset
 
     // Set the system time to the UTC value
     settimeofday(&newTimeVal, nullptr);
@@ -54,7 +54,7 @@ static void updateTZFromLocalTimeInfo(const NimBLEAttValue &value)
 
     // Construct the time zone string in the format "UTC±hh:mm"
     char timeZoneString[10];
-    snprintf(timeZoneString, sizeof(timeZoneString), "UTC%+d:%02d", hours, minutes);
+    snprintf(timeZoneString, sizeof(timeZoneString), "UTC%+d:%02d", -hours, minutes);
 
     // Set the time zone environment variable and update the time zone setting
     setenv("TZ", timeZoneString, 1);
@@ -113,17 +113,15 @@ class LocalTimeInfoCharacteristicCallbacks : public NimBLECharacteristicCallback
         if (tz != nullptr)
         {
             int hours = 0, minutes = 0;
-            if (sscanf(tz, "UTC+%d:%d", &hours, &minutes) == 2 ||
-                sscanf(tz, "UTC-%d:%d", &hours, &minutes) == 2)
+            if (sscanf(tz, "UTC%d:%d", &hours, &minutes) == 2)
             {
                 // Handle "UTC±XX:XX" format
-                timeZoneOffset = (hours * 4) + (minutes / 15);
+                timeZoneOffset = -((hours * 4) + (minutes / 15));
             }
-            else if (sscanf(tz, "UTC+%d", &hours) == 1 ||
-                     sscanf(tz, "UTC-%d", &hours) == 1)
+            else if (sscanf(tz, "UTC%d", &hours) == 1)
             {
                 // Handle "UTC±XX" format
-                timeZoneOffset = hours * 4;
+                timeZoneOffset = -(hours * 4);
             }
         }
 
