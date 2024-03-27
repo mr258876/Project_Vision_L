@@ -2,6 +2,7 @@
 #include "The_Vision_L_globals.h"
 #include <esp_log.h>
 #include "BluetoothTime.h"
+// #include "nimble/nimble/host/src/ble_hs_pvcy_priv.h"
 
 NimBLEServer *pBLEServer = nullptr;
 NimBLEAdvertising *pBLEAdvertising = nullptr;
@@ -41,6 +42,8 @@ void bluetooth_init()
   esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
 
   NimBLEDevice::init(setting_deviceName.c_str());
+
+  // ble_hs_pvcy_set_our_irk();
 
   // Enable IRK distribution from both ends
   NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);

@@ -221,7 +221,7 @@ class CTSClientCallbacks : public NimBLEClientCallbacks
     void onConnect(NimBLEClient *pClient)
     {
         ESP_LOGI(TAG, "Connected to server");
-        pClient->secureConnection();
+        // pClient->secureConnection();
         ble_read_cts_from_peer_and_disconnect(pClient);
     }
 
