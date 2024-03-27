@@ -260,7 +260,6 @@ LV_IMG_DECLARE(ui_img_weather_snow_showers);
 LV_IMG_DECLARE(ui_img_weather_snowstorm);
 LV_IMG_DECLARE(ui_img_weather_thunderstorm);
 
-LV_FONT_DECLARE(ui_font_HanyiWenhei16ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei20ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei24ZhHans);
 LV_FONT_DECLARE(ui_font_HanyiWenhei48ASCII);
