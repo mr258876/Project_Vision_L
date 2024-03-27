@@ -8,5 +8,6 @@ extern NimBLEServer *pBLEServer;
 extern NimBLEAdvertising *pBLEAdvertising;
 
 void bluetooth_init();
+void bluetooth_deinit();
 
 #endif

@@ -1221,6 +1221,9 @@ void setAPIserver_async(void *parameter)
         vTaskDelete(NULL);
       }
 
+      // stop bluetooth first or wifi performance will be ridiculous (~1Mbps)
+      bluetooth_deinit();
+
       info_APIstatus = 2;
       if (connectWiFi())
       {
@@ -1245,6 +1248,9 @@ void setAPIserver_async(void *parameter)
       endAPIServer();
       info_APIstatus = 0;
       disConnectWiFi();
+
+      // researt bluetooth
+      bluetooth_init();
     }
   }
   xSemaphoreGive(APIStartupMutex);

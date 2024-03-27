@@ -68,3 +68,10 @@ void bluetooth_init()
   pBLEServer->setCallbacks(new ServerCallbacks());
 
 }
+
+void bluetooth_deinit()
+{
+  NimBLEDevice::stopAdvertising();
+  NimBLEDevice::deinit(true);
+  esp_bt_controller_disable();
+}
