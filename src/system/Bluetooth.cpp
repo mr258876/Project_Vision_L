@@ -2,6 +2,7 @@
 #include "The_Vision_L_globals.h"
 #include <esp_log.h>
 #include "BluetoothTime.h"
+#include "api/BLEAPIServer.h"
 // #include "nimble/nimble/host/src/ble_hs_pvcy_priv.h"
 
 NimBLEServer *pBLEServer = nullptr;
@@ -63,6 +64,7 @@ void bluetooth_init()
   pBLEAdvertising = NimBLEDevice::getAdvertising();
   pBLEAdvertising->setAppearance(256); // BLE_APPEARANCE_GENERIC_CLOCK
   ble_cts_setup(pBLEServer);
+  ble_api_setup(pBLEServer);
   pBLEAdvertising->start();
 
   pBLEServer->setCallbacks(new ServerCallbacks());
