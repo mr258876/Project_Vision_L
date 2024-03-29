@@ -1035,11 +1035,12 @@ static void leaveVideoScreen(void *parameter)
     cleanObj(ui_VideoScreen);
     ui_MenuScreen_screen_init();
     lv_scr_load_anim(ui_MenuScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+
+    isInLVGL = true;
     xSemaphoreGive(LVGLMutex);
   }
 
   vTaskResume(lvglLoopHandle);
-  isInLVGL = true;
 
   vTaskDelete(NULL);
 }
@@ -1269,7 +1270,7 @@ static void lvglLoop(void *parameter)
   {
     if (xSemaphoreTake(LVGLMutex, portMAX_DELAY) == pdTRUE)
     {
-      lv_task_handler(); /* let the GUI do its work */
+      lv_timer_handler(); /* let the GUI do its work */
       xSemaphoreGive(LVGLMutex);
     }
     vTaskDelay(pdMS_TO_TICKS(5));
@@ -1595,7 +1596,8 @@ static void onDoubleClick()
   if (!isInLVGL)
   {
     // 若在视频播放界面则返回主菜单
-    xTaskCreatePinnedToCore(leaveVideoScreen, "leaveVideoScr", 3072, NULL, 2, NULL, 1);
+    xTaskCreatePinnedToCore(leaveVideoScreen, "leaveVideoScr", 3072, NULL, 3, NULL, 1);
+    return;
   }
 
   xSemaphoreTake(LVGLMutex, portMAX_DELAY);
