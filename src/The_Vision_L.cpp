@@ -311,7 +311,7 @@ void setup()
 
     // if (setting_wirelessMode & SETTING_WIRELESS_BT)
     // {
-    bluetooth_init();
+    // bluetooth_init();
 
     // ds4 = new DS4(pServer);
     // }
@@ -851,6 +851,13 @@ void hardwareSetup()
     {
       disConnectWiFi();
     }
+
+    bluetooth_init();
+    if (!info_timeSynced)
+    {
+      syncTime_BT_async();
+    }
+    
   }
 
   if (!(hwErr & VISION_HW_PROX_ERR))
