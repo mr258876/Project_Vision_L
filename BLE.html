@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="height=device-height,width=device-width,initial-scale=1.0,user-scalable=0">
+
+    <title>神之眼实用程序</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="stylesheet" href="./css/mdui.min.css" />
+    <script src="./js/jquery-3.6.3.min.js"></script>
+    <script src="./js/Sortable.min.js"></script>
+    <script src="./js/jquery-sortable.js"></script>
+
+    <style>
+        /* 解决移动端对话框高度不对 */
+        html {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body
+    class="mdui-appbar-with-toolbar mdui-bottom-nav-fixed mdui-theme-primary-teal mdui-theme-accent-orange mdui-theme-layout-auto">
+    <header class="mdui-appbar mdui-appbar-fixed" id="appbar">
+        <div class="mdui-toolbar mdui-color-theme">
+            <a href="javascript:;" class="mdui-btn mdui-btn-icon" mdui-drawer="{target: '#drawer'}"><i
+                    class="mdui-icon material-icons">menu</i></a>
+            <a href="javascript:;" class="mdui-typo-title" id="title">神之眼实用程序</a>
+            <div class="mdui-toolbar-spacer"></div>
+        </div>
+        <div class="mdui-progress" id="progress-bar" hidden>
+            <div class="mdui-progress-indeterminate"></div>
+        </div>
+    </header>
+
+    <br />
+
+    <div class="mdui-container" id="settings-container">
+        <div class="mdui-typo" id="basic-info">
+            <div class="mdui-typo-title">通过 BLE 为设备授时</div>
+            <p>点击下方按钮选择神之眼以开始授时流程。</p>
+            <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent"
+                id="btn-select-device">选择设备</button>
+        </div>
+    </div>
+
+    <div class="mdui-container" id="info-container" hidden="true">
+        <div class="mdui-typo" id="basic-info">
+            <div class="mdui-typo-title"><i class="mdui-icon material-icons">check_circle</i>授时成功</div>
+            <p>设备时钟功能应该可以使用了。要重新开始授时流程，请点击<a href="javascript:$('#info-container').attr('hidden', true);$('#isettings-container').removeAttr('hidden');">这里</a>。</p>
+        </div>
+    </div>
+
+    <div class="mdui-drawer mdui-drawer-close" id="drawer">
+        <ul class="mdui-list">
+            <li class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">info</i>
+                <div class="mdui-list-item-content" id="utility-about-div">关于实用程序</div>
+            </li>
+        </ul>
+    </div>
+
+    <script src="./js/mdui.min.js"></script>
+</body>
+
+<script>
+    const UTILITY_VERSION = 20240328;
+    const VISION_BLE_SERVICE_UUID = "00008800-0000-1000-d826-075e4e8cecf3";
+    var Device = null;
+
+    ////////////////////
+    //  helper函数
+    ////////////////////
+
+    // 隐藏 / 显示进度条
+    function hideProgressBar() {
+        $("#progress-bar").prop("hidden", true);
+    }
+    function showProgressBar() {
+        $("#progress-bar").prop("hidden", false);
+    }
+
+    //获取url中的参数
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r != null) return unescape(r[2]); return null; //返回参数值
+    }
+
+    String.prototype.format = String.prototype.f = function () {
+        var s = this,
+            i = arguments.length;
+
+        while (i--) {
+            s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arguments[i]);
+        }
+        return s;
+    };
+
+    ////////////////////
+    //  ajax函数
+    ////////////////////
+
+    // 选择BLE设备
+    async function selectDevice() {
+        let options = { filters: [{ services: [VISION_BLE_SERVICE_UUID, 'current_time'] }] };
+
+        BLEDevice = null;
+        BLEServer = null;
+        try {
+            console.log('Requesting Bluetooth Device...');
+            BLEDevice = await navigator.bluetooth.requestDevice(options);
+
+            showProgressBar();
+            await timeDevice(BLEDevice);
+
+            mdui.snackbar({
+                message: '授时成功',
+                position: 'top'
+            });
+            
+            $('#settings-container').attr('hidden', true);
+            $('#info-container').removeAttr('hidden');
+        } catch (error) {
+            console.log('Argh! ' + error);
+            BLEDevice = null;
+
+            mdui.snackbar({
+                message: '错误：' + error,
+                position: 'top'
+            });
+        } finally {
+            hideProgressBar();
+        }
+    }
+
+    // 连接BLE设备
+    async function connect(BLEDevice) {
+        console.log('Connecting to Bluetooth Device...');
+        server = await BLEDevice.gatt.connect();
+        console.log('> Bluetooth Device connected');
+        return server;
+    }
+
+    // 断开BLE设备连接
+    async function disconnect(BLEDevice) {
+        await BLEDevice.gatt.disconnect();
+        console.log('> Bluetooth Device disconnected');
+    }
+
+    // 为设备授时
+    async function timeDevice(BLEDevice) {
+        const BLEServer = await connect(BLEDevice);
+
+        const CTSservice = await BLEServer.getPrimaryService('current_time');
+
+        // Get the Time Zone characteristic
+        const tzTimeChar = await CTSservice.getCharacteristic('local_time_information');
+
+        const TZnow = new Date();
+        const offset = -(TZnow.getTimezoneOffset() / 15);
+
+        let TZbuffer = new ArrayBuffer(2);
+        let TZview = new DataView(TZbuffer);
+        TZview.setInt8(0, offset);
+
+        await tzTimeChar.writeValueWithResponse(TZbuffer);
+
+        console.log('Device TZ set');
+        
+        // Get the Current Time characteristic
+        const currentTimeChar = await CTSservice.getCharacteristic('current_time');
+
+        // 获取浏览器时间
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // Months are 0-based in JavaScript
+        const day = now.getDate();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+
+        // Create the data buffer to write to the characteristic
+        // The format is defined in the Current Time Service specification
+        let CTbuffer = new ArrayBuffer(10);
+        let CTview = new DataView(CTbuffer);
+        CTview.setUint16(0, year, true); // Year (little-endian)
+        CTview.setUint8(2, month);       // Month
+        CTview.setUint8(3, day);         // Day
+        CTview.setUint8(4, hours);       // Hours
+        CTview.setUint8(5, minutes);     // Minutes
+        CTview.setUint8(6, seconds);     // Seconds
+        CTview.setUint8(7, 0);           // Day of Week (unknown)
+
+        // 写入时间
+        await currentTimeChar.writeValueWithResponse(CTbuffer);
+
+        console.log('Device time set');
+
+        await disconnect(BLEDevice);
+    }
+
+    ////////////////////
+    // 按钮回调函数
+    ////////////////////
+
+    document.querySelector("#btn-select-device").addEventListener('click', async function () {
+        await selectDevice();
+    });
+
+    // 侧栏 - 关于
+    $("#utility-about-div").click(function () {
+        mdui.alert("神之眼实用程序 BLE<br/>版本：" + UTILITY_VERSION + "<br/>@mr258876 2022-2024<br/><br/>如果您喜欢本项目，请在<a href='https://github.com/mr258876/Project_Vision_L'>Github</a>上Star本项目！", "关于实用程序");
+    });
+
+    ////////////////////
+    //  其他
+    ////////////////////
+
+    $(document).ready(function () {
+        mdui.mutation();
+    });
+</script>
+
+</html>
