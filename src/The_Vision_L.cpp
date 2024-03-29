@@ -779,7 +779,7 @@ void hardwareSetup()
       syncTime_BT_async();
     }
   }
-  hasWifi = false;
+
   if (hasWifi)
   {
     /* 查询树脂 */
