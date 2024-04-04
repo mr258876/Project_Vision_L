@@ -239,18 +239,33 @@ HoyoverseClient_result_t HoyoverseClient::syncDailyNote(Notedata *nd)
 
     /* Set headers */
     esp_http_client_set_header(client, "Accept", "application/json, text/plain, */*");
-    esp_http_client_set_header(client, "Accept-Language", "en-US,zh-CN,ja-JP,ko-KR;q=0.8");
+    esp_http_client_set_header(client, "Accept-Language", "en-US,zh-CN,ja-JP,ko-KR");
     esp_http_client_set_header(client, "cookie", _cookie.c_str());
     esp_http_client_set_header(client, "DS", getDynamicSalt("", p.c_str()).c_str());
     esp_http_client_set_header(client, "Origin", Hoyoverse_App_origin[forumtype]);
     esp_http_client_set_header(client, "Referer", Hoyoverse_App_referer[forumtype]);
-    // esp_http_client_set_header(client, "User-Agent", Hoyoverse_App_UA[forumtype]);
+    esp_http_client_set_header(client, "User-Agent", Hoyoverse_App_UA[forumtype]);
     esp_http_client_set_header(client, "X_Requested_With", Hoyoverse_App_x_requested_with[forumtype]);
     esp_http_client_set_header(client, "x-rpc-app_version", Hoyoverse_App_version[forumtype]);
     esp_http_client_set_header(client, "x-rpc-client_type", Hoyoverse_App_client_type[forumtype]);
+    esp_http_client_set_header(client, "x-rpc-sys_version", Hoyoverse_App_rpc_sys_version);
+    esp_http_client_set_header(client, "x-rpc-device_model", Hoyoverse_App_rpc_device_model);
+    esp_http_client_set_header(client, "x-rpc-device_name", Hoyoverse_App_rpc_device_name);
     if (_device_guid.length() == 32)
     {
         esp_http_client_set_header(client, "x-rpc-device_id", _device_guid.c_str());
+    }
+
+    /* Miyoushe only */
+    if (forumtype == 0)
+    {
+        esp_http_client_set_header(client, "x-rpc-page", Hoyoverse_App_rpc_page[forumtype]);
+        esp_http_client_set_header(client, "x-rpc-tool-version", Hoyoverse_App_rpc_tool_version[forumtype]);
+        esp_http_client_set_header(client, "x-rpc-channel", Hoyoverse_App_rpc_channel[forumtype]);
+        esp_http_client_set_header(client, "x-rpc-verify_key", Hoyoverse_App_rpc_verify_key[forumtype]);
+        esp_http_client_set_header(client, "Sec-Fetch-Site", Hoyoverse_App_sec_fetch_site[forumtype]);
+        esp_http_client_set_header(client, "Sec-Fetch-Dest", Hoyoverse_App_sec_fetch_dest[forumtype]);
+        esp_http_client_set_header(client, "Sec-Fetch-Mode", Hoyoverse_App_sec_fetch_mode[forumtype]);
     }
 
     /* Execute query */
