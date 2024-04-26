@@ -8,6 +8,8 @@
 NimBLEServer *pBLEServer = nullptr;
 NimBLEAdvertising *pBLEAdvertising = nullptr;
 
+static bool bluetoothStarted = false;
+
 static const char *TAG = "Bluetooth";
 
 // Callbacks for server events
@@ -69,10 +71,13 @@ void bluetooth_init()
 
   pBLEServer->setCallbacks(new ServerCallbacks());
 
+  bluetoothStarted = true;
 }
 
 void bluetooth_deinit()
 {
+  if (!bluetoothStarted) return;
+
   NimBLEDevice::stopAdvertising();
   NimBLEDevice::deinit(true);
   esp_bt_controller_disable();
