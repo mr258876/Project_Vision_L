@@ -39,6 +39,7 @@ void mboxCreate(lv_obj_t *parent, const char *title, const char *content, const 
   if (title) lv_msgbox_add_title(mbox, title);
   if (add_close_btn) lv_msgbox_add_close_button(mbox);
   lv_obj_set_style_text_font(mbox, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_width(mbox, lv_pct(100));
   lv_obj_center(mbox);
 
   if (timeout > 0)
