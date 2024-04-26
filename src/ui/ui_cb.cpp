@@ -206,7 +206,7 @@ void cb_loadWifiReconfigInfo(lv_event_t *e)
   lv_obj_set_style_text_font(ui_InfoPanelLabel1, &ui_font_HanyiWenhei16ZhHans, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   lv_obj_t *ui_InfoPanelQR1 = lv_qrcode_create(ui_InfoPanel);
-  lv_qrcode_set_size(ui_InfoPanel, 100);
+  lv_qrcode_set_size(ui_InfoPanelQR1, 100);
   lv_qrcode_update(ui_InfoPanelQR1, lang[curr_lang][34], strlen(lang[curr_lang][34])); // "http://iot.espressif.cn/configWXDeviceWiFi.html"
   lv_obj_set_x(ui_InfoPanelQR1, 0);
   lv_obj_set_y(ui_InfoPanelQR1, 60);
