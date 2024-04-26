@@ -852,13 +852,13 @@ void hardwareSetup()
       disConnectWiFi();
     }
 
-    bluetooth_init();
     if (!info_timeSynced)
     {
       syncTime_BT_async();
     }
     
   }
+  bluetooth_init();
 
   if (!(hwErr & VISION_HW_PROX_ERR))
   {
